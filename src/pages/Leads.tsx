@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Search } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
+import StatusBadge from "@/components/status-badge";
 
 const mockLeads = [
     { id: 1, name: "Enterprise Corp", email: "info@enterprise.com", status: "Qualified", source: "Website", expectedRevenue: 50000 },
@@ -42,9 +43,10 @@ const Leads = () => {
                 <div className="flex justify-between text-sm text-gray-600">
                     <div>Total Leads: <span className="font-bold">{mockLeads.length}</span></div>
                     <div>Qualified: <span className="font-bold text-green-600">3</span></div>
-                    <div>% Conversion: 
+                    <div className="flex items-center space-x-2">
+                        <span className='text-gray-700'>Conversion Rate:</span>
                         <progress className="w-28 h-2 rounded-full" value="60" max="100"></progress>
-                        <span className='ml-2'>{Math.round(60)}%</span>
+                        <span className='text-sm'>60%</span>
                     </div>
                 </div>
             </div>
@@ -66,13 +68,10 @@ const Leads = () => {
                             <TableCell className="font-medium">{lead.name}</TableCell>
                             <TableCell>{lead.email}</TableCell>
                             <TableCell>
-                                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                                    lead.status === 'Qualified' ? 'bg-green-100 text-green-800' :
-                                    lead.status === 'Needs Follow-up' ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-gray-100 text-gray-800'
-                                }`}>
+                                <StatusBadge status={lead.status} variant="secondary">
+                                    {/* StatusBadge handles the display logic */}
                                     {lead.status}
-                                </span>
+                                </StatusBadge>
                             </TableCell>
                             <TableCell>{lead.source}</TableCell>
                             <TableCell className="text-right font-semibold">${lead.expectedRevenue.toLocaleString()}</TableCell>

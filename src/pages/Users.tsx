@@ -6,10 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Search, User, LogOut, ArrowDownCircle, UserCheck, Zap } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeadline, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import StatusBadge from "@/components/status-badge";
 
 // Mock User Data
 interface UserProfile {
@@ -38,9 +39,10 @@ const roleClasses: Record<typeof mockUsers[0]['role'], { text: string; color: st
 // --- User Profile Dialog Component ---
 const UserProfileDialog: React.FC<{ user: UserProfile; isOpen: boolean; onClose: () => void }> = ({ user, isOpen, onClose }) => {
     const [newRole, setNewRoleState] = useState<typeof mockUsers[0]['role']>(user.role);
+    // Initialize permissions based on current role
     const [permissions, setPermissions] = useState<{ canEditProject: boolean; canViewAnalytics: boolean; canManageUsers: boolean }>({ 
-        canEditProject: true, 
-        canViewAnalytics: true, 
+        canEditProject: user.role === 'Admin' || user.role === 'Editor', 
+        canViewAnalytics: user.role === 'Viewer' || user.role === 'Admin', 
         canManageUsers: user.role === 'Admin' 
     });
 
@@ -74,16 +76,16 @@ const UserProfileDialog: React.FC<{ user: UserProfile; isOpen: boolean; onClose:
                 
                 <div className="space-y-6 pt-2">
                     {/* 1. Role Assignment */}
-                    <div>
-                        <p className="text-sm font-medium text-gray-500 mb-2">Role Assignment</p>
+                    <div className="space-y-2 py-3 border rounded-md">
+                        <p className="text-sm font-medium text-gray-500">Role Assignment</p>
                         <div className="flex items-center space-x-4">
                             <div className='flex-grow'>
-                                <Label htmlFor="role">Current Role</Label>
+                                <Label htmlFor="role" className='text-sm'>Select Role</Label>
                                 <Select 
                                     onValueChange={handleRoleChange} 
                                     onValueRef={handleRoleChange}>
                                     <SelectTrigger id="role" value={user.role}>
-                                        <SelectValue placeholder="Select a role" />
+                                        <SelectValue placeholder="Role" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {Object.keys(roleClasses).map(role => (
@@ -96,8 +98,8 @@ const UserProfileDialog: React.FC<{ user: UserProfile; isOpen: boolean; onClose:
                     </div>
 
                     {/* 2. Permissions Management */}
-                    <div>
-                        <p className="text-sm font-medium text-gray-500 mb-3 border-b pb-2">Feature Permissions</p>
+                    <div className="space-y-4 py-3 border rounded-md">
+                        <p className="text-sm font-medium text-gray-500">System Permissions</p>
                         <div className="space-y-3">
                             {[
                                 { key: 'canEditProject', label: 'Edit Projects', description: 'Can modify project scope and milestones.' },
@@ -162,7 +164,7 @@ const Users = () => {
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold text-gray-800">User & Team Management</h1>
-      <p className="text-gray-600 mb-6">View, manage roles, and control permissions for every team member.</p>
+      <p className="text-gray-600">View, manage roles, and control permissions for every team member.</p>
       
       {/* Search and Add Controls */}
       <div className="flex justify-between items-center pt-1">
@@ -205,12 +207,14 @@ const Users = () => {
                             </TableCell>
                             <TableCell>{user.email}</TableCell>
                             <TableCell className="flex items-center space-x-2">
-                                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${roleClasses[user.role]?.color || 'bg-gray-100'}`}>
+                                <StatusBadge status={user.role} variant="secondary">
                                     {roleClasses[user.role]?.text || 'N/A'}
-                                </span>
+                                </StatusBadge>
                             </TableCell>
-                            <TableCell className={`font-semibold ${user.isSuspended ? 'text-red-500' : 'text-green-600'}`}>
-                                {user.isSuspended ? 'Suspended' : 'Active'}
+                            <TableCell className="text-right">
+                                <StatusBadge status={user.isSuspended ? 'Suspended' : 'Active'}>
+                                    {user.isSuspended ? 'Suspended' : 'Active'}
+                                </StatusBadge>
                             </TableCell>
                             <TableCell className="text-right space-x-2">
                                 <UserDetailsPanel user={user} />

@@ -5,9 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import ProjectForm from "@/components/project-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import StatusBadge from "@/components/status-badge";
+import ProjectForm from "@/components/project-form";
+
+// Mock Project Data for demonstration
+interface Project {
+    id: number;
+    name: string;
+    goal: string;
+    priority: 'High' | 'Medium' | 'Low';
+    status: 'In Progress' | 'Complete' | 'At Risk';
+    completion: number; // Percentage
+}
+
+const mockProjects: Project[] = [
+    { id: 1, name: 'Website Redesign Q3 2024', goal: 'Optimize user journey/CTAs.', priority: 'High', status: 'In Progress', completion: 65 },
+    { id: 2, name: 'Q4 Branding Assets Library', goal: 'Expand iconography and color guidelines.', priority: 'Medium', status: 'In Progress', completion: 10 },
+    { id: 3, name: 'Internal Tool Migration', goal: 'Move legacy CRM data to new platform.', priority: 'High', status: 'At Risk', completion: 90 },
+    { id: 4, name: 'Market Research Initiative', goal: 'Identify key untapped revenue sources.', priority: 'Low', status: 'Complete', completion: 100 },
+];
 
 
 const Projects = () => {
@@ -34,7 +52,6 @@ const Projects = () => {
         
         {/* Project Form/Creation Sidebar */}
         <div className={`lg:col-span-1 ${isCreating ? '' : 'hidden'}`}>
-           {/* This area will dynamically show the form if isCreating is true */}
            <Card className="h-full">
              <CardHeader className='border-b'>
                 <CardTitle>Create New Project</CardTitle>
@@ -59,7 +76,6 @@ const Projects = () => {
              </div>
            </div>
 
-            {/* Project Table */}
             <Card className="shadow-sm">
                 <CardHeader>List of Active Projects</CardHeader>
                 <CardContent>
@@ -70,55 +86,38 @@ const Projects = () => {
                                 <TableHead>Goal</TableHead>
                                 <TableHead>Priority</TableHead>
                                 <TableHead className="text-right">Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead className="text-right">Completion/head>
+                                <TableHead className="text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {/* Example Project Row 1 */}
-                            <TableRow className="hover:bg-gray-50 cursor-pointer">
-                                <TableCell className="font-medium">Website Redesign Q3 2024</TableCell>
-                                <TableCell>Optimize user journey/CTAs.</TableCell>
-                                <TableCell>High</TableCell>
-                                <TableCell className="text-green-600 font-semibold">65% Complete</TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="outline" size="sm" className="mr-2">View</Button>
-                                    <Button variant="ghost" size="sm">Edit</Button>
-                                </TableCell>
-                            </TableRow>
-                            {/* Example Project Row 2 */}
-                            <TableRow className="hover:bg-gray-50 cursor-pointer">
-                                <TableCell className="font-medium">Q4 Branding Assets Library</TableCell>
-                                <TableCell>Expand iconography and color guidelines.</TableCell>
-                                <TableCell>Medium</TableCell>
-                                <TableCell className="text-yellow-600 font-semibold">10% Complete</TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="outline" size="sm" className="mr-2">View</Button>
-                                    <Button variant="ghost" size="sm">Edit</Button>
-                                </TableCell>
-                            </TableRow>
-                            {/* Example Project Row 3 */}
-                            <TableRow className="hover:bg-gray-50 cursor-pointer">
-                                <TableCell className="font-medium">Internal Tool Migration</TableCell>
-                                <TableCell>Move legacy CRM data to new platform.</TableCell>
-                                <TableCell>High</TableCell>
-                                <TableCell className="text-blue-600 font-semibold">Upcoming</TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="outline" size="sm" className="mr-2">View</Button>
-                                    <Button variant="ghost" size="sm">Edit</Button>
-                                </TableCell>
-                            </TableRow>
+                            {mockProjects.map((project) => (
+                                <TableRow key={project.id} className="hover:bg-gray-50 cursor-pointer">
+                                    <TableCell className="font-medium">{project.name}</TableCell>
+                                    <TableCell className="text-sm">{project.goal}</TableCell>
+                                    <TableCell>
+                                        <StatusBadge status={project.priority} variant="secondary">{project.priority}</StatusBadge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <StatusBadge status={project.status} variant="secondary">{project.status}</StatusBadge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex items-center space-x-2">
+                                            <Badge className="text-lg font-bold text-blue-600">{project.completion}%</Badge>
+                                            <progress className="w-24 h-2 rounded-full" value={project.completion} max="100"></progress>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right space-x-2">
+                                        <Button variant="outline" size="sm" className="mr-2">Edit</Button>
+                                        <Button variant="default" size="sm">View</Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
                         </TableBody>
                     </Table>
                 </CardContent>
             </Card>
         </div>
-      </div>
-
-      {/* To make the form usable on click in the list style */}
-      <div className="flex justify-center pt-8">
-        <Button onClick={() => setIsCreating(true)}>
-            + Start New Project Workflow
-        </Button>
       </div>
     </div>
   );

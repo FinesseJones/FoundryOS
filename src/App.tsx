@@ -9,6 +9,7 @@ import Leads from './pages/Leads';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 import BrandGenerator from './pages/BrandGenerator';
+import ProjectDetail from './pages/ProjectDetail';
 
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           
           {/* Project Management Page */}
           <Route path="projects" element={<Projects />} />
+          <Route path="projects/:projectId" element={<ProjectDetail />} />
           
           {/* Lead Management Page */}
           <Route path="leads" element={<Leads />} /> 

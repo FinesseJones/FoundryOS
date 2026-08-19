@@ -10,6 +10,7 @@ import { AlertCircle } from "lucide-react";
 import StatusBadge from "@/components/status-badge";
 import ProjectForm, { ProjectData } from "@/components/project-form";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 
 // Mock Project Data for demonstration
 interface Project {
@@ -159,7 +160,9 @@ const Projects = () => {
                                     </TableCell>
                                     <TableCell className="text-right space-x-2">
                                         <Button variant="outline" size="sm" className="mr-2" onClick={() => handleEditClick(project)}>Edit</Button>
-                                        <Button size="sm">View</Button>
+                                        <Link to={`/projects/${project.id}`}>
+                                            <Button size="sm">View</Button>
+                                        </Link>
                                     </TableCell>
                                 </TableRow>
                             ))}

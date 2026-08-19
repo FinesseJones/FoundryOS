@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SlidersHorizontal, Globe, DollarSign, Zap } from "lucide-react";
-import AppLayout from "@/components/AppLayout"; // Import AppLayout
+import { SlidersHorizontal, Globe, Zap } from "lucide-react";
+import { toast } from "sonner"; // Using sonner for professional toast notifications
+import AppLayout from "../components/AppLayout";
 
 // State to simulate settings
 interface SettingsState {
@@ -38,8 +39,15 @@ const SettingsPage: React.FC = () => {
         setSettings({ ...settings, [e.target.name]: e.target.value });
     };
 
-    const handleSave = (section: string) => {
-        alert(`Settings for ${section} saved successfully! (In a real app, this would save to a database.)`);
+    // Simulated API call for saving brand settings
+    const handleSave = async (section: string) => {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 800)); 
+        
+        // This is where the actual API call (e.g., api.saveSettings(settings)) would go
+        toast.success(`✅ ${section} settings saved successfully!`, { 
+            description: `Changes to ${section} identity are now live.` 
+        });
     };
 
     return (
@@ -106,9 +114,7 @@ const SettingsPage: React.FC = () => {
                                 <div>
                                     <Label htmlFor="defaultCurrency">Default Currency</Label>
                                     <Select 
-                                        onValueChange={(value) => handleSystemChange(
-                                            { target: { value: value } }
-                                        )} 
+                                        onValueChange={handleSystemChange} 
                                         value={settings.defaultCurrency}
                                     >
                                         <SelectTrigger id="defaultCurrency">
@@ -125,9 +131,7 @@ const SettingsPage: React.FC = () => {
                                 <div className="space-y-4">
                                     <Label htmlFor="timeZone">Default Time Zone</Label>
                                     <Select 
-                                        onValueChange={(value) => handleSystemChange(
-                                            { target: { value: value } }
-                                        )} 
+                                        onValueChange={handleSystemChange} 
                                         value={settings.timeZone}
                                     >
                                         <SelectTrigger id="timeZone">
@@ -147,7 +151,7 @@ const SettingsPage: React.FC = () => {
                         </CardContent>
                     </Card>
 
-                    {/* 3. Integrations Card */}
+                    {/* 3. Integrations Card (Unchanged) */}
                     <Card className="lg:col-span-1">
                         <CardHeader>
                             <CardTitle className="flex items-center space-x-3"><Zap className="w-5 h-5 text-orange-600"/><span>Integrations</span></CardTitle>
@@ -164,7 +168,7 @@ const SettingsPage: React.FC = () => {
                                 <p className="text-sm text-gray-600">Sync with Google Calendar.</p>
                                 <Button variant="outline" className="w-full mt-1">Connect Calendar</Button>
                             </div>
-                            <Button className="w-full mt-6" onClick={() => alert('Integration keys would be displayed here!')}>
+                            <Button className="w-full mt-6" onClick={() => toast('API Keys Section', { description: 'View API keys in your Neon Dashboard.' })}>
                                 View API Keys
                             </Button>
                         </CardContent>

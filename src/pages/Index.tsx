@@ -9,6 +9,7 @@ import ProjectDashboardContent from "@/components/ProjectDashboardContent"; // I
 import { Users } from "./Users";
 import { Settings } from "./Settings";
 import { TrendingUp } from "lucide-react";
+import { ReportSquare } from "lucide-react"; // New icon for Reports
 
 // Mock Project Data Structure
 interface Project {
@@ -63,10 +64,10 @@ export default function IndexPage() {
                         />
                     </div>
                 )}
-            </div>
+            </div >
 
-            {/* Quick Links for Other Modules (Unchanged) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Quick Links for Other Modules */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = "/users/*"}>
                     <CardHeader>
                         <CardTitle className="flex items-center space-x-3 text-indigo-600"><Users className="w-5 h-5"/><span>Users & Teams</span></CardTitle>
@@ -85,13 +86,23 @@ export default function IndexPage() {
                         <Button className="mt-2">Go to Settings</Button>
                     </CardContent>
                 </Card>
-                {/* Placeholder for future module */}
+                {/* Reporting Module Link */}
                  <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = "/reports/*"}>
                     <CardHeader>
-                        <CardTitle className="flex items-center space-x-3 text-green-600"><TrendingUp className="w-5 h-5"/><span>Reports & Analytics</span></CardTitle>
+                        <CardTitle className="flex items-center space-x-3 text-green-600"><ReportSquare className="w-5 h-5"/><span>Reports & Analytics</span></CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-muted-foreground">Generate reports and visualize team performance over time.</p>
+                        <p className="text-muted-foreground">View performance metrics and financial reports.</p>
+                        <Button className="mt-2">View Reports</Button>
+                    </CardContent>
+                </Card>
+                {/* Placeholder for future module */}
+                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                    <CardHeader>
+                        <CardTitle className="flex items-center space-x-3 text-gray-500"><TrendingUp className="w-5 h-5"/></CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">Reporting function coming soon.</p>
                         <Button className="mt-2" disabled>Coming Soon</Button>
                     </CardContent>
                 </Card>

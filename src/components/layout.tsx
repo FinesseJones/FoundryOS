@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, Folder, Settings, Users } from 'lucide-react';
+import { LayoutDashboard, Folder, Settings, Users, Zap, DollarSign } from 'lucide-react';
 
 interface NavItem {
   name: string;
@@ -13,8 +13,10 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/" },
   { name: "Projects", icon: Folder, href: "/projects" },
+  { name: "Leads", icon: DollarSign, href: "/leads" }, {/* NEW */}
   { name: "Users", icon: Users, href: "/users" },
   { name: "Settings", icon: Settings, href: "/settings" },
+  { name: "Brand Generator", icon: Zap, href: "/brand-generator" }, {/* NEW */}
 ];
 
 const Sidebar = () => (

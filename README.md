@@ -1,0 +1,86 @@
+# TACF — Brand-First Autonomous Business AI Operating System
+
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict_Mode-blue.svg)](https://www.typescriptlang.org/)
+[![Tests](https://img.shields.io/badge/Tests-121_Passing-emerald.svg)](./tests)
+[![Architecture](https://img.shields.io/badge/Architecture-Closed_Loop_AI_OS-purple.svg)](#architecture)
+[![License](https://img.shields.io/badge/License-Proprietary-cyan.svg)](#)
+
+> **TACF** is a Brand-First Autonomous Business AI Operating System. Rather than functioning as a surface-level AI prompt wrapper, TACF constructs a continuous, versioned **Business DNA** model, evaluates multi-domain intelligence across Marketing, Sales, Operations, and Security, and executes risk-governed workflows through an autonomous multi-agent runtime with a closed-loop memory learning engine.
+
+---
+
+## 🌟 Key Architecture & Stack
+
+```
+                     CUSTOMER WORKSPACE
+                             │
+     ┌───────────────────────┼───────────────────────┐
+     ▼                       ▼                       ▼
+Business DNA Core     Intelligence Layer      Execution Engine
+ (Phases 12–13)        (Phases 14–18)          (Phases 19–20)
+ • Web & Doc Extraction • Marketing Intel       • Autonomous Execution
+ • Brand Voice Sync     • Sales & Lead Intel    • Risk Evaluation
+ • Revision History     • Ops Bottlenecks       • Human Approval Manager
+ • Auto Refresh Engine  • Security Posture      • Automation Scheduler
+                             │                       │
+                             └───────────┬───────────┘
+                                         ▼
+                             Agent Governance & Memory
+                                    (Phase 21)
+                             • Agent Identity & RBAC Matrix
+                             • Data Security Classifications
+                             • Versioning & Rollbacks
+                             • Marketplace Publishing
+                             • Weighted Reputation Scoring
+```
+
+---
+
+## 🚀 Key Features
+
+### 🧬 1. Business DNA & Knowledge Core
+- **Continuous Signal Ingestion**: Crawls company websites and imports documents to build a unified Business DNA graph.
+- **Brand Voice Alignment**: Enforces company identity, value propositions, positioning, and visual guidelines.
+- **Continuous Knowledge Refresh**: Automatic change-detection triggers DNA revisions with audit trails.
+
+### 🧠 2. Multi-Domain Intelligence Layer
+- **Marketing Intelligence**: Multi-channel campaign strategies, content calendar generation, and positioning optimization.
+- **Sales & Customer Intelligence**: Opportunity detection, lead qualification scoring, and next-best-action routing.
+- **Operations Intelligence**: Bottleneck analysis, process optimization, and resource efficiency insights.
+- **Security Intelligence**: Zero-Trust posture evaluation, risk detection across 6 risk vectors, and TACF policy enforcement.
+- **Intelligence Analytics & Learning**: Unified business maturity scoring (`FOUNDATION` → `AUTONOMOUS`) with memory write-backs.
+
+### ⚡ 3. Autonomous Execution & Customer Automation
+- **Risk-Evaluated Execution**: Workflow engine evaluates execution risk (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`).
+- **Human Approval Manager**: `LOW` risk auto-executes; `HIGH` and `CRITICAL` risk hard-halt for human approval sign-off.
+- **Automation Scheduler**: Manages cron trigger schedules with state progression (`WAITING` → `TRIGGERED` → `EXECUTING` → `COMPLETED`).
+- **Workflow Marketplace**: 8 pre-built templates plus customer workflow builder & versioning engine.
+
+### 🛡️ 4. Enterprise Agent Governance
+- **Agent Identity Registry**: Bootstraps 7 core system agents (`@brand`, `@content`, `@publishing`, `@website`, `@security`, `@analytics`, `@learning`).
+- **Granular RBAC Permission Matrix**: 12 permission actions mapped across 4 data security classification levels (`PUBLIC`, `INTERNAL`, `CONFIDENTIAL`, `RESTRICTED`).
+- **Automation Versioning & Rollbacks**: `v1`, `v2`, `v3` snapshot tracking with pre-flight migration safety checks and atomic rollbacks.
+- **Marketplace Publishing**: Package submission, review/approval workflow, and single-click customer installation.
+- **Weighted Reputation Scoring**: Real-time performance tracking (0-100) with badging (`EXCELLENT`, `GOOD`, `NEEDS_IMPROVEMENT`, `CRITICAL_RISK`).
+
+---
+
+## 🛠️ Verification & Test Suite
+
+The platform is fully verified with **121 passing tests across 37 test files** and 0 TypeScript compilation errors.
+
+### Type Check
+```bash
+npx tsc --noEmit
+```
+
+### Run Test Suite
+```bash
+npx tsx --test tests/hardening/*.test.ts tests/e2e/*.test.ts
+```
+
+---
+
+## 📖 Product Documentation
+
+For the complete product architecture, API schemas, governance matrix, and operational launch guide, see [WIKI.md](./WIKI.md).

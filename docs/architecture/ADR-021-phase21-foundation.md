@@ -1,0 +1,1 @@
+docs/architecture/ADR-021-phase21-foundation.md## Decision 4: Knowledge and Memory ArchitectureDefine:- Business DNA relationship- Knowledge storage architecture- Semantic search strategy- Context retrieval flow- Memory lifecycle management- Tenant memory isolation ## Decision 5

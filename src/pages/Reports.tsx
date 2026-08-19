@@ -2,11 +2,11 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, DollarSign, TrendingUp, Users } from "lucide-react";
-import AppLayout from "@/components/AppLayout"; // Import AppLayout
+import { TrendingUp, DollarSign, Users } from "lucide-react";
+import AppLayout from "@/components/AppLayout"; // The alias should work here
 
+// Helper component (moved up for better readability)
 interface KpiCardProps {
     title: string;
     value: string;

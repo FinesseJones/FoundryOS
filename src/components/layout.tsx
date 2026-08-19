@@ -3,6 +3,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { LayoutDashboard, Folder, Settings, Users, Zap, DollarSign } from 'lucide-react';
+import { Toaster } from "@/components/ui/toaster";
 
 interface NavItem {
   name: string;
@@ -46,10 +47,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
-      {/* Adjusted padding and flex properties here */}
       <main className="flex-1 p-8 overflow-y-auto">
         {children}
       </main>
+      <Toaster />
     </div>
   );
 };

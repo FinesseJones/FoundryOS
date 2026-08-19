@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Zap, Palette, BookOpen, TrendingUp } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 // Define the structure for the generated brand guidelines
 interface BrandGuidelines {
@@ -123,24 +124,42 @@ const BrandGuidelinesDisplay: React.FC<{ guidelines: BrandGuidelines }> = ({ gui
 const BrandGenerator: React.FC = () => {
   const [inputPrompt, setInputPrompt] = useState("");
   const [generatedGuidelines, setGeneratedGuidelines] = useState<BrandGuidelines | null>(null);
+  const { toast } = useToast();
   
   const handleGenerate = () => {
     if (inputPrompt.trim()) {
       // Reset state and show loading/processing state
       setGeneratedGuidelines(null); 
       
+      toast({
+        title: "Generating Brand...",
+        description: "The AI is crafting your brand guidelines. Please wait.",
+      });
+
       // Simulate API latency
       setTimeout(() => {
         const guidelines = generateGuidelines(inputPrompt);
         if (guidelines) {
             setGeneratedGuidelines(guidelines);
+            toast({
+              title: "Success!",
+              description: "Your brand guidelines have been generated.",
+            });
         } else {
-            alert("Please provide a more detailed prompt (at least 50 characters) to generate guidelines.");
+            toast({
+              variant: "destructive",
+              title: "Prompt Too Short",
+              description: "Please provide a more detailed prompt (at least 50 characters).",
+            });
         }
       }, 1500);
 
     } else {
-        alert("Please enter a brand concept before generating.");
+        toast({
+          variant: "destructive",
+          title: "Input Required",
+          description: "Please enter a brand concept before generating.",
+        });
     }
   };
 

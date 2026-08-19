@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StatusBadge from "@/components/status-badge";
+import { useToast } from "@/components/ui/use-toast";
 
 // Mock User Data
 interface UserProfile {
@@ -39,6 +40,7 @@ const roleClasses: Record<typeof mockUsers[0]['role'], { text: string; color: st
 // --- User Profile Dialog Component ---
 const UserProfileDialog: React.FC<{ user: UserProfile; isOpen: boolean; onClose: () => void }> = ({ user, isOpen, onClose }) => {
     const [newRole, setNewRoleState] = useState<typeof mockUsers[0]['role']>(user.role);
+    const { toast } = useToast();
     // Initialize permissions based on current role
     const [permissions, setPermissions] = useState<{ canEditProject: boolean; canViewAnalytics: boolean; canManageUsers: boolean }>({ 
         canEditProject: user.role === 'Admin' || user.role === 'Editor', 
@@ -56,7 +58,10 @@ const UserProfileDialog: React.FC<{ user: UserProfile; isOpen: boolean; onClose:
     };
 
     const handleSave = () => {
-        alert(`User ${user.name} updated:\nRole: ${newRole}\nPermissions saved.`);
+        toast({
+          title: "User Profile Saved",
+          description: `Permissions for ${user.name} have been updated.`,
+        });
         onClose();
     };
 

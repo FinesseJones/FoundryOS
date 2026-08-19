@@ -48,7 +48,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ icon: IconElement, title, value
                 {IconElement}
             </CardHeader>
             <CardContent>
-                <div className={`text-2xl font-bold ${colorClasses}`}>{value}</div >
+                <div className={`text-2xl font-bold ${colorClasses}`}>{value}</div>
             </CardContent>
         </Card>
     );
@@ -110,7 +110,7 @@ const AIAssistantWidget: React.FC = () => {
                         </Button>
                     </div>
                     <div className="text-sm text-gray-500 pt-2">*Always verify AI suggestions against current Settings configurations.</div>
-                </div >
+                </div>
             </CardContent>
         </Card>
     );
@@ -185,10 +185,10 @@ const Dashboard = () => {
         <MetricCard 
           icon={<Users className="w-5 h-5" /> } 
           title="Active Team Members" 
-          value=mockDashboardData.activeUsers} 
+          value={mockDashboardData.activeUsers} 
           color="blue"
         />
-      </div >
+      </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -198,7 +198,7 @@ const Dashboard = () => {
             <AIAssistantWidget />
             {/* Project/Pipeline Widget */}
             <PipelineWidget />
-        </div >
+        </div>
 
         {/* Right Column (1/3 width) */}
         <div className="lg:col-span-1 space-y-6">
@@ -214,7 +214,7 @@ const Dashboard = () => {
                 <Button variant="secondary" onClick={() => window.location.href = "/users"} className="w-full">👥 Users</Button>
             </CardContent>
           </Card>
-        </div >
+        </div>
       </div>
     </div>
   );

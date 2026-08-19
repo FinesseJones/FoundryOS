@@ -1,64 +1,124 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import ProjectForm from "@/components/project-form";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+
 
 const Projects = () => {
+  const [isCreating, setIsCreating] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Mock function for handling project submission
+  const handleProjectSubmit = (data: any) => {
+    setLoading(true);
+    // Logic to call an API endpoint to create/update the project goes here
+    setTimeout(() => {
+        setLoading(false);
+        setIsCreating(false);
+        alert(`Project "${data.projectName}" submitted! (Check console for data)`);
+        console.log("Submitted Project Data:", data);
+    }, 1000);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <h1 className="text-3xl font-bold text-gray-800">Project Management Dashboard</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* New Project Button */}
-        <div className="lg:col-span-1">
-          <Card className="p-6 shadow-lg border-l-4 border-blue-500">
-            <h3 className="text-xl font-semibold mb-3">Create New Project</h3>
-            <p className="text-gray-600 mb-4">Start a new brand initiative by defining scope, goals, and team members.</p>
-            <button className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                + New Project
-            </button>
+        
+        {/* Project Form/Creation Sidebar */}
+        <div className={`lg:col-span-1 ${isCreating ? '' : 'hidden'}`}>
+           {/* This area will dynamically show the form if isCreating is true */}
+           <Card className="h-full">
+             <CardHeader className='border-b'>
+                <CardTitle>Create New Project</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <ProjectForm onSubmit={handleProjectSubmit} isLoading={loading} />
+            </CardContent>
           </Card>
         </div>
 
-        {/* Project Listing */}
-        <div className="lg:col-span-2 space-y-4">
-            <h3 className="text-xl font-semibold">Current Projects</h3>
-            {/* Example Project Card 1 */}
-            <Card className="shadow-sm p-4 hover:bg-gray-50 transition-colors cursor-pointer">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h4 className="text-lg font-medium">Website Redesign Q3 2024</h4>
-                        <p className="text-sm text-gray-500">Scope: Full user journey optimization.</p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                        <span className="px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">Active</span>
-                        <button className="text-blue-600 hover:text-blue-800">View Details</button>
-                    </div>
-                </div>
-                <div className="mt-3 pt-3 border-t flex justify-between text-sm text-gray-500">
-                    <span>Due: Sep 30, 2024</span>
-                    <span>Progress: 65%</span>
-                </div>
-            </Card>
-            {/* Example Project Card 2 */}
-            <Card className="shadow-sm p-4 hover:bg-gray-50 transition-colors cursor-pointer">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h4 className="text-lg font-medium">Q4 Branding Assets Library</h4>
-                        <p className="text-sm text-gray-500">Scope: Iconography and color palette expansion.</p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                        <span className="px-3 py-1 text-xs font-semibold bg-orange-100 text-orange-800 rounded-full">On Hold</span>
-                        <button className="text-blue-600 hover:text-blue-800">View Details</button>
-                    </div>
-                </div>
-                <div className="mt-3 pt-3 border-t flex justify-between text-sm text-gray-500">
-                    <span>Due: Nov 15, 2024</span>
-                    <span>Progress: 10%</span>
-                </div>
+        {/* Project Listing Area */}
+        <div className="lg:col-span-2 space-y-6">
+           <div className="flex justify-between items-center pt-1">
+             <h2 className="text-2xl font-semibold">Browse All Initiatives</h2>
+             <div className="flex space-x-2">
+                <Button variant="outline" onClick={() => setIsCreating(true)}>
+                    + New Project
+                </Button>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  Filter
+                </button>
+             </div>
+           </div>
+
+            {/* Project Table */}
+            <Card className="shadow-sm">
+                <CardHeader>List of Active Projects</CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Project Name</TableHead>
+                                <TableHead>Goal</TableHead>
+                                <TableHead>Priority</TableHead>
+                                <TableHead className="text-right">Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {/* Example Project Row 1 */}
+                            <TableRow className="hover:bg-gray-50 cursor-pointer">
+                                <TableCell className="font-medium">Website Redesign Q3 2024</TableCell>
+                                <TableCell>Optimize user journey/CTAs.</TableCell>
+                                <TableCell>High</TableCell>
+                                <TableCell className="text-green-600 font-semibold">65% Complete</TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="outline" size="sm" className="mr-2">View</Button>
+                                    <Button variant="ghost" size="sm">Edit</Button>
+                                </TableCell>
+                            </TableRow>
+                            {/* Example Project Row 2 */}
+                            <TableRow className="hover:bg-gray-50 cursor-pointer">
+                                <TableCell className="font-medium">Q4 Branding Assets Library</TableCell>
+                                <TableCell>Expand iconography and color guidelines.</TableCell>
+                                <TableCell>Medium</TableCell>
+                                <TableCell className="text-yellow-600 font-semibold">10% Complete</TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="outline" size="sm" className="mr-2">View</Button>
+                                    <Button variant="ghost" size="sm">Edit</Button>
+                                </TableCell>
+                            </TableRow>
+                            {/* Example Project Row 3 */}
+                            <TableRow className="hover:bg-gray-50 cursor-pointer">
+                                <TableCell className="font-medium">Internal Tool Migration</TableCell>
+                                <TableCell>Move legacy CRM data to new platform.</TableCell>
+                                <TableCell>High</TableCell>
+                                <TableCell className="text-blue-600 font-semibold">Upcoming</TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="outline" size="sm" className="mr-2">View</Button>
+                                    <Button variant="ghost" size="sm">Edit</Button>
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </CardContent>
             </Card>
         </div>
+      </div>
+
+      {/* To make the form usable on click in the list style */}
+      <div className="flex justify-center pt-8">
+        <Button onClick={() => setIsCreating(true)}>
+            + Start New Project Workflow
+        </Button>
       </div>
     </div>
   );

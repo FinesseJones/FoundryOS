@@ -43,8 +43,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             <CardHeader className="border-b pb-4">
                 <div className="flex items-center justify-between mb-2">
                     <h3 className="text-xl font-semibold text-gray-800">{project.name}</h3>
-                    <Badge className={`${getStatusClasses(project.status)}`}>{project.status.charAt(0).toUpperCase() + project.status.slice(1)}</Badge>
-                </div>
+                    <Badge className={`border ring-offset-2 ring-offset-white ${getStatusClasses(project.status)}`}>{project.status.charAt(0).toUpperCase() + project.status.slice(1)}</Badge>
+                </div >
                 <p className="text-sm text-gray-500">{project.client}</p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -68,13 +68,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
                         <Calendar className="w-4 h-4" />
                         <span>Due: {project.dueDate}</span>
                     </div>
-                </div>
+                </div >
             </CardContent>
             <div className="mt-4">
                 <Button className="w-full" onClick={() => alert(`Viewing details for ${project.name}`)}>
                     View Project
                 </Button>
-            </div>
+            </div >
         </Card>
     );
 };

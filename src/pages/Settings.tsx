@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlidersHorizontal, Globe, DollarSign, Zap } from "lucide-react";
+import AppLayout from "@/components/AppLayout"; // Import AppLayout
 
 // State to simulate settings
 interface SettingsState {
@@ -42,133 +43,135 @@ const SettingsPage: React.FC = () => {
     };
 
     return (
-        <div className="space-y-8 max-w-6xl mx-auto">
-            <h1 className="text-4xl font-bold text-gray-900">System Settings</h1>
-            <p className="text-lg text-gray-600">Manage global configurations, branding, and system-wide parameters.</p>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <AppLayout>
+            <div className="space-y-8 max-w-7xl mx-auto pt-6">
+                <h1 className="text-4xl font-bold text-gray-900">System Settings</h1>
+                <p className="text-lg text-gray-600">Manage global configurations, branding, and system-wide parameters.</p>
                 
-                {/* 1. Brand Configuration Card */}
-                <Card className="lg:col-span-2">
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-3"><SlidersHorizontal className="w-5 h-5 text-indigo-600"/><span>Brand Identity</span></CardTitle>
-                        <p className="text-sm text-muted-foreground">Control the public facing assets and core message of the agency.</p>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-4">
-                            <div>
-                                <Label htmlFor="companyName">Company Name</Label>
-                                <Input 
-                                    id="companyName"
-                                    name="companyName"
-                                    value={settings.companyName}
-                                    onChange={handleBrandChange}
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="tagline">Tagline / Motto</Label>
-                                <Input 
-                                    id="tagline"
-                                    name="tagline"
-                                    value={settings.tagline}
-                                    onChange={handleBrandChange}
-                                    placeholder="Your company's concise mission statement"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="primaryColor">Primary Theme Color</Label>
-                                <Input 
-                                    id="primaryColor"
-                                    name="primaryColor"
-                                    type="color"
-                                    value={settings.primaryColor}
-                                    onChange={handleBrandChange}
-                                />
-                                <p className="text-sm text-gray-500 mt-2">This color controls the primary brand button and accents across the site.</p>
-                            </div>
-                        </div>
-                        <div className="pt-4 border-t">
-                             <Button onClick={() => handleSave('Brand')}>Save Branding Settings</Button>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* 2. System Preferences Card */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-3"><Globe className="w-5 h-5 text-green-600"/><span>System Preferences</span></CardTitle>
-                        <p className="text-sm text-muted-foreground">Define default operational parameters for the entire platform.</p>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-4">
-                            <div>
-                                <Label htmlFor="defaultCurrency">Default Currency</Label>
-                                <Select 
-                                    onValueChange={(value) => handleSystemChange(
-                                        { target: { value: value } }
-                                    )} 
-                                    value={settings.defaultCurrency}
-                                >
-                                    <SelectTrigger id="defaultCurrency">
-                                        <SelectValue placeholder="Select currency" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="USD">USD - US Dollar</SelectItem>
-                                        <SelectItem value="EUR">EUR - Euro</SelectItem>
-                                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                                        <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    {/* 1. Brand Configuration Card */}
+                    <Card className="lg:col-span-2">
+                        <CardHeader>
+                            <CardTitle className="flex items-center space-x-3"><SlidersHorizontal className="w-5 h-5 text-indigo-600"/><span>Brand Identity</span></CardTitle>
+                            <p className="text-sm text-muted-foreground">Control the public facing assets and core message of the agency.</p>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
                             <div className="space-y-4">
-                                <Label htmlFor="timeZone">Default Time Zone</Label>
-                                <Select 
-                                    onValueChange={(value) => handleSystemChange(
-                                        { target: { value: value } }
-                                    )} 
-                                    value={settings.timeZone}
-                                >
-                                    <SelectTrigger id="timeZone">
-                                        <SelectValue placeholder="Select timezone" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="America/Los_Angeles">America/Los_Angeles</SelectItem>
-                                        <SelectItem value="Europe/London">Europe/London</SelectItem>
-                                        <SelectItem value="Asia/Tokyo">Asia/Tokyo</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <div>
+                                    <Label htmlFor="companyName">Company Name</Label>
+                                    <Input 
+                                        id="companyName"
+                                        name="companyName"
+                                        value={settings.companyName}
+                                        onChange={handleBrandChange}
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="tagline">Tagline / Motto</Label>
+                                    <Input 
+                                        id="tagline"
+                                        name="tagline"
+                                        value={settings.tagline}
+                                        onChange={handleBrandChange}
+                                        placeholder="Your company's concise mission statement"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="primaryColor">Primary Theme Color</Label>
+                                    <Input 
+                                        id="primaryColor"
+                                        name="primaryColor"
+                                        type="color"
+                                        value={settings.primaryColor}
+                                        onChange={handleBrandChange}
+                                    />
+                                    <p className="text-sm text-gray-500 mt-2">This color controls the primary brand button and accents across the site.</p>
+                                </div>
                             </div>
-                        </div>
-                        <div className="pt-4 border-t">
-                             <Button onClick={() => handleSave('System')}>Save System Preferences</Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                            <div className="pt-4 border-t">
+                                 <Button onClick={() => handleSave('Brand')}>Save Branding Settings</Button>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                {/* 3. Integrations Card */}
-                <Card className="lg:col-span-1">
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-3"><Zap className="w-5 h-5 text-orange-600"/><span>Integrations</span></CardTitle>
-                        <p className="text-sm text-muted-foreground">Connect external tools like CRMs and calendars.</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="p-3 border rounded-md bg-orange-50/50">
-                            <h4 className="font-semibold mb-2">CRM Sync</h4>
-                            <p className="text-sm text-gray-600">Connect via Salesforce or HubSpot.</p>
-                            <Button variant="outline" className="w-full mt-1">Connect CRM</Button>
-                        </div>
-                        <div className="p-3 border rounded-md bg-orange-50/50">
-                            <h4 className="font-semibold mb-2">Calendar Events</h4>
-                            <p className="text-sm text-gray-600">Sync with Google Calendar.</p>
-                            <Button variant="outline" className="w-full mt-1">Connect Calendar</Button>
-                        </div>
-                        <Button className="w-full mt-6" onClick={() => alert('Integration keys would be displayed here!')}>
-                            View API Keys
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div >
-        </div>
+                    {/* 2. System Preferences Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center space-x-3"><Globe className="w-5 h-5 text-green-600"/><span>System Preferences</span></CardTitle>
+                            <p className="text-sm text-muted-foreground">Define default operational parameters for the entire platform.</p>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="space-y-4">
+                                <div>
+                                    <Label htmlFor="defaultCurrency">Default Currency</Label>
+                                    <Select 
+                                        onValueChange={(value) => handleSystemChange(
+                                            { target: { value: value } }
+                                        )} 
+                                        value={settings.defaultCurrency}
+                                    >
+                                        <SelectTrigger id="defaultCurrency">
+                                            <SelectValue placeholder="Select currency" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="USD">USD - US Dollar</SelectItem>
+                                            <SelectItem value="EUR">EUR - Euro</SelectItem>
+                                            <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                                            <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-4">
+                                    <Label htmlFor="timeZone">Default Time Zone</Label>
+                                    <Select 
+                                        onValueChange={(value) => handleSystemChange(
+                                            { target: { value: value } }
+                                        )} 
+                                        value={settings.timeZone}
+                                    >
+                                        <SelectTrigger id="timeZone">
+                                            <SelectValue placeholder="Select timezone" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="America/Los_Angeles">America/Los_Angeles</SelectItem>
+                                            <SelectItem value="Europe/London">Europe/London</SelectItem>
+                                            <SelectItem value="Asia/Tokyo">Asia/Tokyo</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="pt-4 border-t">
+                                 <Button onClick={() => handleSave('System')}>Save System Preferences</Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* 3. Integrations Card */}
+                    <Card className="lg:col-span-1">
+                        <CardHeader>
+                            <CardTitle className="flex items-center space-x-3"><Zap className="w-5 h-5 text-orange-600"/><span>Integrations</span></CardTitle>
+                            <p className="text-sm text-muted-foreground">Connect external tools like CRMs and calendars.</p>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="p-3 border rounded-md bg-orange-50/50">
+                                <h4 className="font-semibold mb-2">CRM Sync</h4>
+                                <p className="text-sm text-gray-600">Connect via Salesforce or HubSpot.</p>
+                                <Button variant="outline" className="w-full mt-1">Connect CRM</Button>
+                            </div>
+                            <div className="p-3 border rounded-md bg-orange-50/50">
+                                <h4 className="font-semibold mb-2">Calendar Events</h4>
+                                <p className="text-sm text-gray-600">Sync with Google Calendar.</p>
+                                <Button variant="outline" className="w-full mt-1">Connect Calendar</Button>
+                            </div>
+                            <Button className="w-full mt-6" onClick={() => alert('Integration keys would be displayed here!')}>
+                                View API Keys
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div >
+            </div>
+        </AppLayout>
     );
 }
 

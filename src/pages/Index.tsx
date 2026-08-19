@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProjectCard from "@/components/ProjectCard";
-import ProjectDashboardContent from "@/components/ProjectDashboardContent"; // Import the new component
+import ProjectDashboardContent from "@/components/ProjectDashboardContent"; 
 import { Users } from "./Users";
 import { Settings } from "./Settings";
 import { TrendingUp } from "lucide-react";
-import { ReportSquare } from "lucide-react"; // New icon for Reports
+import { ReportSquare } from "lucide-react"; // Keeping ReportSquare here for consistency
 
 // Mock Project Data Structure
 interface Project {
@@ -45,7 +45,6 @@ export default function IndexPage() {
                     <Button>+ New Project</Button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Displaying Project Cards as they were */}
                     {mockProjects.map(project => (
                         <ProjectCard key={project.id} project={project} />
                     ))}
@@ -64,7 +63,7 @@ export default function IndexPage() {
                         />
                     </div>
                 )}
-            </div >
+            </div>
 
             {/* Quick Links for Other Modules */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

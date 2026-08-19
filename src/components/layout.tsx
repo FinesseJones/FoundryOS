@@ -13,14 +13,14 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/" },
   { name: "Projects", icon: Folder, href: "/projects" },
-  { name: "Leads", icon: DollarSign, href: "/leads" }, {/* NEW */}
+  { name: "Leads", icon: DollarSign, href: "/leads" },
   { name: "Users", icon: Users, href: "/users" },
   { name: "Settings", icon: Settings, href: "/settings" },
-  { name: "Brand Generator", icon: Zap, href: "/brand-generator" }, {/* NEW */}
+  { name: "Brand Generator", icon: Zap, href: "/brand-generator" },
 ];
 
 const Sidebar = () => (
-  <div className="w-64 h-full bg-gray-50 border-r p-6 flex flex-col">
+  <div className="w-64 h-full bg-gray-50 border-r p-6 flex flex-col sticky top-0 h-screen"> 
     <div className="text-2xl font-bold text-blue-700 mb-8">
       Brand First App
     </div>
@@ -46,6 +46,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
+      {/* Adjusted padding and flex properties here */}
       <main className="flex-1 p-8 overflow-y-auto">
         {children}
       </main>

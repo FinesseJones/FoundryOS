@@ -15,13 +15,12 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         <SelectValue placeholder="Select a value" />
       </SelectTrigger>
       <SelectContent className="z-50" />
-    </div>
+    </div >
   )
 )
 Select.displayName = "Select"
 
-export { Select }
-
+// Corrected forwardRef signature
 const SelectTrigger = React.forwardRef<HTMLButtonElement, React.ComponentPropsWithoutRef<HTMLButtonElement>>(
   ({ className, ...props }, ref) => (
     <button
@@ -31,18 +30,19 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, React.ComponentPropsWi
         className
       )}
       {...props}
+    </button>
   )
 )
 SelectTrigger.displayName = "SelectTrigger"
 
 const SelectValue = ({ value }: { value: string }) => (
-  <div className="text-muted-foreground">{value}</div>
+  <div className="text-muted-foreground">{value}</div >
 )
 
 const SelectContent = ({ className, children }: { className?: string; children: React.ReactNode }) => (
   <div className={cn("z-50 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md", className)}>
     {children}
-  </div>
+  </div >
 )
 SelectContent.displayName = "SelectContent"
 

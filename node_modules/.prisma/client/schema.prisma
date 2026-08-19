@@ -1,0 +1,128 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Organization {
+  id         String      @id @default(uuid())
+  name       String
+  planTier   String      @default("growth")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  workspaces Workspace[]
+}
+
+model Workspace {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model BusinessDNA {
+  id             String   @id @default(uuid())
+  organizationId String
+  businessId     String   @unique
+  dataJson       String // Serialized BusinessDNA JSON object
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model DNARevision {
+  id             String   @id @default(uuid())
+  organizationId String
+  businessId     String
+  versionNumber  Int
+  diffSummary    String
+  snapshotJson   String // Serialized BusinessDNA snapshot JSON
+  createdBy      String
+  createdAt      DateTime @default(now())
+}
+
+model MemoryRecord {
+  id             String   @id @default(uuid())
+  organizationId String
+  businessId     String
+  category       String // brand, campaign, customer, decision, security, etc.
+  content        String
+  importance     Float
+  relevance      Float
+  createdAt      DateTime @default(now())
+}
+
+model AuditEvent {
+  id             String   @id @default(uuid())
+  organizationId String
+  businessId     String
+  action         String
+  changedBy      String
+  detailsJson    String // Serialized audit details JSON
+  timestamp      DateTime @default(now())
+}
+
+model ApprovalRequest {
+  id              String    @id @default(uuid())
+  organizationId  String
+  businessId      String
+  workflowRunId   String
+  actionTitle     String
+  description     String
+  status          String    @default("pending") // pending, approved, rejected
+  proposedByAgent String
+  reviewedBy      String?
+  reviewNote      String?
+  createdAt       DateTime  @default(now())
+  resolvedAt      DateTime?
+}
+
+model AutomationWorkflow {
+  id             String   @id @default(uuid())
+  organizationId String
+  businessId     String
+  name           String
+  triggerType    String
+  targetAction   String
+  status         String   @default("active")
+  recipeJson     String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model LearningRecord {
+  id                  String   @id @default(uuid())
+  organizationId      String
+  businessId          String
+  learnedFrom         String
+  knowledgeAcquired   String
+  confidenceScore     Float
+  actionsExecutedJson String // Serialized array of actions executed
+  createdAt           DateTime @default(now())
+}
+
+model ConversationContext {
+  id             String   @id @default(uuid())
+  organizationId String
+  businessId     String
+  sessionTitle   String
+  messagesJson   String // Serialized array of conversation messages
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CampaignHistory {
+  id             String   @id @default(uuid())
+  organizationId String
+  businessId     String
+  campaignName   String
+  channel        String // facebook, google, instagram, email
+  status         String   @default("active")
+  roi            Float    @default(0.0)
+  metricsJson    String // Serialized campaign performance metrics
+  createdAt      DateTime @default(now())
+}

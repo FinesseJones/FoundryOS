@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProjectCard from "@/components/ProjectCard";
+import ProjectDashboardContent from "@/components/ProjectDashboardContent"; // Import the new component
 import { Users } from "./Users";
 import { Settings } from "./Settings";
+import { TrendingUp } from "lucide-react";
 
 // Mock Project Data Structure
 interface Project {
@@ -27,6 +29,9 @@ const mockProjects: Project[] = [
 ];
 
 export default function IndexPage() {
+    // For demonstration, we'll pre-select the first project for the detail view
+    const selectedProject = mockProjects[0];
+
     return (
         <div className="space-y-8 max-w-7xl mx-auto pt-6">
             <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
@@ -38,16 +43,31 @@ export default function IndexPage() {
                     <h2 className="text-2xl font-semibold text-gray-800">Current Projects</h2>
                     <Button>+ New Project</Button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Displaying Project Cards as they were */}
                     {mockProjects.map(project => (
                         <ProjectCard key={project.id} project={project} />
                     ))}
                 </div>
             </section>
 
-            {/* Quick Links for Other Modules */}
+            {/* Project Deep Dive Preview (New Section) */}
+            <div className="space-y-6 pt-8 border-t border-gray-200">
+                <h2 className="text-2xl font-semibold text-gray-800">Project Deep Dive Preview</h2>
+                <p className="text-gray-600">Clicking on any project card above would open a detailed view like this one:</p>
+                {selectedProject && (
+                    <div className="bg-gray-50 p-6 rounded-lg shadow-inner">
+                        <ProjectDashboardContent 
+                            projectName={selectedProject.name} 
+                            clientName={selectedProject.client} 
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Quick Links for Other Modules (Unchanged) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = "/users/*">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = "/users/*"}>
                     <CardHeader>
                         <CardTitle className="flex items-center space-x-3 text-indigo-600"><Users className="w-5 h-5"/><span>Users & Teams</span></CardTitle>
                     </CardHeader>
@@ -75,7 +95,7 @@ export default function IndexPage() {
                         <Button className="mt-2" disabled>Coming Soon</Button>
                     </CardContent>
                 </Card>
-            </div>
+            </div >
         </div>
     );
 }

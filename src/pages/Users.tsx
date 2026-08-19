@@ -13,7 +13,11 @@ const UsersContent: React.FC = () => (
         {/* User Table Placeholder */}
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center space-x-3 text-xl"><Users className="w-5 h-5 text-indigo-600"/><span/>Manage Team Members</span></CardTitle>
+                {/* FIX APPLIED HERE */}
+                <CardTitle className="flex items-center space-x-3 text-xl">
+                    <Users className="w-5 h-5 text-indigo-600" />
+                    <span>Manage Team Members</span>
+                </CardTitle>
             </CardHeader>
             <CardContent>
                 <p className="text-muted-foreground mb-4">View, edit, and assign roles to all users accessing the platform.</p>
@@ -40,7 +44,7 @@ export default function UsersPage() {
         <AppLayout>
             <div className="max-w-7xl mx-auto pt-6">
                 <UsersContent />
-            </div>
+            </div >
         </AppLayout>
     );
 }

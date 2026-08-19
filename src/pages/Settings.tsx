@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { SlidersHorizontal, Globe, DollarSign, Zap } from "lucide-react";
 
 // State to simulate settings
@@ -168,7 +167,7 @@ const SettingsPage: React.FC = () => {
                         </Button>
                     </CardContent>
                 </Card>
-            </div>
+            </div >
         </div>
     );
 }

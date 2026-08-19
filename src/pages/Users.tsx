@@ -4,8 +4,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Search, User, LogOut, ArrowDownCircle, UserCheck, Zap } from 'lucide-react';
+import { Search, User } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,49 +12,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import StatusBadge from "@/components/status-badge";
 import { useToast } from "@/components/ui/use-toast";
 
-// Mock User Data
+// Updated UserProfile interface
 interface UserProfile {
     id: string;
     name: string;
     email: string;
     role: 'Admin' | 'Editor' | 'Viewer' | 'Guest';
-    isSuspended: boolean;
+    status: 'Active' | 'Suspended' | 'Pending';
 }
 
-const mockUsers: UserProfile[] = [
-    { id: 'u1', name: 'Jane Smith', email: 'jane.smith@brand.com', role: 'Admin', isSuspended: false },
-    { id: 'u2', name: 'Mark Olsen', email: 'mark.olsen@brand.com', role: 'Editor', isSuspended: true },
-    { id: 'u3', name: 'Sarah Lee', email: 'sarah.lee@brand.com', role: 'Viewer', isSuspended: false },
-    { id: 'u4', name: 'Alex Kim', email: 'alex.kim@brand.com', role: 'Guest', isSuspended: false },
+const initialMockUsers: UserProfile[] = [
+    { id: 'u1', name: 'Jane Smith', email: 'jane.smith@brand.com', role: 'Admin', status: 'Active' },
+    { id: 'u2', name: 'Mark Olsen', email: 'mark.olsen@brand.com', role: 'Editor', status: 'Suspended' },
+    { id: 'u3', name: 'Sarah Lee', email: 'sarah.lee@brand.com', role: 'Viewer', status: 'Active' },
+    { id: 'u4', name: 'Alex Kim', email: 'alex.kim@brand.com', role: 'Guest', status: 'Active' },
 ];
 
 // Role Mapping for display
-const roleClasses: Record<typeof mockUsers[0]['role'], { text: string; color: string }> = {
+const roleClasses: Record<UserProfile['role'], { text: string; color: string }> = {
     'Admin': { text: 'Administrator', color: 'bg-red-100 text-red-700' },
     'Editor': { text: 'Editor', color: 'bg-yellow-100 text-yellow-700' },
     'Viewer': { text: 'Viewer', color: 'bg-green-100 text-green-700' },
-    'Guest': { text: 'Guest', color: 'bg-red-50 text-red-500' },
-} as { [key: string]: { text: string; color: string } };
+    'Guest': { text: 'Guest', color: 'bg-gray-100 text-gray-500' },
+};
 
 // --- User Profile Dialog Component ---
 const UserProfileDialog: React.FC<{ user: UserProfile; isOpen: boolean; onClose: () => void }> = ({ user, isOpen, onClose }) => {
-    const [newRole, setNewRoleState] = useState<typeof mockUsers[0]['role']>(user.role);
     const { toast } = useToast();
-    // Initialize permissions based on current role
-    const [permissions, setPermissions] = useState<{ canEditProject: boolean; canViewAnalytics: boolean; canManageUsers: boolean }>({ 
-        canEditProject: user.role === 'Admin' || user.role === 'Editor', 
-        canViewAnalytics: user.role === 'Viewer' || user.role === 'Admin', 
-        canManageUsers: user.role === 'Admin' 
-    });
-
-
-    const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setNewRoleState(e.target.value as any);
-    };
-
-    const handlePermissionChange = (key: 'canEditProject' | 'canViewAnalytics' | 'canManageUsers', checked: boolean) => {
-        setPermissions(prev => ({ ...prev, [key]: checked }));
-    };
 
     const handleSave = () => {
         toast({
@@ -64,7 +47,6 @@ const UserProfileDialog: React.FC<{ user: UserProfile; isOpen: boolean; onClose:
         });
         onClose();
     };
-
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -78,60 +60,11 @@ const UserProfileDialog: React.FC<{ user: UserProfile; isOpen: boolean; onClose:
                         Modify the user's access level, roles, and key permissions.
                     </DialogDescription>
                 </DialogHeader>
-                
-                <div className="space-y-6 pt-2">
-                    {/* 1. Role Assignment */}
-                    <div className="space-y-2 py-3 border rounded-md">
-                        <p className="text-sm font-medium text-gray-500">Role Assignment</p>
-                        <div className="flex items-center space-x-4">
-                            <div className='flex-grow'>
-                                <Label htmlFor="role" className='text-sm'>Select Role</Label>
-                                <Select 
-                                    onValueChange={handleRoleChange} 
-                                    onValueRef={handleRoleChange}>
-                                    <SelectTrigger id="role" value={user.role}>
-                                        <SelectValue placeholder="Role" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.keys(roleClasses).map(role => (
-                                            <SelectItem key={role} value={role}>{role}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 2. Permissions Management */}
-                    <div className="space-y-4 py-3 border rounded-md">
-                        <p className="text-sm font-medium text-gray-500">System Permissions</p>
-                        <div className="space-y-3">
-                            {[
-                                { key: 'canEditProject', label: 'Edit Projects', description: 'Can modify project scope and milestones.' },
-                                { key: 'canViewAnalytics', label: 'View Analytics', description: 'Access to performance metrics dashboard.' },
-                                { key: 'canManageUsers', label: 'Manage Users', description: 'Ability to invite/suspend team members.' },
-                            ].map(({ key, label, description }) => (
-                                <div key={key} className="flex items-start space-x-3">
-                                    <input 
-                                        id={key} 
-                                        type="checkbox" 
-                                        checked={permissions[key as keyof typeof permissions]} 
-                                        onChange={(e) => handlePermissionChange(key as keyof typeof permissions, e.target.checked)}
-                                        className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 cursor-pointer"
-                                    />
-                                    <div className="flex-grow">
-                                        <Label htmlFor={key}>{label}</Label>
-                                        <p className="text-sm text-gray-500">{description}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* 3. Actions */}
+                <div className="space-y-4 pt-4">
+                    <p>Details and permissions form would go here.</p>
                     <div className="flex justify-end space-x-3 pt-4">
                         <Button variant="outline" onClick={onClose}>Close</Button>
-                        <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">Save Changes</Button>
+                        <Button onClick={handleSave}>Save Changes</Button>
                     </div>
                 </div>
             </DialogContent>
@@ -139,7 +72,69 @@ const UserProfileDialog: React.FC<{ user: UserProfile; isOpen: boolean; onClose:
     );
 };
 
-// Trigger Component
+// --- Invite User Dialog Component ---
+const InviteUserDialog: React.FC<{ onInvite: (email: string, role: UserProfile['role']) => void; isOpen: boolean; onClose: () => void }> = ({ onInvite, isOpen, onClose }) => {
+    const [email, setEmail] = useState('');
+    const [role, setRole] = useState<UserProfile['role']>('Viewer');
+    const { toast } = useToast();
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!email) {
+            toast({ title: "Email is required", variant: "destructive" });
+            return;
+        }
+        onInvite(email, role);
+        setEmail('');
+        setRole('Viewer');
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Invite New User</DialogTitle>
+                    <DialogDescription>
+                        Enter the email address and assign a role. An invitation will be sent.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+                    <div>
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="name@example.com"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="invite-role">Role</Label>
+                        <Select onValueChange={(value) => setRole(value as UserProfile['role'])} value={role}>
+                            <SelectTrigger id="invite-role">
+                                <SelectValue placeholder="Select a role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Admin">Admin</SelectItem>
+                                <SelectItem value="Editor">Editor</SelectItem>
+                                <SelectItem value="Viewer">Viewer</SelectItem>
+                                <SelectItem value="Guest">Guest</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex justify-end space-x-3">
+                        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                        <Button type="submit">Send Invitation</Button>
+                    </div>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+// Trigger Component for Details
 const UserDetailsPanel: React.FC<{ user: UserProfile }> = ({ user }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -157,11 +152,29 @@ const UserDetailsPanel: React.FC<{ user: UserProfile }> = ({ user }) => {
     );
 };
 
-
 const Users = () => {
+  const [users, setUsers] = useState<UserProfile[]>(initialMockUsers);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const { toast } = useToast();
 
-  const filteredUsers = mockUsers.filter(user => 
+  const handleInviteUser = (email: string, role: UserProfile['role']) => {
+    const newUser: UserProfile = {
+      id: `u${users.length + 1}`,
+      name: `(Pending) ${email.split('@')[0]}`,
+      email: email,
+      role: role,
+      status: 'Pending',
+    };
+    setUsers(prev => [...prev, newUser]);
+    setIsInviteDialogOpen(false);
+    toast({
+      title: "Invitation Sent!",
+      description: `An invitation has been sent to ${email}.`,
+    });
+  };
+
+  const filteredUsers = users.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -171,7 +184,6 @@ const Users = () => {
       <h1 className="text-3xl font-bold text-gray-800">User & Team Management</h1>
       <p className="text-gray-600">View, manage roles, and control permissions for every team member.</p>
       
-      {/* Search and Add Controls */}
       <div className="flex justify-between items-center pt-1">
         <div className="flex items-center space-x-4">
             <Search className="w-5 h-5 text-gray-400" />
@@ -182,12 +194,11 @@ const Users = () => {
                 className="w-80"
             />
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => setIsInviteDialogOpen(true)}>
             + Invite User
         </Button>
       </div>
       
-      {/* User Table */}
       <Card className="shadow-sm">
         <CardHeader>
             <CardTitle>Team Members ({filteredUsers.length} found)</CardTitle>
@@ -211,14 +222,14 @@ const Users = () => {
                                 <span>{user.name}</span>
                             </TableCell>
                             <TableCell>{user.email}</TableCell>
-                            <TableCell className="flex items-center space-x-2">
+                            <TableCell>
                                 <StatusBadge status={user.role} variant="secondary">
                                     {roleClasses[user.role]?.text || 'N/A'}
                                 </StatusBadge>
                             </TableCell>
-                            <TableCell className="text-right">
-                                <StatusBadge status={user.isSuspended ? 'Suspended' : 'Active'}>
-                                    {user.isSuspended ? 'Suspended' : 'Active'}
+                            <TableCell>
+                                <StatusBadge status={user.status}>
+                                    {user.status}
                                 </StatusBadge>
                             </TableCell>
                             <TableCell className="text-right space-x-2">
@@ -230,6 +241,11 @@ const Users = () => {
             </Table>
         </CardContent>
       </Card>
+      <InviteUserDialog
+          isOpen={isInviteDialogOpen}
+          onClose={() => setIsInviteDialogOpen(false)}
+          onInvite={handleInviteUser}
+      />
     </div>
   );
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
 import { LayoutDashboard, Folder, Settings, Users, Zap, DollarSign } from 'lucide-react';
 import { Toaster } from "@/components/ui/toaster";
 
@@ -43,12 +43,12 @@ const Sidebar = () => (
   </div>
 );
 
-const Layout = ({ children }: { children: React.ReactNode }) => {
+const Layout = () => {
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto">
-        {children}
+        <Outlet />
       </main>
       <Toaster />
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,25 +8,57 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 
-interface ProjectFormProps {
-  onSubmit: (data: any) => void;
-  isLoading: boolean;
+export interface ProjectData {
+  id?: number;
+  projectName: string;
+  projectGoal: string;
+  scopeDescription: string;
+  priority: 'High' | 'Medium' | 'Low' | string;
+  startDate: string;
+  budget: string;
 }
 
-const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading }) => {
+interface ProjectFormProps {
+  onSubmit: (data: ProjectData) => void;
+  isLoading: boolean;
+  initialData?: ProjectData | null;
+  onCancel: () => void;
+}
+
+const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading, initialData, onCancel }) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProjectData>({
     projectName: "",
     projectGoal: "",
     scopeDescription: "",
-    priority: "High",
+    priority: "Medium",
     startDate: new Date().toISOString().split('T')[0],
     budget: "",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    } else {
+      // Reset form for creation mode
+      setFormData({
+        projectName: "",
+        projectGoal: "",
+        scopeDescription: "",
+        priority: "Medium",
+        startDate: new Date().toISOString().split('T')[0],
+        budget: "",
+      });
+    }
+  }, [initialData]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData(prev => ({ ...prev, priority: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,18 +81,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading }) => {
         // Success feedback
         toast({
             title: "Success!",
-            description: `${formData.projectName} has been successfully created.`,
+            description: `Project "${formData.projectName}" has been successfully saved.`,
         });
         
-        // Clear form after submission
-        setFormData({
-            projectName: "",
-            projectGoal: "",
-            scopeDescription: "",
-            priority: "High",
-            startDate: new Date().toISOString().split('T')[0],
-            budget: "",
-        });
+        // Let parent component handle closing/clearing
     } catch (error) {
         // Error feedback
         toast({
@@ -116,8 +140,8 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading }) => {
         {/* Priority */}
         <div>
           <Label htmlFor="priority">Priority</Label>
-          <Select onValueChange={(value) => handleChange({ target: { name: 'priority', value } })} onValueRef={handleChange}>
-            <SelectTrigger id="priority" value={formData.priority}>
+          <Select onValueChange={handleSelectChange} value={formData.priority}>
+            <SelectTrigger id="priority">
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
             <SelectContent>
@@ -157,11 +181,11 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading }) => {
 
       {/* Actions */}
       <div className="flex justify-end space-x-3 pt-4">
-          <Button type="button" variant="outline" disabled={isLoading}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
               Cancel
           </Button>
           <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save Project"}
+              {isLoading ? "Saving..." : (initialData ? "Save Changes" : "Create Project")}
           </Button>
       </div>
     </form>

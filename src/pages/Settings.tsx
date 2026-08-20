@@ -1,164 +1,169 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SlidersHorizontal, Globe, Zap, DollarSign, LayoutDashboard, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "@/components/ui/alert";
+import { CheckCircle } from "@/components/ui/check-circle";
 
-// Global state definition for configuration
-interface Config {
+// Defines the structure for all global settings
+interface GlobalSettings {
     baseCurrency: string;
     currencySymbol: string;
     timeZone: string;
-    defaultReportPeriod: 'Month' | 'Quarter' | 'Year';
+    defaultReportPeriod: string;
 }
 
-// Initial placeholder state - This should be replaced by initial server data
-const initialConfig: Config = {
-    baseCurrency: "USD",
-    currencySymbol: "$",
-    timeZone: "UTC",
-    defaultReportPeriod: "Month"
-};
+interface SettingsProps {
+    currentUser: { role: string; permissions: { [key: string]: boolean } };
+}
 
-const SettingsPage: React.FC = () => {
-    const [config, setConfig] = useState<Config>(initialConfig);
-    const [isLoading, setIsLoading] = useState(false);
+const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
+    // State for the global settings (Mock Data Source)
+    const [settings, setSettings] = useState<GlobalSettings>({
+        baseCurrency: "USD",
+        currencySymbol: "$",
+        timeZone: "UTC",
+        defaultReportPeriod: "Month"
+    });
+    
+    // State for form management
+    const [isSaving, setIsSaving] = useState(false);
+    const [message, setMessage] = useState<{ type: 'success' | 'error' | null, text: string } | null>(null);
 
-    // Handlers simulating API interaction
-    const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const newCurrency = e.target.value;
-        setConfig(prev => ({ ...prev, baseCurrency: newCurrency, currencySymbol: newCurrency === 'EUR' ? '€' : prev.currencySymbol }));
-    };
+    // Authorization Check
+    const canModifySettings = currentUser.permissions.settingsManagement || currentUser.role === "ADMIN";
 
-    const handleSave = async (e: React.FormEvent) => {
+    // Handler for submitting the form
+    const handleSaveSettings = (e: React.FormEvent) => {
         e.preventDefault();
-        if (isLoading) return;
+        if (!canModifySettings) {
+            setMessage({ type: 'error', text: "❌ Permission Denied: You do not have the required rights to modify global system settings." });
+            return;
+        }
 
-        setIsLoading(true);
-        
-        // *** Critical section: Simulate API call ***
-        await new Promise(resolve => setTimeout(resolve, 1500)); 
-        
-        // Success feedback
-        setIsLoading(false);
-        toast("Settings Saved!", { description: "The global system configuration has been safely updated.", action: <Button onClick={() => window.location.reload()}>OK</Button> });
-    }
+        setIsSaving(true);
+        setMessage({ type: null, text: "Saving changes..." });
 
-    // --- New State to track loading status for demonstration ---
-    const isSettingsLoaded = true; // Assume settings are loaded successfully
-
-    if (!isSettingsLoaded) {
-        return (
-            <AppLayout>
-                <div className="text-center py-20">
-                    <h1 className="text-2xl font-semibold">Loading Settings...</h1>
-                    <p className="text-gray-500 mt-2">Please wait while system configurations are being retrieved.</p>
-                </div>
-            </AppLayout>
-        );
-    }
+        // Simulate API delay
+        setTimeout(() => {
+            setSettings({
+                baseCurrency: (e.target.baseCurrency as HTMLInputElement).value,
+                currencySymbol: (e.target.currencySymbol as HTMLInputElement).value,
+                timeZone: (e.target.timeZone as HTMLSelectElement).value,
+                defaultReportPeriod: (e.target.defaultReportPeriod as HTMLSelectElement).value
+            });
+            setMessage({ type: 'success', text: "✅ Global settings updated successfully. Changes are now live across the system." });
+            setIsSaving(false);
+        }, 1500);
+    };
 
     return (
         <AppLayout>
             <div className="space-y-8">
-                <h1 className="text-3xl font-bold">Global System Settings</h1>
-                <p className="text-gray-600">Manage the global controls and core configuration parameters for the entire application.</p>
+                <h1 className="text-3xl font-bold">System Configuration & Settings</h1>
+                <p className="text-gray-600">
+                    Manage global parameters for the entire platform, including currency, time zones, and default report periods.
+                </p>
 
-                <Card className="p-8 shadow-xl">
-                    <div className="flex justify-between items-center border-b pb-6 mb-6">
-                         <h2 className="text-xl font-semibold flex items-center space-x-2 text-indigo-700">
-                            <SlidersHorizontal className="w-5 h-5"/>
-                            <span>General Configuration</span>
-                        </h2>
-                        <button onClick={handleSave} disabled={isLoading} className="flex items-center space-x-2">
-                            <Zap className="w-5 h-5" />
-                            <span>{isLoading ? "Saving..." : "Save Changes"}</span>
-                            <ArrowRight className="w-4 h-4 ml-2" />
-                        </button>
-                    </div >
+                {/* Global Settings Management Card */}
+                <Card className="shadow-md">
+                    <CardHeader>
+                        <CardTitle className="flex items-center space-x-2 text-xl">
+                            <SlidersHorizontal className="w-5 h-5 text-indigo-600"/>
+                            <span >Global Business Settings</span>
+                        </CardTitle>
+                        <p className="text-sm text-gray-500">These settings affect all reporting and user experiences across the application.</p>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-8">
+                            <form onSubmit={handleSaveSettings} className="space-y-6">
+                                {/* Messaging Display */}
+                                {message && (
+                                    message.type === 'success' ? (
+                                        <Alert className="bg-green-50 border-green-200">
+                                            <CheckCircle className="h-4 w-4 text-green-500"/>
+                                            <AlertTitle>Success</AlertTitle>
+                                            <AlertDescription>{message.text}</AlertDescription>
+                                        </Alert>
+                                    ) : message.type === 'error' ? (
+                                        <Alert className="bg-red-50 border-red-200">
+                                            <AlertCircle className="h-4 w-4 text-red-500"/>
+                                            <AlertTitle>Permission Required</AlertTitle>
+                                            <AlertDescription>{message.text}</AlertDescription>
+                                        </Alert>
+                                    ) : null
+                                )}
 
-                    <form onSubmit={handleSave} className="space-y-10">
-                        {/* Currency Control Section */}
-                        <div className="border p-6 rounded-lg bg-indigo-50/50 border-indigo-200">
-                            <h3 className="text-lg font-semibold flex items-center space-x-2 text-indigo-800">
-                                <DollarSign className="w-5 h-5"/>
-                                <span>Global Currency Control</span>
-                            </h3>
-                            <p className="text-sm text-indigo-600 mb-4">Setting the base currency standard ensures all modules (Reports, Budgets, etc.) calculate rates consistently.</p>
+
+                                {/* Settings Grid Container */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* 1. Currency */}
+                                    <div className="p-4 border rounded-lg">
+                                        <h3 className="text-lg font-semibold mb-3 flex items-center space-x-2"><BookOpen className="w-5 h-5 text-red-500"/> Currency Management</h3>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="currencySymbol">Currency Symbol</Label>
+                                                <Input type="text" id="currencySymbol" name="currencySymbol" value={settings.currencySymbol} required />
+                                            </div>
                             
-                            <div className="grid grid-cols-2 gap-5 items-center">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Base Currency</label>
-                                    <select 
-                                        value={config.baseCurrency} 
-                                        onChange={handleCurrencyChange}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                            <div className="space-y-2">
+                                                <Label htmlFor="baseCurrency">Base Currency Code (e.g., USD, EUR)</Label>
+                                                <Input type="text" id="baseCurrency" name="baseCurrency" value={settings.baseCurrency} required />
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                                    {/* 2. Timezone & Reporting */}
+                                    <div className="p-4 border rounded-lg">
+                                        <h3 className="text-lg font-semibold mb-3 flex items-center space-x-2"><Clock className="w-5 h-5 text-blue-500"/> Time & Reporting</h3>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="timeZone">System Time Zone</Label>
+                                                <select id="timeZone" name="timeZone" required 
+                                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                                                    <option value="UTC">UTC</option>
+                                                    <option value="America/New_York">America/New_York</option>
+                                                    <option value="Europe/London">Europe/London</option>
+                                                </select>
+                                            </div>
+                            
+                                            <div className="space-y-2">
+                                                <Label htmlFor="defaultReportPeriod">Default Report Period</Label>
+                                                <select id="defaultReportPeriod" name="defaultReportPeriod" required 
+                                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                                                    <option value="Month">Month</option>
+                                                    <option value="Quarter">Quarter</option>
+                                                    <option value="Year">Year</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Action Button */}
+                                <div className="flex justify-end">
+                                    <Button 
+                                        type="submit" 
+                                        className="w-auto"
+                                        disabled={isSaving}
                                     >
-                                        <option value="USD">$ - US Dollar</option>
-                                        <option value="EUR">€ - Euro</option>
-                                        <option value="GBP">£ - British Pound</option>
-                                        <option value="JPY">¥ - Japanese Yen</option>
-                                    </select>
+                                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Global Settings'}
+                                    </Button>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Currency Symbol</label>
-                                    <Input 
-                                        type="text" 
-                                        value={config.currencySymbol} 
-                                        onChange={(e) => setConfig({...config, currencySymbol: e.target.value})}
-                                        // Keep disabled because the UI implies it is system-controlled
-                                        disabled={true}
-                                        className="cursor-not-allowed"
-                                    />
-                                </div>
-                            </div>
-                            <p className="text-xs text-indigo-500 mt-3">Note: Changing the base currency requires administrator approval.</p>
+                            </form>
                         </div>
-
-                        {/* Time Zone and Report Settings */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-semibold flex items-center space-x-2 text-gray-800">
-                                <Clock className="w-5 h-5"/>
-                                <span>Time & Reporting Defaults</span>
-                            </h3>
-
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Time Zone</label>
-                                    <select 
-                                        disabled={true}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-not-allowed"
-                                    >
-                                        <option value="UTC">UTC</option>
-                                        <option value="EST">Eastern Standard Time</option>
-                                        {/* ... more options ... */}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Default Report Period</label>
-                                    <select 
-                                        value={config.defaultReportPeriod} 
-                                        onChange={(e) => setConfig({...config, defaultReportPeriod: e.target.value as 'Month' | 'Quarter' | 'Year'})}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"
-                                    >
-                                        <option value="Month">Month</option>
-                                        <option value="Quarter">Quarter</option>
-                                        <option value="Year">Year</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                    </form>
+                    </CardContent>
                 </Card>
             </div >
         </AppLayout>
     );
-}
+};
 
-export default SettingsPage;
+export default Settings;

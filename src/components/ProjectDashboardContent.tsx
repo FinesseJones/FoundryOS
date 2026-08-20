@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Clock, FolderOpen, ListChecks, MessageCircle, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner"; // Use sonner toast for professional feedback
+import { toast } from "sonner"; // Make sure to use the toast library
 
 // Mock Data Structures (kept for context)
 interface Task {
@@ -84,10 +84,19 @@ const ProjectDashboardContent: React.FC<ProjectDashboardContentProps> = ({ proje
             };
             setProject(updatedProject);
 
-            // 3. Success feedback
-            const message = `🎉 SUCCESS! Project Status updated from ${currentStatus} to ${nextStatus}.`;
-            toast.success(message, { 
-                description: `Notifications have been sent to the team and the timeline has been updated.` 
+            // 3. Success feedback + Triggering Notifications
+            let notificationMessage = `Project status updated to ${nextStatus}.`;
+            if (nextStatus === 'Review') {
+                notificationMessage = `ACTION REQUIRED: Project moved to Review status. Please check the assets.`;
+                toast.warning("🚨 Project Alert!", { description: `The project '${projectName}' is ready for internal review.` });
+            } else if (nextStatus === 'Completed') {
+                notificationMessage = `✨ Congratulations! Project ${projectName} has been marked as Completed.`;
+                toast.success("Project Closed!", { description: `All milestones met. Ready for final invoicing.` });
+            }
+            
+            // Simulate internal activity
+            toast.info(notificationMessage, { 
+                description: `Status change successfully recorded and team members notified.` 
             });
             
         } catch (error) {
@@ -98,7 +107,7 @@ const ProjectDashboardContent: React.FC<ProjectDashboardContentProps> = ({ proje
         }
     };
 
-    // Helper to determine status badge elements
+    // Helper to determine status badge elements (unchanged)
     const getStatusBadge = (status: Project['status']) => {
         switch (status) {
             case 'Planning':
@@ -175,7 +184,7 @@ const ProjectDashboardContent: React.FC<ProjectDashboardContentProps> = ({ proje
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
-                {/* Column 1: Tasks & To-Dos (Mostly unchanged) */}
+                {/* Column 1: Tasks & To-Dos (Minor updates for polish) */}
                 <div className="space-y-8">
                     <Card>
                         <CardHeader>
@@ -215,7 +224,7 @@ const ProjectDashboardContent: React.FC<ProjectDashboardContentProps> = ({ proje
                     </Card>
                 </div >
 
-                {/* Column 2: Milestones & Assets (Minor update for consistency) */}
+                {/* Column 2: Milestones & Assets (Minor updates for polish) */}
                 <div className="space-y-8">
                     <Card>
                         <CardHeader>
@@ -245,8 +254,8 @@ const ProjectDashboardContent: React.FC<ProjectDashboardContentProps> = ({ proje
                             </Button>
                         </CardContent>
                     </Card>
-                </div>
-            </div >
+                </div >
+            </div>
         </div>
     );
 }

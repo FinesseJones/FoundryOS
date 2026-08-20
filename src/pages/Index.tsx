@@ -10,6 +10,7 @@ import { Users } from "./Users";
 import { Settings } from "./Settings";
 import { TrendingUp } from "lucide-react";
 import { ReportSquare } from "lucide-react";
+import ActivityFeed from "@/components/ActivityFeed"; // Import new component
 
 // Mock Project Data Structure
 interface Project {
@@ -23,17 +24,47 @@ interface Project {
     dueDate: string;
 }
 
-// Mock Data Fetching Function (Simulating API Call)
-const fetchProjects = async (): Promise<Project[]> => {
-    console.log("Fetching projects from the database...");
-    // Simulate network delay and API call
-    await new Promise(resolve => setTimeout(resolve, 500)); 
+// Mock Activity Item Structure
+interface ActivityItem {
+    id: number;
+    icon: React.ReactNode;
+    title: string;
+    message: string;
+    timestamp: string;
+    color: string; // Class string for color
+}
+
+// Mock Activity Fetching Function (Simulating API Call)
+const fetchActivityFeed = async (): Promise<ActivityItem[]> => {
+    console.log("Fetching activity feed from the database...");
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 300)); 
     
     return [
-        { id: 'p1', name: 'Quantum Leap Branding', client: 'Enterprise Global', status: 'Active', progress: 65, totalBudget: 50000, budgetSpent: 35000, dueDate: '2024-12-31' },
-        { id: 'p2', name: 'Mobile App Relaunch', client: 'Startup Inc.', status: 'Review', progress: 90, totalBudget: 120000, budgetSpent: 115000, dueDate: '2024-10-15' },
-        { id: 'p3', name: 'Internal System Audit', client: 'Internal', status: 'Planning', progress: 10, totalBudget: 15000, budgetSpent: 1000, dueDate: '2025-01-20' },
-        { id: 'p4', name: 'Acme Website Revamp', client: 'Midsize Corp', status: 'Active', progress: 30, totalBudget: 30000, budgetSpent: 5000, dueDate: '2024-11-01' },
+        { 
+            id: 101, 
+            icon: <Users className="w-6 h-6" />, 
+            title: "New User Registered", 
+            message: "John Doe joined the team and was assigned 'Admin' role.", 
+            timestamp: "Just now", 
+            color: "text-indigo-600 bg-opacity-15" 
+        },
+        { 
+            id: 102, 
+            icon: <ClipboardList className="w-6 h-6" />, 
+            title: "Project Milestone Achieved", 
+            message: "Mobile App Relaunch reached 'Wireframe Approval' milestone.", 
+            timestamp: "2 hours ago", 
+            color: "text-blue-600 bg-opacity-15" 
+        },
+        { 
+            id: 103, 
+            icon: <Zap className="w-6 h-6" />, 
+            title: "Website Revamp Started", 
+            message: "Project 'Acme Website Revamp' moved to Active status.", 
+            timestamp: "Yesterday", 
+            color: "text-green-600 bg-opacity-15" 
+        }
     ];
 };
 
@@ -41,16 +72,31 @@ const fetchProjects = async (): Promise<Project[]> => {
 export default function IndexPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [selectedProject, setSelectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([]);
 
     useEffect(() => {
-        setLoading(true);
-        fetchProjects().then(data => {
-            setProjects(data);
-            // Set the first project as the default selected preview
-            setSelectedProject(data[0]);
-            setLoading(false);
-        });
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                // Load Projects
+                const projectData = await fetchProjects();
+                setProjects(projectData);
+                
+                // Set the first project as the default selected preview
+                setSelectedProject(projectData[0]);
+
+                // Load Activity Feed
+                const feedData = await fetchActivityFeed();
+                setActivityFeed(feedData);
+
+            } catch (e) {
+                console.error("Failed to load dashboard data:", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
     }, []);
 
     return (
@@ -72,26 +118,36 @@ export default function IndexPage() {
                             <ProjectCard key={project.id} project={project} />
                         ))
                     )}
-                </div>
+                </div >
             </section>
 
-            {/* Project Deep Dive Preview (New Section) */}
-            <div className="space-y-6 pt-8 border-t border-gray-200">
-                <h2 className="text-2xl font-semibold text-gray-800">Project Deep Dive Preview</h2>
-                <p className="text-gray-600">Clicking on any project card above would open a detailed view like this one:</p>
-                {selectedProject && (
-                    <div className="bg-gray-50 p-6 rounded-lg shadow-inner">
-                        <ProjectDashboardContent 
-                            projectName={selectedProject.name} 
-                            clientName={selectedProject.client} 
-                            initialProject={selectedProject}
-                        />
-                    </div >
-                )}
-            </div >
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-8 border-t border-gray-200">
+                
+                {/* Main Content Area (Project Detail Preview) */}
+                <div className="lg:col-span-2 space-y-6">
+                    <h2 className="text-2xl font-semibold text-gray-800">Project Deep Dive Preview</h2>
+                    <p className="text-gray-600">Clicking on any project card above would open a detailed view like this one:</p>
+                    {selectedProject && (
+                        <div className="bg-gray-50 p-6 rounded-lg shadow-inner">
+                            <ProjectDashboardContent 
+                                projectName={selectedProject.name} 
+                                clientName={selectedProject.client} 
+                                initialProject={selectedProject}
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* Activity Feed Column */}
+                <div className="lg:col-span-1">
+                    <ActivityFeed items={activityFeed} />
+                </div>
+            </div>
+
 
             {/* Quick Links for Other Modules */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* ... (Quick Links remain unchanged but are now positioned below the new layout) ... */}
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = "/users/*"}>
                     <CardHeader>
                         <CardTitle className="flex items-center space-x-3 text-indigo-600"><Users className="w-5 h-5"/><span>Users & Teams</span></CardTitle>

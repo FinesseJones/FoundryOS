@@ -42,14 +42,14 @@ const Dashboard = () => {
       <div className="bg-gradient-to-r from-indigo-500 to-indigo-700 p-8 rounded-xl shadow-xl text-white">
         <div className="flex justify-between items-center">
             <div>
-                <h1 className="text-3xl font-extrabold">Welcome Back, Administrator!</h1
+                <h1 className="text-3xl font-extrabold">Welcome Back, Administrator!</h1 > {/* FIX APPLIED HERE */}
                 <p className="text-indigo-200 mt-1">Your strategic performance summary for today's readiness.</p>
             </div >
             <button className="bg-white text-indigo-700 hover:bg-gray-100 px-4 py-2 rounded-lg font-semibold shadow-md">
                 View Full System Settings <ArrowRight className="w-4 h-4 inline ml-2" />
             </button>
         </div >
-      </div>
+      </div >
 
 
       {/* KPI Summary */}
@@ -66,7 +66,7 @@ const Dashboard = () => {
         ))}
       </div >
 
-      <Separator />
+      <Separater />
 
       {/* Main Content Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -118,7 +118,7 @@ const Dashboard = () => {
             </Button>
         </Card>
       </div >
-    </div>
+    </div >
   );
 }
 

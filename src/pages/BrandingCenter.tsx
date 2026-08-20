@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Zap, Search, ShieldCheck, Rocket } from "lucide-react";
-import { useOllamaApi } from "@/hooks/useOllamaApi";
+import { Settings, Loader2 } from "lucide-react"; // Added Loader2 import
 import { toast } from "react-hot-toast";
 
+// Define types for clarity
 interface BrandingProps {
     currentUser: { role: string; permissions: { [key: string]: boolean } };
 }
@@ -57,29 +58,23 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
             });
             toast.success("✨ Brand assets generated successfully!");
         } catch (e) {
+            console.error(e);
             toast.error("❌ Failed to generate assets. Check the API endpoint or try again.");
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Display component for structured output (Refined display with better markdown handling)
+    // Display component for structured output (Revised for better robust rendering)
     const DisplayedOutput = generatedOutput.fullText ? (
         <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-inner">
-            <div className="prose prose-lg max-w-full dark:prose-invert">
-                {/* A quick hack to render markdown headers and bold text for visual richness */}
-                {generatedOutput.fullText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^(#+)\s*(.*)/g, match => {
-                    const level = match[1].length;
-                    const content = match[2].trim();
-                    return `${'----------'.repeat(level)} <h${level}>${content}</h${level}>`;
-                }).split('</h*">').join('</div>') }
-            </div>
+            <div dangerouslySetInnerHTML={{ __html: generatedOutput.fullText.replace(/\n\n/g, '</br><br>').replace(/\*\*/g, '<strong>') }} />
         </div>
     ) : (
-        <div className="text-gray-400 p-8 border-2 border-dashed border-gray-200 rounded-lg text-center">
+        <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg text-gray-400">
             <Zap className="w-6 h-6 mx-auto mb-2"/>
             <p className="text-base">Generate assets here using the 3 Pillars above to see your professional brand positioning suite.</p>
-        </div >
+        </div>
     );
 
     return (
@@ -103,7 +98,7 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                             <div className="lg:col-span-1 space-y-6">
                                 <h3 className="text-xl font-bold text-indigo-800 flex items-center space-x-3"><Search className="w-6 h-6"/> Operational Intelligence Inputs</h3>
                                 
-                                {/* Input Field Component - Use refined styling */}
+                                {/* Input Field Component - Using common styling */}
                                 <div className="space-y-2 border-l-4 border-red-400 pl-4 py-3 bg-red-50/50">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">1. Financial Mandate (The Wallet)</label>
                                     <textarea 
@@ -136,12 +131,14 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                                         className="w-full border p-3 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 resize-none"
                                     ></textarea>
                                 </div >
-                            </div>
+                            </div >
 
                             {/* Input Column 2: Tone & Action */}
                             <div className="lg:col-span-2 space-y-6">
                                 <div className="p-6 bg-indigo-50 rounded-xl border border-indigo-200 shadow-md">
-                                    <h3 className="text-xl font-bold text-indigo-800 mb-4 flex items-center space-x-2"><Zap className="w-5 h-5"/> Tone & Context Control</h3>
+                                    <h3 className="text-xl font-bold text-indigo-800 mb-4 flex items-center space-x-2">
+                                        <Zap className="w-5 h-5"/> Tone & Context Control
+                                    </h3>
                                     <div className="grid grid-cols-2 gap-6 mb-6">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Brand Tone / Authority</label>
@@ -189,14 +186,24 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                                 <CardTitle className="text-2xl">Generated Brand Assets Package</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {isLoading && <div className="text-center py-10 text-gray-500"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-3"/> Drafting Strategic Tone...</div>}
-                                {!generatedOutput.fullText && !isLoading && (
+                                {/* FIX: Ensuring the ternary operator returns a single element */}
+                                {isLoading ? (
+                                    <div className="text-center py-10 text-gray-500">
+                                        <div className="flex items-center justify-center space-x-2">
+                                            <Loader2 className="w-8 h-8 animate-spin text-red-600"/>
+                                            <span>Drafting Strategic Tone...</span>
+                                        </div>
+                                    </div> 
+                                : (!generatedOutput.fullText && !isLoading) ? (
                                     <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg text-gray-400">
                                         <Zap className="w-6 h-6 mx-auto mb-2"/>
                                         <p className="text-base">Define the client pain points and click "Generate" to see your professional brand positioning suite.</p>
+                                    </div >
+                                ) : (
+                                    <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-inner">
+                                        <div dangerouslySetInnerHTML={{ __html: generatedOutput.fullText.replace(/\n\n/g, '</br><br>').replace(/\*\*/g, '<strong>') }} />
                                     </div>
-                                )}
-                                {displayedOutput && <></>}
+                                );
                             </CardContent>
                         </Card>
                     </Card>

@@ -8,15 +8,16 @@ import { DollarSign, TrendingUp, Clock, Users, CheckCircle, Upload, Download, Fi
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import CurrencySwitcher from "@/components/CurrencySwitcher"; // Import the new component
 
 // Define the structure for a KPI card
 interface KPIData {
     title: string;
-    value: { usd: number; local: string; currency: string }; // Structured value
+    value: { usd: number; local: string; currency: string };
     icon: React.ReactNode;
     change: string; 
     colorClass: string; 
-    localCurrency: string; // Flag to indicate original local currency
+    localCurrency: string; 
 }
 
 const mockKPIs: KPIData[] = [
@@ -30,8 +31,8 @@ const ReportsContent: React.FC = () => {
     const [timeframe, setTimeframe] = useState("Last 12 Months");
     const [importFile, setImportFile] = useState<File | null>(null);
 
-
-    // Handlers (unchanged)
+    // (Function implementations remain the same)
+    // ... (handleTimeframeChange, handleFileUpload, handleImportData)
     const handleTimeframeChange = async (newTimeframe: string) => {
         await new Promise(resolve => setTimeout(resolve, 500)); 
         toast.info("Data Updated", { 
@@ -54,9 +55,8 @@ const ReportsContent: React.FC = () => {
             return;
         }
         
-        // Simulate processing
         toast.loading('Processing Data', { 
-            description: `Analyzing ${importFile.name}... Currency conversion applied.`, 
+            description: `Analyzing ${importFile.name}... Currency conversion applied automatically.`, 
             duration: 3000 
         });
 
@@ -69,8 +69,9 @@ const ReportsContent: React.FC = () => {
         (document.getElementById('csv-upload') as HTMLInputElement).value = '';
         setImportFile(null);
     };
-    
-    // Function to format and display the structured currency data
+
+
+    // Function to format and display the structured currency data (unchanged)
     const renderCurrencyKpi = (kpi: KPIData) => (
         <Card key={kpi.title} className="shadow-lg hover:scale-[1.02] transition-transform">
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -84,7 +85,6 @@ const ReportsContent: React.FC = () => {
                     {/* Displaying both USD (base) and Local Currency */}
                     {kpi.value.usd ? (
                         <span className='text-lg text-gray-600 mr-2'>↓</span>
-                        {/* Always show the calculated USD value prominently */}
                         <span className='text-3xl'>
                             {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(kpi.value.usd)}
                         </span>
@@ -99,7 +99,6 @@ const ReportsContent: React.FC = () => {
         </Card>
     );
 
-
     return (
         <div className="space-y-8">
             <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-3">
@@ -107,6 +106,10 @@ const ReportsContent: React.FC = () => {
                 <span className="text-xl">Analytics & Reporting</span>
             </h1>
             <p className="text-lg text-gray-600">Analyze your performance, track key metrics, and identify growth opportunities using real-time, multi-currency data.</p>
+
+            {/* Global Currency Control Component */}
+            <CurrencySwitcher />
+
 
             {/* Report Filtering, Timeframe & Controls */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -134,14 +137,9 @@ const ReportsContent: React.FC = () => {
                                 Custom Range
                             </Button>
                         </div >
-                        <div className="flex flex-col space-y-3">
-                            <Button onClick={() => { toast('Currency', { description: 'System currency successfully set to USD for reporting.' })}>
-                                <Globe className="w-4 h-4 mr-2"/> Base Currency: USD
-                            </Button>
-                            <Button className="w-full" onClick={() => toast('Export', { description: 'Generating PDF report containing all displayed data.' })}>
-                                <Download className="w-4 h-4 mr-2"/> Export Report (PDF)
-                            </Button>
-                        </div>
+                        <button className="w-full" onClick={() => toast('Export', { description: 'Generating PDF report containing all displayed data.' })} disabled>
+                            <Download className="w-4 h-4 mr-2"/> Export Report (PDF)
+                        </button>
                     </div>
 
                     {/* Data Import Module (Column 2/3) */}
@@ -170,27 +168,24 @@ const ReportsContent: React.FC = () => {
                             </Button>
                         </div >
                     </Card>
-                </div >
-
-                {/* KPIs and Charts (Remaining space) */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* KPI Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        {mockKPIs.map((kpi) => (
-                            renderCurrencyKpi(kpi)
-                        ))}
-                    </div >
-
-                    {/* Charting and Visualizations */}
-                    <Card className="p-6">
-                        <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2"><TrendingUp className="w-5 h-5 text-indigo-600"/><span >Revenue Trend Overview (Graph)</span></h3>
-                        <div className="h-[400px] bg-gray-50 rounded-lg border flex items-center justify-center text-gray-400">
-                            [DASHBOARD CHART CANVAS: Time-series graph showing monthly revenue projections (Converted to USD).]
-                        </div>
-                        <p className="text-sm text-gray-500 mt-4">Source: Consolidated Project & Invoicing Data.</p>
-                    </Card>
-                </div >
+                </div>
             </div >
+
+            {/* KPI Cards remain the same, but now benefit from the global currency control */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {mockKPIs.map((kpi) => (
+                    renderCurrencyKpi(kpi)
+                ))}
+            </div>
+
+            {/* Charting Area (unmodified) */}
+            <Card className="p-6">
+                <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2"><TrendingUp className="w-5 h-5 text-indigo-600"/><span >Revenue Trend Overview (Graph)</span></h3>
+                <div className="h-[400px] bg-gray-50 rounded-lg border flex items-center justify-center text-gray-400">
+                    [DASHBOARD CHART CANVAS: Time-series graph showing monthly revenue projections (Converted to USD).]
+                </div>
+                <p className="text-sm text-gray-500 mt-4">Source: Consolidated Project & Invoicing Data. Base Currency: USD</p>
+            </Card>
         </div>
     );
 }

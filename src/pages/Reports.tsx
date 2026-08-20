@@ -4,38 +4,38 @@ import React, { useState } from 'react';
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { DollarSign, TrendingUp, Clock, Users, CheckCircle, Upload, Download, FileText } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, Users, CheckCircle, Upload, Download, FileText, Calendar, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-// Define the structure for a KPI card (kept for context)
+// Define the structure for a KPI card
 interface KPIData {
     title: string;
-    value: string;
+    value: { usd: number; local: string; currency: string }; // Structured value
     icon: React.ReactNode;
-    change: string; // e.g., "+12% vs last month"
-    colorClass: string; // Tailwind class for color
+    change: string; 
+    colorClass: string; 
+    localCurrency: string; // Flag to indicate original local currency
 }
 
 const mockKPIs: KPIData[] = [
-    { title: "Total Projected Revenue", value: "$1.2M", icon: <DollarSign className="w-5 h-5" />, change: "+8.5%", colorClass: "text-green-500" },
-    { title: "Active Projects", value: "14", icon: <Clock className="w-5 h-5" />, change: "+1 since last month", colorClass: "text-indigo-500" },
-    { title: "Average Project Value", value: "$65,000", icon: <Users className="w-5 h-5" />, change: "Stable", colorClass: "text-yellow-500" },
-    { title: "Completion Rate", value: "78%", icon: <CheckCircle className="w-5 h-5" />, change: "2% increase", colorClass: "text-blue-500" },
+    { title: "Total Projected Revenue", value: { usd: 1200000, local: "1,200,000", currency: "INR" }, icon: <DollarSign className="w-5 h-5" />, change: "+8.5%", colorClass: "text-green-500", localCurrency: "INR" },
+    { title: "Total Spent Budget", value: { usd: 350000, local: "35,00,000", currency: "INR" }, icon: <Clock className="w-5 h-5" />, change: "+1 since last month", colorClass: "text-indigo-500", localCurrency: "INR" },
+    { title: "Average Project Value", value: { usd: 65000, local: "650,000", currency: "INR" }, icon: <Users className="w-5 h-5" />, change: "Stable", colorClass: "text-yellow-500", localCurrency: "INR" },
+    { title: "Completion Rate", value: { usd: 0, local: "78%", currency: "" }, icon: <CheckCircle className="w-5 h-5" />, change: "2% increase", colorClass: "text-blue-500", localCurrency: "" },
 ];
-
 
 const ReportsContent: React.FC = () => {
     const [timeframe, setTimeframe] = useState("Last 12 Months");
     const [importFile, setImportFile] = useState<File | null>(null);
 
 
-    // Handlers
+    // Handlers (unchanged)
     const handleTimeframeChange = async (newTimeframe: string) => {
         await new Promise(resolve => setTimeout(resolve, 500)); 
         toast.info("Data Updated", { 
-            description: `Statistics refreshed for ${newTimeframe}.` 
+            description: `Statistics refreshed for ${newTimeframe} using converted currency.` 
         });
     };
 
@@ -54,20 +54,50 @@ const ReportsContent: React.FC = () => {
             return;
         }
         
-        // Simulate large data processing
-        toast.loading('Processing Data', { description: `Analyzing ${importFile.name}... This may take a moment.`, duration: 3000 });
+        // Simulate processing
+        toast.loading('Processing Data', { 
+            description: `Analyzing ${importFile.name}... Currency conversion applied.`, 
+            duration: 3000 
+        });
 
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Simulate successful import
         toast.success("Data Import Complete!", { 
-            description: `Successfully imported ${importFile.name}. 45 new records added to the database.` 
+            description: `Successfully imported ${importFile.name}. 45 new records processed and converted.` 
         });
         
-        // Clear the file input
         (document.getElementById('csv-upload') as HTMLInputElement).value = '';
         setImportFile(null);
     };
+    
+    // Function to format and display the structured currency data
+    const renderCurrencyKpi = (kpi: KPIData) => (
+        <Card key={kpi.title} className="shadow-lg hover:scale-[1.02] transition-transform">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-medium text-gray-500">{kpi.title}</CardTitle>
+                <div className={`p-2 rounded-full ${kpi.colorClass}/20 ${kpi.colorClass}`}>
+                    {kpi.icon}
+                </div >
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-gray-900">
+                    {/* Displaying both USD (base) and Local Currency */}
+                    {kpi.value.usd ? (
+                        <span className='text-lg text-gray-600 mr-2'>↓</span>
+                        {/* Always show the calculated USD value prominently */}
+                        <span className='text-3xl'>
+                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(kpi.value.usd)}
+                        </span>
+                    ) : (
+                        <span className='text-3xl'>{kpi.value.local}</span>
+                    )}
+                </div>
+                <p className={`text-sm font-medium ${kpi.colorClass}`}>
+                    {kpi.change} vs previous period
+                </p>
+            </CardContent>
+        </Card>
+    );
 
 
     return (
@@ -76,7 +106,7 @@ const ReportsContent: React.FC = () => {
                 <ReportSquare className="w-6 h-6 text-green-600"/>
                 <span className="text-xl">Analytics & Reporting</span>
             </h1>
-            <p className="text-lg text-gray-600">Analyze your performance, track key metrics, and identify growth opportunities using real-time data.</p>
+            <p className="text-lg text-gray-600">Analyze your performance, track key metrics, and identify growth opportunities using real-time, multi-currency data.</p>
 
             {/* Report Filtering, Timeframe & Controls */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -104,15 +134,20 @@ const ReportsContent: React.FC = () => {
                                 Custom Range
                             </Button>
                         </div >
-                        <Button className="w-full" onClick={() => toast('Export', { description: 'Generating PDF report containing all displayed data.' })}>
-                             <Download className="w-4 h-4 mr-2"/> Export Report (PDF)
-                        </Button>
+                        <div className="flex flex-col space-y-3">
+                            <Button onClick={() => { toast('Currency', { description: 'System currency successfully set to USD for reporting.' })}>
+                                <Globe className="w-4 h-4 mr-2"/> Base Currency: USD
+                            </Button>
+                            <Button className="w-full" onClick={() => toast('Export', { description: 'Generating PDF report containing all displayed data.' })}>
+                                <Download className="w-4 h-4 mr-2"/> Export Report (PDF)
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Data Import Module (Column 2/3) */}
                     <Card className="p-6 border-l-4 border-indigo-600 shadow-md">
                         <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2"><Upload className="w-5 h-5 text-indigo-600"/><span>Data Import</span></h3>
-                        <p className="text-sm text-muted-foreground mb-4">Upload a CSV file to bulk update records (e.g., new projects, user leads).</p>
+                        <p className="text-sm text-muted-foreground mb-4">Upload a CSV file to bulk update records (currency conversion applied automatically).</p>
                         
                         <div className='space-y-4'>
                             <label className="block text-sm font-medium text-gray-700">Select CSV File</label>
@@ -131,29 +166,18 @@ const ReportsContent: React.FC = () => {
                                 disabled={!importFile}
                             >
                                 <Upload className="w-4 h-4 mr-2" />
-                                Process and Import Data
+                                Process & Import Data
                             </Button>
                         </div >
                     </Card>
-                </div>
+                </div >
 
                 {/* KPIs and Charts (Remaining space) */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* KPI Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {mockKPIs.map((kpi) => (
-                            <Card key={kpi.title} className="shadow-lg hover:scale-[1.02] transition-transform">
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                                    <CardTitle className="text-sm font-medium text-gray-500">{kpi.title}</CardTitle>
-                                    <div className={`p-2 rounded-full ${kpi.colorClass}/20 ${kpi.colorClass}`}>
-                                        {kpi.icon}
-                                    </div >
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold text-gray-900">{kpi.value}</div >
-                                    <p className={`text-sm font-medium ${kpi.colorClass}`}>{kpi.change} vs previous period</p>
-                                </CardContent>
-                            </Card>
+                            renderCurrencyKpi(kpi)
                         ))}
                     </div >
 
@@ -161,12 +185,12 @@ const ReportsContent: React.FC = () => {
                     <Card className="p-6">
                         <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2"><TrendingUp className="w-5 h-5 text-indigo-600"/><span >Revenue Trend Overview (Graph)</span></h3>
                         <div className="h-[400px] bg-gray-50 rounded-lg border flex items-center justify-center text-gray-400">
-                            [DASHBOARD CHART CANVAS: Time-series graph showing monthly revenue projections.]
+                            [DASHBOARD CHART CANVAS: Time-series graph showing monthly revenue projections (Converted to USD).]
                         </div>
                         <p className="text-sm text-gray-500 mt-4">Source: Consolidated Project & Invoicing Data.</p>
                     </Card>
-                </div>
-            </div>
+                </div >
+            </div >
         </div>
     );
 }

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Bell, Info, PlusCircle, UserPlus } from "lucide-react";
 import { UserRole } from "@/types/user";
+import { toast } from "react-hot-toast"; // <-- Use toast hook
 
 // Component for displaying a role toggle filter (Helper component remains)
 const RoleFilterToggle = ({ role, isChecked, onChange }: { role: UserRole, isChecked: boolean, onChange: (r: UserRole, checked: boolean) => void }) => {
@@ -43,10 +44,8 @@ interface UsersProps {
     currentUser: { role: string; permissions: { [key: string]: boolean } };
 }
 
-
 const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
     // --- STATE MANAGEMENT ---
-    // Use local state for the user list to allow mutations (CRUD)
     const [users, setUsers] = useState<User[]>(initialUsers);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterRole, setFilterRole] = useState<Partial<Record<UserRole, boolean>>>({});
@@ -55,17 +54,16 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
 
-
     // --- CRUD HANDLERS ---
     const handleCreateUser = (formData: Omit<User, 'id'>) => {
-        // Simulation: Assign a unique ID and set default status
         const newId = Math.max(...users.map(u => u.id)) + 1;
         const newUser: User = { 
             id: newId, 
             ...formData, 
-            status: true // New users are always active
+            status: true
         };
         setUsers([...users, newUser]);
+        toast.success(`✅ User ${newUser.name} created successfully!`);
         setIsModalOpen(false);
         return { success: true, message: `✅ User ${newUser.name} created successfully!` };
     };
@@ -76,24 +74,26 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
         setUsers(users.map(u => 
             u.id === editingUser.id ? { ...u, ...updatedData } : u
         ));
+        toast.success(`✅ User ${editingUser.name} updated successfully!`);
         setEditingUser(null);
         setIsModalOpen(false);
         return { success: true, message: `✅ User ${editingUser.name} updated successfully!` };
     };
 
     const handleDeleteUser = (userId: number) => {
-        // Prevent deletion by non-Admins or if the admin doesn't have permission to delete
         if (!currentUser.permissions.deleteCriticalRecords) {
-            return { success: false, message: "🔒 Permission Denied: You do not have global delete permissions." };
+            toast.error("🔒 Permission Denied: You do not have global delete permissions.");
+            return { success: false, message: "Permission Denied" };
         }
 
-        // Simulation: Remove user and trigger a toast
         setUsers(users.filter(u => u.id !== userId));
+        toast.error(`🗑️ User ID ${userId} successfully deactivated.`);
         return { success: true, message: `🗑️ User ID ${userId} successfully deactivated.` };
     };
     
     // Helper to determine if the current user has permission for the action
     const canManageUsers = currentUser.permissions.userManagement;
+    const canDelete = currentUser.permissions.deleteCriticalRecords || currentUser.role === "ADMIN";
 
 
     // Filter Logic Hook
@@ -101,6 +101,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
         if (users.length === 0) return []; 
 
         return users.filter(user => {
+            // Filtering logic remains the same...
             const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesRole = Object.keys(filterRole).every(role => {
                 const actualRole = role as UserRole;
@@ -168,19 +169,15 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
             
             const submissionData = {
                 ...formState,
-                // Type casting required here for state coherence
-                id: editingUser?.id || 0 // 0 for new, actual ID for edit
+                id: editingUser?.id || 0
             } as Omit<User, 'id'>; 
 
             let result;
             if (editingUser) {
-                result = handleUpdateUser(submissionData);
+                handleUpdateUser(submissionData);
             } else {
-                result = handleCreateUser(submissionData);
+                handleCreateUser(submissionData);
             }
-
-            // Show toast/alert simulation
-            alert(result.message); 
         };
 
         return (
@@ -189,25 +186,27 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                     {editingUser ? `Edit User: ${editingUser.name}` : "Create New User"}
                 </h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                        <Input 
-                            type="text" 
-                            name="name" 
-                            value={formState.name || ''} 
-                            onChange={handleChange} 
-                            required 
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                        <Input 
-                            type="email" 
-                            name="email" 
-                            value={formState.email || ''} 
-                            onChange={handleChange} 
-                            required 
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                            <Input 
+                                type="text" 
+                                name="name" 
+                                value={formState.name || ''} 
+                                onChange={handleChange} 
+                                required 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                            <Input 
+                                type="email" 
+                                name="email" 
+                                value={formState.email || ''} 
+                                onChange={handleChange} 
+                                required 
+                            />
+                        </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -225,7 +224,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                                 <option value="BASIC">Basic User</option>
                             </select>
                         </div>
-                        <div>
+                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
                             <select 
                                 name="department" 
@@ -266,46 +265,20 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
         );
     };
 
-    // Effect to open the modal and set the editing state when clicking the "Add" button
-    const handleOpenCreateModal = useCallback(() => {
-        if (!canManageUsers) {
-            alert("⛔ Permission Denied: You do not have permission to create users.");
-            return;
-        }
-        setEditingUser(null); // null means create new user
-        setIsModalOpen(true);
-    }, [canManageUsers]);
-
 
     return (
         <AppLayout>
             <div className="space-y-6">
                 <h1 className="text-3xl font-bold">User Directory</h1>
-                <p className="text-gray-600">View, manage, and audit all user accounts in the system. (Data source configured to load from API/Props).</p>
+                <p className="text-gray-600">View, manage, and audit all user accounts in the system.</p>
 
-                {/* --- User Management Card (Combined search/filter/actions) --- */}
+                {/* Filtering and Search Card (Unchanged) */}
                 <Card className="p-6 shadow-md">
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="flex space-x-4">
-                            <Button variant="default" onClick={handleOpenCreateModal} disabled={!canManageUsers}>
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                Add User
-                            </Button>
-                            <button 
-                                onClick={() => {/* Simulate bulk action */} } 
-                                disabled={!canManageUsers}
-                                className="flex items-center space-x-2 px-4 py-2 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-md disabled:opacity-50 cursor-not-allowed">
-                                <SlidersHorizontal className="w-4 h-4" />
-                                <span>Bulk Actions</span>
-                            </button>
-                        </div>
-                        <RoleFilter />
-                    </div>
-                    
-                    {/* Search and Filter Container */}
+                    <h2 className="text-xl font-semibold mb-4">Filter Criteria ({currentUser.role})</h2>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {/* Search Bar */}
                         <div>
+                            {/* ... (Search Bar content remains the same) ... */}
                             <label className="block text-sm font-medium text-gray-700 mb-1">Search by Name or Email</label>
                             <div className="relative">
                                 <Input
@@ -350,6 +323,9 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                                 </button>
                             </div>
                         </div>
+
+                        {/* Roles Filter */}
+                        <RoleFilter />
                     </div>
                 </Card>
 
@@ -392,13 +368,13 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <button 
-                                                        onClick={() => { setEditingUser(user); setIsModalOpen(true);}} // SET EDIT MODE
+                                                        onClick={() => { setEditingUser(user); setIsModalOpen(true);}} 
                                                         className="text-indigo-600 hover:underline mr-3"
                                                     >Edit</button>
                                                     {/* Implementing RBAC Guarding */}
-                                                    {(currentUser.permissions.deleteCriticalRecords || currentUser.role === "ADMIN") && (
+                                                    {(canDelete) && (
                                                         <button 
-                                                            onClick={() => { alert("Simulating action for user " + user.name);}}
+                                                            onClick={() => { handleDeleteUser(user.id);}}
                                                             className="text-red-600 hover:underline"
                                                         >Deactivate</button>
                                                     )}
@@ -424,7 +400,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
                         <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full">
                             <UserFormModal />
-                        </div>
+                        </div >
                     </div>
                 )}
             </div >

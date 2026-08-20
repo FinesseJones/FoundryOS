@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Suspense, useState, useMemo } from 'react';
+import { ToasterProvider } from './components/ToastProvider'; // <-- Import the new provider
 import { Routes, Route } from 'react-router-dom';
 
 // Import all pages and the new log page
@@ -8,25 +9,24 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 import ProjectDashboardPage from './pages/ProjectDashboard';
-import AuditLog from './pages/AuditLog'; // <-- New import
-import { UserRole } from "@/types/user";
+import AuditLog from './pages/AuditLog'; // <-- New page
 
 // =============================================================
 // SIMULATED AUTHENTICATED USER STATE
-// We maintain the same state for structural consistency.
 // =============================================================
 const MOCK_CURRENT_USER: { role: UserRole; permissions: Record<string, boolean> } = {
     role: "ADMIN",
     permissions: {
-        userManagement: true, // Admin can manage users
-        settingsManagement: true, // Admin can change global settings
-        ollamaAccess: true, // Admin can access AI models
-        deleteCriticalRecords: true, // Admin can delete critical records
-        viewAuditLogs: true, // Explicit permission for viewing logs
+        userManagement: true,
+        settingsManagement: true,
+        ollamaAccess: true,
+        deleteCriticalRecords: true,
+        viewAuditLogs: true,
+        userManagement: true, // Explicitly defining role-specific checks
     }
 };
 // =============================================================
-// MOCK DATA (No changes needed here)
+// MOCK DATA
 const mockUsers = useMemo(() => ([
     { id: 1, name: 'Alice Smith', email: 'alice@corp.com', role: 'ADMIN', department: 'Executive', status: true },
     { id: 2, name: 'Bob Johnson', email: 'bob@corp.com', role: 'SUPPORT', department: 'Support', status: true },
@@ -34,7 +34,7 @@ const mockUsers = useMemo(() => ([
     { id: 4, name: 'Diana Prince', email: 'diana@corp.com', role: 'ADMIN_PRO', department: 'Finance', status: true },
 ]), []);
 
-const mockSettings = {
+const mockSettingsKeys = {
     baseCurrency: "USD",
     currencySymbol: "$",
     timeZone: "UTC",
@@ -71,7 +71,7 @@ const AppRouter = () => {
                     <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wider">Logged In As:</p>
                     <p className="font-bold text-lg text-indigo-800">{MOCK_CURRENT_USER.role}</p>
                     <p className="text-sm text-indigo-600 mt-1">Permissions: {Object.keys(MOCK_CURRENT_USER.permissions).filter(key => MOCK_CURRENT_USER.permissions[key]).join(', ').toUpperCase()}</p>
-                </div >
+                </div>
 
                 <nav className="space-y-2">
                     {[
@@ -79,7 +79,7 @@ const AppRouter = () => {
                         { name: 'Users', page: 'users', icon: 'Users' },
                         { name: 'Projects', page: 'projects', icon: 'ClipboardList' },
                         { name: 'Settings', page: 'settings', icon: 'SlidersHorizontal' },
-                        { name: 'Audit Log', page: 'audit', icon: 'Clock' } // <-- New Link
+                        { name: 'Audit Log', page: 'audit', icon: 'Clock' }
                     ].map((item) => (
                         <button
                             key={item.page}
@@ -100,7 +100,6 @@ const AppRouter = () => {
             <main className="flex-grow max-w-full">
                 <div className="pt-4 pb-20"> 
                     <Suspense fallback={<div className="text-center py-20 text-gray-500">Loading...</div >}>
-                        {/* Pass the current user state object to all pages */}
                         {selectedPage === 'dashboard' && <Dashboard currentUser={MOCK_CURRENT_USER} />}
                         {selectedPage === 'users' && <Users initialUsers={mockUsers} currentUser={MOCK_CURRENT_USER} />}
                         {selectedPage === 'settings' && <Settings currentUser={MOCK_CURRENT_USER} />}
@@ -108,13 +107,13 @@ const AppRouter = () => {
                             projectName={'Global Platform Overhaul'} 
                             clientName={'TechCorp Global'} 
                             initialProject={mockProjectProps.initialProject} 
-                            currentUser={MOCK_CURRENT_USER} // Passed down
+                            currentUser={MOCK_CURRENT_USER}
                         />}
-                        {selectedPage === 'audit' && <AuditLog initialLogs={[]} currentUser={MOCK_CURRENT_USER} />} {/* <-- New Page Render */}
+                        {selectedPage === 'audit' && <AuditLog initialLogs={[]} currentUser={MOCK_CURRENT_USER} />}
                     </Suspense>
                 </div >
             </main>
-        </div >
+        </div>
     );
 };
 

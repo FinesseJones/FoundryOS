@@ -7,8 +7,9 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BookOpen, TrendingUp, Clock, Folder, Loader2 } from "lucide-react";
-import { AiAssistantWidget } from "@/components/AiAssistantWidget"; // Import AI Widget
-import { useOllamaApi } from "@/hooks/useOllamaApi"; // Import Ollama Hook
+import { AiAssistantWidget } from "@/components/AiAssistantWidget";
+import { useOllamaApi } from "@/hooks/useOllamaApi";
+import { toast } from "react-hot-toast"; // <-- Import toast hook
 
 // Interface for project data
 interface ProjectDetails {
@@ -31,7 +32,6 @@ interface ProjectProps {
 
 const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName, initialProject, currentUser }) => {
     const [project, setProject] = useState<ProjectDetails>(initialProject);
-    // State for modal management
     const [isModalOpen, setIsModalOpen] = useState(false);
     
     // Hooks for AI interaction
@@ -39,17 +39,16 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
 
     // --- CRUD HANDLERS ---
     const handleProjectUpdate = async (formData: Partial<ProjectDetails>) => {
-        // Simulate API call to update the project status
         try {
-            // Update local state immediately
             setProject(prev => ({
                 ...prev,
                 ...formData
             }));
             setIsModalOpen(false);
-            alert("✅ Project details saved successfully! (State Updated)");
+            toast.success(`✅ Project ${projectName} details saved successfully!`);
+
         } catch (e) {
-            alert("❌ Error saving project.");
+            toast.error("❌ Error saving project. Please check your inputs and try again.");
         }
     };
 
@@ -70,12 +69,10 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
             const { name, value, type } = e.target;
             let updateValue: any;
 
-            if (type === 'range') {
+            if (type === 'range' || name === 'progress') {
                 updateValue = parseInt(value);
             } else if (name === 'totalBudget' || name === 'budgetSpent') {
                 updateValue = parseFloat(value) || 0;
-            } else if (name === 'progress') {
-                 updateValue = parseInt(value);
             } else {
                 updateValue = value;
             }
@@ -86,20 +83,18 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
         const handleSubmit = async (e: React.FormEvent) => {
             e.preventDefault();
             
-            // Basic validation/calculation before submission
             if (formState.budgetSpent > formState.totalBudget) {
-                alert("❌ Error: Spent budget cannot exceed total budget.");
+                toast.error("❌ Error: Spent budget cannot exceed total budget.");
                 return;
             }
 
-            // We reuse the handleProjectUpdate logic from the parent component scope
             await handleProjectUpdate(formState);
         };
 
         return (
             <div className="p-6 bg-white rounded-lg shadow-lg border border-indigo-200">
                 <h3 className="text-xl font-semibold mb-4 text-indigo-700">
-                    {project.name}
+                    Edit Project Details
                 </h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Project Name/Client */}
@@ -181,7 +176,7 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
                                 required
                             />
                         </div>
-                        <div>
+                        <div className="col-span-1">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Budget Spent ($)</label>
                             <Input 
                                 type="number" 
@@ -200,67 +195,57 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
                         </Button>
                     </div>
                 </form>
-            </div >
+            </div>
         );
     };
-
-
-    // Calculate remaining budget for display
-    const remainingBudget = useMemo(() => {
-        return Math.max(0, project.totalBudget - project.budgetSpent);
-    }, [project.totalBudget, project.budgetSpent]);
 
 
     return (
         <AppLayout>
             <div className="space-y-8">
-                <h1 className="text-3xl font-bold">Project Management Dashboard</h1>
-                <p className="text-lg text-gray-600">Overview of active projects, resource allocation, and progress tracking.</p>
-
-                {/* Main Project Card */}
+                {/* Main Project Card (Display Logic remains the same) */}
                 <Card className="shadow-md">
                     <CardHeader>
                         <CardTitle>{projectName} ({clientName})</CardTitle>
                         <p className="text-sm text-gray-500">Managed by your team. Focus on key metrics to ensure timely delivery.</p>
                     </CardHeader>
                     <CardContent>
-                        {/* Metric Grid Start */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            {/* Milestone 1: Progress Card */}
+                            {/* Card 1: Progress Card (display) */}
                             <Card className="shadow-md hover:shadow-xl transition-shadow border-l-4 border-indigo-500">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium text-gray-500">Progress</CardTitle>
+                                    <CardTitle className="text-sm font-medium text-gray-500">Projects Progress</CardTitle>
                                     <TrendingUp className="h-5 w-5 text-indigo-400"/>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold text-gray-900">{project.progress}%</div>
-                                    <p className="text-xs text-gray-500 pt-1">Goal completion towards target.</p>
+                                    <p className="text-xs text-gray-500 pt-1">Global Platform Overhaul</p>
                                     <div className="mt-4">
                                         <div className="flex justify-between mb-1 text-xs font-medium">
-                                            <span>Target: {project.progress}%</span>
-                                            <span className={project.progress >= 60 ? "text-green-600" : "text-red-500"}>{project.progress >= 60 ? "Achievable" : "At Risk"}</span>
-                                        </div>
+                                            <span>Stage: Development</span>
+                                            <span className="text-indigo-600">On Track</span>
+                                        </div >
                                         <Progress value={project.progress} className="w-full" />
-                                    </div>
+                                    </div >
                                 </CardContent>
                             </Card>
 
-                             {/* Milestone 2: Budget Card */}
+                             {/* Card 2: Budget Card (display) */}
                             <Card className="shadow-md hover:shadow-xl transition-shadow border-l-4 border-green-500">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium text-gray-500">Budget Status</CardTitle>
                                     <Folder className="h-5 w-5 text-green-400"/>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold text-gray-900">${remainingBudget.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                                    <div className="text-2xl font-bold text-gray-900">${Math.max(0, project.totalBudget - project.budgetSpent).toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
                                     <p className="text-xs text-gray-500 pt-1">Remaining Funds</p>
-                                    <div className="mt-4 text-sm text-red-500">
-                                        <button onClick={() => {/* Alert user to review spending */} } className="hover:underline">Review Spending Breakdown</button>
-                                    </div>
+                                    <div className="mt-4">
+                                        <button onClick={() => toast.success("Opening spending breakdown...")} className="text-sm text-red-600 hover:underline">Review Spending Breakdown</button>
+                                    </div >
                                 </CardContent>
                             </Card>
                             
-                            {/* Milestone 3: Deadline/Timeline Card */}
+                            {/* Card 3: Deadline/Timeline Card (display) */}
                             <Card className="shadow-md hover:shadow-xl transition-shadow border-l-4 border-yellow-500">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium text-gray-500">Timeline</CardTitle>
@@ -271,10 +256,9 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
                                     <p className="text-xs text-gray-500 pt-1">Original Deadline</p>
                                     <div className={`mt-4 text-sm ${project.progress > 80 ? 'text-green-600' : 'text-yellow-600'}`}>
                                         Status: {project.progress > 80 ? "Nearing Completion" : "Needs Attention"}
-                                    </div>
+                                    </div >
                                 </CardContent>
                             </Card>
-
                         </div>
 
                         <div className="flex justify-center items-center pt-8">
@@ -284,11 +268,11 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
                             >
                                 Manage & Update Project Details
                             </button>
-                        </div>
+                        </div >
                     </CardContent>
                 </Card>
                 
-                {/* 3. AI Assistant (Intelligent Layer) */}
+                {/* AI Assistant Widget (The Intelligence Layer) */}
                 <AiAssistantWidget isVisible={true} title="🤖 Project Strategy Assistant" />
             </div >
         </AppLayout>

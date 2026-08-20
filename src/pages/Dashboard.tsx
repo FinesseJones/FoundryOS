@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator"; // FIX: Separator imported correctly
-import { Clock, DollarSign, TrendingUp, Users, Zap, ClipboardList, CheckCircle, Loader, FileText, AlertTriangle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Clock, DollarSign, TrendingUp, Users, Zap, ClipboardList, CheckCircle, Loader, FileText, AlertTriangle, FolderOpen } from "lucide-react"; // FIX: Imported FolderOpen
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -111,7 +111,7 @@ const Dashboard = () => {
                         <p className="text-sm text-indigo-700">Project 'Beta Launch' wireframe approval is scheduled for tomorrow. Prepare documentation.</p>
                     </div>
                 </div>
-            </div>
+            </div >
 
             <Button className="w-full mt-6" variant="outline" onClick={() => toast("View Alerts", { description: 'Opening the full task and alert management center.' })}>
                 View All Alerts & Tasks

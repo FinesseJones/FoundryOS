@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Bell } from "lucide-react";
 import { UserRole } from "@/types/user"; // Assuming this types file exists
 
-// Component for displaying a role toggle filter
+// Component for displaying a role toggle filter (Helper component remains)
 const RoleFilterToggle = ({ role, isChecked, onChange }: { role: UserRole, isChecked: boolean, onChange: (r: UserRole, checked: boolean) => void }) => {
     return (
         <div className="flex items-center space-x-2">
@@ -27,10 +28,25 @@ const RoleFilterToggle = ({ role, isChecked, onChange }: { role: UserRole, isChe
     );
 };
 
-const Users = () => {
+
+// Define API-friendly types for the rendered data
+interface User {
+    id: number;
+    name: string;
+    email: string;
+    role: UserRole;
+    department: string;
+    status: boolean;
+}
+
+// To make the component functional without mock data, I will apply a placeholder prop
+interface UsersProps {
+    initialUsers: User[]; // Expects users from parent component/API Provider
+}
+
+const Users: React.FC<UsersProps> = ({ initialUsers }) => {
     // Filtering states
     const [searchTerm, setSearchTerm] = useState('');
-    // FIX APPLIED HERE: Corrected the useState initialization syntax.
     const [filterRole, setFilterRole] = useState<Partial<Record<UserRole, boolean>>>({});
     const [filterDepartment, setFilterDepartment] = useState('');
     const [filterStatus, setFilterStatus] = useState<boolean>(true); // True for Active, False for Inactive
@@ -39,20 +55,33 @@ const Users = () => {
     const allRoles: UserRole[] = ["ADMIN", "ADMIN_PRO", "SUPPORT", "BASIC"];
 
 
-    // Filter Logic (Unchanged, assumes correct dependencies)
-    React.useEffect(() => {
-        // This effect would typically run on mount or dependency change
-        console.log("Filtering applied based on criteria:", { searchTerm, filterRole, filterDepartment, filterStatus });
-    }, [searchTerm, filterRole, filterDepartment, filterStatus]);
+    // API Data Fetching Simulation (This is where the actual call MUST go)
+    // We use the passed initialUsers as a substitute for the API response.
+    const users = initialUsers || []; 
 
+    // Filter Logic Hook (Improved to process the received data)
+    const filteredUsers = React.useMemo(() => {
+        return users.filter(user => {
+            // 1. Search Term Filter
+            const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            // 2. Role Filter
+            const matchesRole = Object.keys(filterRole).every(role => {
+                const actualRole = role as UserRole;
+                const isChecked = filterRole[actualRole] || false;
+                return isChecked ? (user.role === actualRole) : true;
+            });
 
-    // Mock/Simulated User List
-    const mockUsers = [
-        { id: 1, name: "Alice Johnson", email: "alice@corp.com", role: "ADMIN", department: "Marketing", status: true },
-        { id: 2, name: "Bob Smith", email: "bob@corp.com", role: "SUPPORT", department: "Support", status: true },
-        { id: 3, name: "Charlie Brown", email: "charlie@corp.com", role: "BASIC", department: "Finance", status: false },
-        { id: 4, name: "Diana Prince", email: "diana@corp.com", role: "ADMIN_PRO", department: "Executive", status: true },
-    ];
+            // 3. Department Filter
+            const matchesDept = filterDepartment === '' || user.department === filterDepartment;
+
+            // 4. Status Filter
+            const matchesStatus = filterStatus === true ? user.status : !user.status;
+
+            return matchesSearch && matchesRole && matchesDept && matchesStatus;
+        });
+    }, [searchTerm, filterRole, filterDepartment, filterStatus, users]);
+
 
     // --- Handlers ---
     const handleRoleToggle = (role: UserRole, checked: boolean) => {
@@ -85,11 +114,11 @@ const Users = () => {
         <AppLayout>
             <div className="space-y-6">
                 <h1 className="text-3xl font-bold">User Directory</h1>
-                <p className="text-gray-600">View, manage, and audit all user accounts in the system.</p>
+                <p className="text-gray-600">View, manage, and audit all user accounts in the system. (Data source should be API).</p>
 
                 {/* Filtering and Search Card */}
                 <Card className="p-6 shadow-md">
-                    <h2 className="text-xl font-semibold mb-4">Search & Filter</h2>
+                    <h2 className="text-xl font-semibold mb-4">Filter Criteria</h2>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {/* Search Bar */}
                         <div>
@@ -138,9 +167,8 @@ const Users = () => {
                             </div>
                         </div>
 
-                        {/* Roles Filter (New Component Usage) */}
+                        {/* Roles Filter */}
                         <RoleFilter />
-                        
                     </div>
                 </Card>
 
@@ -150,48 +178,66 @@ const Users = () => {
                     <CardHeader>
                         <CardTitle className="flex items-center space-x-2 text-xl">
                             <Bell className="w-5 h-5 text-indigo-600"/>
-                            <span >Found {mockUsers.length} Users</span>
+                            <span >Found {filteredUsers.length} Users</span>
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <tr className="uppercase text-xs text-gray-500 tracking-wider">
+                                        <th className="px-6 py-3 text-left">Name</th>
+                                        <th className="px-6 py-3 text-left">Email</th>
+                                        <th className="px-6 py-3 text-left">Role</th>
+                                        <th className="px-6 py-3 text-left">Department</th>
+                                        <th className="px-6 py-3 text-left">Status</th>
+                                        <th className="px-6 py-3 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {mockUsers.map((user) => (
-                                        <tr key={user.id} className={`${user.status ? 'hover:bg-green-50' : 'hover:bg-red-50'}`}>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                <Badge variant="secondary" className="bg-indigo-100 text-indigo-800">{user.role}</Badge>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.department}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <Badge variant={user.status ? "success" : "destructive"} className="text-xs uppercase">{user.status ? "Active" : "Inactive"}</Badge>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button className="text-indigo-600 hover:underline mr-3">Edit</button>
-                                                <button className="text-red-600 hover:underline">Deactivate</button>
+                                    {filteredUsers.length > 0 ? (
+                                        filteredUsers.map((user) => (
+                                            <tr key={user.id} className={`${user.status ? 'hover:bg-green-50' : 'hover:bg-red-50'}`}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                    <Badge variant="secondary" className="bg-indigo-100 text-indigo-800">{user.role}</Badge>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.department}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <Badge variant={user.status ? "success" : "destructive"} className="text-xs uppercase">{user.status ? "Active" : "Inactive"}</Badge>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <button className="text-indigo-600 hover:underline mr-3">Edit</button>
+                                                    <button className="text-red-600 hover:underline">Deactivate</button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={6} className="text-center py-12 text-gray-500">
+                                                <Info className="w-8 h-8 mx-auto mb-2"/>
+                                                <p>No users found matching your current filter criteria.</p>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                     </CardContent>
                 </Card>
-            </div>
+            </div >
         </AppLayout>
     );
-};
+}
+
+/* Example usage wrapper for calling component (usually parent page/App.tsx)
+// In production, the parent component would call API and pass data:
+const MyPageWrapper = () => {
+    // const userData = useApiFetch('/users'); // <-- This is where the data goes
+    // return <Users initialUsers={userData} />
+    return <Users initialUsers={[]} />; // Empty array placeholder for now
+}
+*/
 
 export default Users;

@@ -6,8 +6,9 @@ import { Separator } from "@/components/ui/separator";
 import { HeartHandshake, FileText, AlertTriangle, CheckCircle, Loader, Mail, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
-// Define the structure for a single notification
+// Define the structure for a single notification (Remains the contract with the API)
 interface Notification {
     id: number;
     title: string;
@@ -18,48 +19,12 @@ interface Notification {
     read: boolean;
 }
 
-// Mock/Simulated list of notifications
-const mockNotifications: Notification[] = [
-    // ... (Data remains the same) ...
-    { 
-        id: 1, 
-        title: "Project Review Required", 
-        message: "The 'AlphaCorp Revamp' project is ready for your review. Please check the asset library and provide feedback.", 
-        icon: <HeartHandshake className="w-5 h-5"/>, 
-        type: 'warning', 
-        timestamp: "5 minutes ago", 
-        read: false 
-    },
-    { 
-        id: 2, 
-        title: "System Update", 
-        message: "The base currency was successfully set to USD for all financial reports. Please verify affected reports.", 
-        icon: <CheckCircle className="w-5 h-5"/>, 
-        type: 'info', 
-        timestamp: "2 hours ago", 
-        read: true 
-    },
-    { 
-        id: 3, 
-        title: "Milestone Passed", 
-        message: "Project 'Apollo' reached the 'Discovery Phase Completion' milestone, paving the way for wireframing.", 
-        icon: <FileText className="w-5 h-5"/>, 
-        type: 'success', 
-        timestamp: "Yesterday", 
-        read: true 
-    },
-    { 
-        id: 4, 
-        title: "Invoices Overdue", 
-        message: "Payment reminder for Charlie Client is due. Please address this to keep the project on track.", 
-        icon: <AlertTriangle className="w-5 h-5"/>, 
-        type: 'failure', 
-        timestamp: "3 days ago", 
-        read: false 
-    }
-];
+// Define the props the component will accept
+interface NotificationCenterProps {
+    notifications: Notification[]; // **CORE CHANGE: Data now passed via props**
+}
 
-const NotificationCenter: React.FC = () => {
+const NotificationCenter: React.FC<NotificationCenterProps> = ({ notifications }) => {
     return (
         <Card className="p-0 overflow-hidden shadow-md">
             <CardHeader className="border-b flex flex-row items-center justify-between p-6">
@@ -67,18 +32,40 @@ const NotificationCenter: React.FC = () => {
                     <span className="text-xl text-indigo-600"><Mail className="w-6 h-6"/></span>
                     <span>Notification Center</span>
                 </CardTitle>
-                <Button variant="outline" size="sm" onClick={() => toast("Inbox Sync", { description: 'Syncing latest notifications from all project and system activities.' })}>
+                <Button variant="outline" size="sm" onClick={() => toast("Inbox Sync", { description: 'Real-time sync initiated. Data will populate shortly.' })}>
                     <Loader className="w-4 h-4 mr-2 animate-spin" /> Sync
                 </Button>
             </CardHeader>
             
             <CardContent className="p-0 p-6 pt-4">
-                <div className="space-y-4 max-h-[450px] overflow-y-auto custom-scrollbar">
-                    {/* ... (Mapping the notifications remains the same) ... */}
-                </div>
+                {/* **CORE CHANGE: Map over the received 'notifications' prop instead of mock data.** */}
+                {notifications && notifications.length > 0 ? (
+                    <div className="space-y-4">
+                         {notifications.map((notification) => (
+                            <div key={notification.id} className={`flex items-start space-x-3 p-3 border ${notification.read ? 'border-gray-200 bg-white' : 'border-gray-100 bg-indigo-50/50'} rounded-md`}>
+                                <div className="flex-shrink-0 pt-1">
+                                    {notification.icon}
+                                </div>
+                                <div className="flex-grow">
+                                    <div className="flex justify-between items-center">
+                                        <p className="font-semibold text-gray-900">{notification.title}</p>
+                                        <p className="text-xs text-gray-500">{notification.timestamp}</p>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12 text-gray-500">
+                        <Clock className="w-10 h-10 mx-auto mb-3 opacity-60"/>
+                        <p>No notifications found.</p>
+                        <p className="text-sm mt-1">Check back later or trigger a manual sync.</p>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
 }
 
-export { NotificationCenter };
+export default NotificationCenter;

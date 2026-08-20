@@ -1,179 +1,147 @@
 "use client";
 
 import React, { useState } from 'react';
+import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SlidersHorizontal, Globe, Zap, DollarSign, LayoutDashboard, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SlidersHorizontal, Globe, Zap } from "lucide-react";
-import { toast } from "sonner"; // Using sonner for professional toast notifications
-import AppLayout from "../components/AppLayout";
+import { toast } from "sonner";
 
-// State to simulate settings
-interface SettingsState {
-    companyName: string;
-    tagline: string;
-    primaryColor: string;
-    defaultCurrency: string;
+// Global state definition for configuration (Mock internal state structure)
+interface Config {
+    baseCurrency: string;
+    currencySymbol: string;
     timeZone: string;
+    defaultReportPeriod: 'Month' | 'Quarter' | 'Year';
 }
 
-const initialSettings: SettingsState = {
-    companyName: "BrandFirst Agency",
-    tagline: "Building powerful brands through data-driven design.",
-    primaryColor: "#4f46e5", // Tailwind indigo-600 default
-    defaultCurrency: "USD",
-    timeZone: "America/Los_Angeles",
+// Initial placeholder state - This needs to be fetched from the actual settings API endpoint
+const initialConfig: Config = {
+    baseCurrency: "USD",
+    currencySymbol: "$",
+    timeZone: "UTC",
+    defaultReportPeriod: "Month"
 };
 
 const SettingsPage: React.FC = () => {
-    const [settings, setSettings] = useState<SettingsState>(initialSettings);
+    const [config, setConfig] = useState<Config>(initialConfig);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleBrandChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setSettings({ ...settings, [e.target.name]: e.target.value });
+    // Handlers simulating API interaction
+    const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newCurrency = e.target.value;
+        setConfig(prev => ({ ...prev, baseCurrency: newCurrency, currencySymbol: newCurrency === 'EUR' ? '€' : prev.currencySymbol }));
     };
 
-    const handleSystemChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSettings({ ...settings, [e.target.name]: e.target.value });
-    };
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (isLoading) return;
 
-    // Simulated API call for saving brand settings
-    const handleSave = async (section: string) => {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 800)); 
+        setIsLoading(true);
         
-        // This is where the actual API call (e.g., api.saveSettings(settings)) would go
-        toast.success(`✅ ${section} settings saved successfully!`, { 
-            description: `Changes to ${section} identity are now live.` 
-        });
-    };
+        // *** Critical section: Simulate API call ***
+        // In a real app: await fetch('/api/settings', { method: 'PUT', body: JSON.stringify(config) });
+        await new Promise(resolve => setTimeout(resolve, 1500)); 
+        
+        // Success feedback
+        setIsLoading(false);
+        toast("Settings Saved!", { description: "The global system configuration has been safely updated.", action: <Button onClick={() => window.location.reload()}>OK</Button> });
+    }
 
     return (
         <AppLayout>
-            <div className="space-y-8 max-w-7xl mx-auto pt-6">
-                <h1 className="text-4xl font-bold text-gray-900">System Settings</h1>
-                <p className="text-lg text-gray-600">Manage global configurations, branding, and system-wide parameters.</p>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    {/* 1. Brand Configuration Card */}
-                    <Card className="lg:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="flex items-center space-x-3"><SlidersHorizontal className="w-5 h-5 text-indigo-600"/><span>Brand Identity</span></CardTitle>
-                            <p className="text-sm text-muted-foreground">Control the public facing assets and core message of the agency.</p>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-4">
-                                <div>
-                                    <Label htmlFor="companyName">Company Name</Label>
-                                    <Input 
-                                        id="companyName"
-                                        name="companyName"
-                                        value={settings.companyName}
-                                        onChange={handleBrandChange}
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="tagline">Tagline / Motto</Label>
-                                    <Input 
-                                        id="tagline"
-                                        name="tagline"
-                                        value={settings.tagline}
-                                        onChange={handleBrandChange}
-                                        placeholder="Your company's concise mission statement"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="primaryColor">Primary Theme Color</Label>
-                                    <Input 
-                                        id="primaryColor"
-                                        name="primaryColor"
-                                        type="color"
-                                        value={settings.primaryColor}
-                                        onChange={handleBrandChange}
-                                    />
-                                    <p className="text-sm text-gray-500 mt-2">This color controls the primary brand button and accents across the site.</p>
-                                </div>
-                            </div>
-                            <div className="pt-4 border-t">
-                                 <Button onClick={() => handleSave('Brand')}>Save Branding Settings</Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+            <div className="space-y-8">
+                <h1 className="text-3xl font-bold">Global System Settings</h1>
+                <p className="text-gray-600">Manage the global controls and core configuration parameters for the entire application.</p>
 
-                    {/* 2. System Preferences Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center space-x-3"><Globe className="w-5 h-5 text-green-600"/><span>System Preferences</span></CardTitle>
-                            <p className="text-sm text-muted-foreground">Define default operational parameters for the entire platform.</p>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-4">
-                                <div>
-                                    <Label htmlFor="defaultCurrency">Default Currency</Label>
-                                    <Select 
-                                        onValueChange={handleSystemChange} 
-                                        value={settings.defaultCurrency}
-                                    >
-                                        <SelectTrigger id="defaultCurrency">
-                                            <SelectValue placeholder="Select currency" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="USD">USD - US Dollar</SelectItem>
-                                            <SelectItem value="EUR">EUR - Euro</SelectItem>
-                                            <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                                            <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-4">
-                                    <Label htmlFor="timeZone">Default Time Zone</Label>
-                                    <Select 
-                                        onValueChange={handleSystemChange} 
-                                        value={settings.timeZone}
-                                    >
-                                        <SelectTrigger id="timeZone">
-                                            <SelectValue placeholder="Select timezone" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="America/Los_Angeles">America/Los_Angeles</SelectItem>
-                                            <SelectItem value="Europe/London">Europe/London</SelectItem>
-                                            <SelectItem value="Asia/Tokyo">Asia/Tokyo</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div className="pt-4 border-t">
-                                 <Button onClick={() => handleSave('System')}>Save System Preferences</Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+                <Card className="p-8 shadow-xl">
+                    <div className="flex justify-between items-center border-b pb-6 mb-6">
+                         <h2 className="text-xl font-semibold flex items-center space-x-2 text-indigo-700">
+                            <SlidersHorizontal className="w-5 h-5"/>
+                            <span>General Configuration</span>
+                        </h2>
+                        <button onClick={handleSave} disabled={isLoading} className="flex items-center space-x-2">
+                            <Zap className="w-5 h-5" />
+                            <span>{isLoading ? "Saving..." : "Save Changes"}</span>
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                        </button>
+                    </div>
 
-                    {/* 3. Integrations Card (Unchanged) */}
-                    <Card className="lg:col-span-1">
-                        <CardHeader>
-                            <CardTitle className="flex items-center space-x-3"><Zap className="w-5 h-5 text-orange-600"/><span>Integrations</span></CardTitle>
-                            <p className="text-sm text-muted-foreground">Connect external tools like CRMs and calendars.</p>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="p-3 border rounded-md bg-orange-50/50">
-                                <h4 className="font-semibold mb-2">CRM Sync</h4>
-                                <p className="text-sm text-gray-600">Connect via Salesforce or HubSpot.</p>
-                                <Button variant="outline" className="w-full mt-1">Connect CRM</Button>
+                    <form onSubmit={handleSave} className="space-y-10">
+                        {/* Currency Control Section (Most critical function) */}
+                        <div className="border p-6 rounded-lg bg-indigo-50/50 border-indigo-200">
+                            <h3 className="text-lg font-semibold flex items-center space-x-2 text-indigo-800">
+                                <DollarSign className="w-5 h-5"/>
+                                <span>Global Currency Control</span>
+                            </h3>
+                            <p className="text-sm text-indigo-600 mb-4">Setting the base currency standard ensures all modules (Reports, Budgets, etc.) calculate rates consistently.</p>
+                            
+                            <div className="grid grid-cols-2 gap-5 items-center">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Base Currency</label>
+                                    <select 
+                                        value={config.baseCurrency} 
+                                        onChange={handleCurrencyChange}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                    >
+                                        <option value="USD">$ - US Dollar</option>
+                                        <option value="EUR">€ - Euro</option>
+                                        <option value="GBP">£ - British Pound</option>
+                                        <option value="JPY">¥ - Japanese Yen</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Currency Symbol</label>
+                                    <Input 
+                                        type="text" 
+                                        value={config.currencySymbol} 
+                                        onChange={(e) => setConfig({...config, currencySymbol: e.target.value})}
+                                        disabled={true}
+                                        className="cursor-not-allowed"
+                                    />
+                                </div>
                             </div>
-                            <div className="p-3 border rounded-md bg-orange-50/50">
-                                <h4 className="font-semibold mb-2">Calendar Events</h4>
-                                <p className="text-sm text-gray-600">Sync with Google Calendar.</p>
-                                <Button variant="outline" className="w-full mt-1">Connect Calendar</Button>
+                            <p className="text-xs text-indigo-500 mt-3">Note: Changing the base currency requires administrator approval.</p>
+                        </div>
+
+                        {/* Time Zone and Report Settings */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold flex items-center space-x-2 text-gray-800">
+                                <Clock className="w-5 h-5"/>
+                                <span>Time & Reporting Defaults</span>
+                            </h3>
+
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Time Zone</label>
+                                    <select 
+                                        disabled={true}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-not-allowed"
+                                    >
+                                        <option value="UTC">UTC</option>
+                                        <option value="EST">Eastern Standard Time</option>
+                                        {/* ... more options ... */}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Default Report Period</label>
+                                    <select 
+                                        value={config.defaultReportPeriod} 
+                                        onChange={(e) => setConfig({...config, defaultReportPeriod: e.target.value as 'Month' | 'Quarter' | 'Year'})}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"
+                                    >
+                                        <option value="Month">Month</option>
+                                        <option value="Quarter">Quarter</option>
+                                        <option value="Year">Year</option>
+                                    </select>
+                                </div>
                             </div>
-                            <Button className="w-full mt-6" onClick={() => toast('API Keys Section', { description: 'View API keys in your Neon Dashboard.' })}>
-                                View API Keys
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div >
+                        </div>
+
+                    </form>
+                </Card>
             </div>
         </AppLayout>
     );

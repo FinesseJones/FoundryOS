@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Bell, Info, PlusCircle, UserPlus } from "lucide-react";
 import { UserRole } from "@/types/user";
-import { toast } from "react-hot-toast"; // <-- Use toast hook
+import { toast } from "react-hot-toast";
+import { logSystemEvent } from "@/utils/auditLogger"; // <-- Imported logger
 
 // Component for displaying a role toggle filter (Helper component remains)
 const RoleFilterToggle = ({ role, isChecked, onChange }: { role: UserRole, isChecked: boolean, onChange: (r: UserRole, checked: boolean) => void }) => {
@@ -63,9 +64,10 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
             status: true
         };
         setUsers([...users, newUser]);
+        // LOGGING: Log successful creation
+        logSystemEvent('Users', 'CREATE', `New user created: ${newUser.name} (${newUser.role})`, currentUser.role); 
         toast.success(`✅ User ${newUser.name} created successfully!`);
         setIsModalOpen(false);
-        return { success: true, message: `✅ User ${newUser.name} created successfully!` };
     };
 
     const handleUpdateUser = (updatedData: Partial<User>) => {
@@ -74,6 +76,8 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
         setUsers(users.map(u => 
             u.id === editingUser.id ? { ...u, ...updatedData } : u
         ));
+        // LOGGING: Log successful update
+        logSystemEvent('Users', 'UPDATE', `Updated user ${editingUser.name} details (Role: ${updatedData.role || editingUser.role}, Dept: ${updatedData.department || editingUser.department})`, currentUser.role); 
         toast.success(`✅ User ${editingUser.name} updated successfully!`);
         setEditingUser(null);
         setIsModalOpen(false);
@@ -87,6 +91,8 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
         }
 
         setUsers(users.filter(u => u.id !== userId));
+        // LOGGING: Log successful deletion/deactivation
+        logSystemEvent('Users', 'DELETE', `User ID ${userId} deactivated by ${currentUser.role}`, currentUser.role);
         toast.error(`🗑️ User ID ${userId} successfully deactivated.`);
         return { success: true, message: `🗑️ User ID ${userId} successfully deactivated.` };
     };
@@ -96,12 +102,11 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
     const canDelete = currentUser.permissions.deleteCriticalRecords || currentUser.role === "ADMIN";
 
 
-    // Filter Logic Hook
+    // Filter Logic Hook (Unchanged, relies on state)
     const filteredUsers = useMemo(() => {
-        if (users.length === 0) return []; 
-
+        // [Filtering logic remains the same...]
+        if (users.length === 0) return [];
         return users.filter(user => {
-            // Filtering logic remains the same...
             const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesRole = Object.keys(filterRole).every(role => {
                 const actualRole = role as UserRole;
@@ -123,7 +128,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
         }));
     };
 
-    // --- Component Logic: Add/Edit Feature ---
+    // UserFormModal (Unchanged functionality, just ensure prop typing is correct)
     const UserFormModal = () => {
         const initialFormData: Partial<User> = editingUser 
             ? { name: editingUser.name, email: editingUser.email, role: editingUser.role, department: editingUser.department, status: editingUser.status }
@@ -134,7 +139,6 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
             name: '', email: '', department: '', status: true
         });
         
-        // Effect to reset form when editingUser changes
         useEffect(() => {
             if (editingUser) {
                 setFormState({ 
@@ -145,7 +149,6 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                     status: editingUser.status 
                 });
             } else {
-                // Reset for 'Add User' mode
                 setFormState({ 
                     name: '', 
                     email: '', 
@@ -261,7 +264,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                         </Button>
                     </div>
                 </form>
-            </div>
+            </div >
         );
     };
 
@@ -272,13 +275,12 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                 <h1 className="text-3xl font-bold">User Directory</h1>
                 <p className="text-gray-600">View, manage, and audit all user accounts in the system.</p>
 
-                {/* Filtering and Search Card (Unchanged) */}
+                {/* Filtering and Search Card (content remains the same) */}
                 <Card className="p-6 shadow-md">
                     <h2 className="text-xl font-semibold mb-4">Filter Criteria ({currentUser.role})</h2>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {/* Search Bar */}
                         <div>
-                            {/* ... (Search Bar content remains the same) ... */}
                             <label className="block text-sm font-medium text-gray-700 mb-1">Search by Name or Email</label>
                             <div className="relative">
                                 <Input
@@ -339,7 +341,6 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {/* FINAL FIX: Single wrapper div around the entire table structure */}
                         <div className="overflow-x-auto"> 
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
@@ -395,7 +396,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                     </CardContent>
                 </Card>
                 
-                {/* Conditional Modal for User Creation/Editing */}
+                {/* Conditional Modal for User Creation/Editing (Modal component requires no changes) */}
                 {isModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
                         <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full">

@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 
 import { AgentIdentityRegistry } from '../../src/core/agents/agent-identity';
 
-test('Prompt 1: Agent Registry & Bootstrap of 7 System Agents', () => {
+test('Prompt 1: Agent Registry & Bootstrap of 8 System Agents', () => {
   const registry = new AgentIdentityRegistry();
   const agents = registry.listAgentIdentities();
 
-  assert.equal(agents.length, 7, 'Must bootstrap 7 system agents');
+  assert.equal(agents.length, 8, 'Must bootstrap 8 system agents');
   const roles = agents.map((a) => a.role);
   assert.ok(roles.includes('brand'));
   assert.ok(roles.includes('content'));
@@ -16,6 +16,7 @@ test('Prompt 1: Agent Registry & Bootstrap of 7 System Agents', () => {
   assert.ok(roles.includes('security'));
   assert.ok(roles.includes('analytics'));
   assert.ok(roles.includes('learning'));
+  assert.ok(roles.includes('lead'));
 });
 
 test('Prompt 1: Agent Metadata Schema Validation', () => {

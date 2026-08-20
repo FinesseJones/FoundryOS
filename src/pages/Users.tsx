@@ -50,7 +50,6 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
     const [filterDepartment, setFilterDepartment] = useState('');
     const [filterStatus, setFilterStatus] = useState<boolean>(true); // True for Active, False for Inactive
     
-
     // Mock list of roles (Used for internal logic)
     const allRoles: UserRole[] = ["ADMIN", "ADMIN_PRO", "SUPPORT", "BASIC"];
 
@@ -92,7 +91,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
         }));
     };
 
-    // --- UI Components ---
+    // --- UI Components (No changes needed here) ---
 
     const RoleFilter = () => (
         <div className="space-y-4 pt-2">
@@ -183,46 +182,46 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr className="uppercase text-xs text-gray-500 tracking-wider">
-                                        <th className="px-6 py-3 text-left">Name</th>
-                                        <th className="px-6 py-3 text-left">Email</th>
-                                        <th className="px-6 py-3 text-left">Role</th>
-                                        <th className="px-6 py-3 text-left">Department</th>
-                                        <th className="px-6 py-3 text-left">Status</th>
-                                        <th className="px-6 py-3 text-right">Actions</th>
-                                    </tr >
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {/* Display Logic Improvement: Show "No records found" message */}
-                                    {filteredUsers.length > 0 ? (
-                                        filteredUsers.map((user) => (
-                                            <tr key={user.id} className={`${user.status ? 'hover:bg-green-50' : 'hover:bg-red-50'}`}>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <Badge variant="secondary" className="bg-indigo-100 text-indigo-800">{user.role}</Badge>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.department}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <Badge variant={user.status ? "success" : "destructive"} className="text-xs uppercase">{user.status ? "Active" : "Inactive"}</Badge>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button className="text-indigo-600 hover:underline mr-3">Edit</button>
-                                                    <button className="text-red-600 hover:underline">Deactivate</button>
-                                                </td>
-                                            </tr >
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={6} className="text-center py-12 text-gray-500">
-                                                <Info className="w-8 h-8 mx-auto mb-2 text-indigo-400"/>
-                                                <p>No active users found matching the current criteria.</p>
-                                                <p className="text-sm mt-1">Try adjusting your filters or clearing the search term.</p>
-                                            </td >
-                                        </tr >
+                        {/* Removed the outer div wrapper */}
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr className="uppercase text-xs text-gray-500 tracking-wider">
+                                    <th className="px-6 py-3 text-left">Name</th>
+                                    <th className="px-6 py-3 text-left">Email</th>
+                                    <th className="px-6 py-3 text-left">Role</th>
+                                    <th className="px-6 py-3 text-left">Department</th>
+                                    <th className="px-6 py-3 text-left">Status</th>
+                                    <th className="px-6 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {/* Display Logic Improvement: Show "No records found" message */}
+                                {filteredUsers.length > 0 ? (
+                                    filteredUsers.map((user) => (
+                                        <tr key={user.id} className={`${user.status ? 'hover:bg-green-50' : 'hover:bg-red-50'}`}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                <Badge variant="secondary" className="bg-indigo-100 text-indigo-800">{user.role}</Badge>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.department}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <Badge variant={user.status ? "success" : "destructive"} className="text-xs uppercase">{user.status ? "Active" : "Inactive"}</Badge>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button className="text-indigo-600 hover:underline mr-3">Edit</button>
+                                                <button className="text-red-600 hover:underline">Deactivate</button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-12 text-gray-500">
+                                            <Info className="w-8 h-8 mx-auto mb-2 text-indigo-400"/>
+                                            <p>No active users found matching the current criteria.</p>
+                                            <p className="text-sm mt-1">Try adjusting your filters or clearing the search term.</p>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>

@@ -91,7 +91,7 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                             <span className="text-gray-800">Brand Messaging Engine</span>
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-8">
+                    <CardContent>
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             {/* Input Column 1: Pain Points */}
                             <div className="lg:col-span-1 space-y-6">
@@ -161,7 +161,7 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                                         </div>
                                     </div>
                                     
-                                    {/* FIX APPLIED HERE: Streamlining the button content structure */}
+                                    {/* FINAL FIX APPLIED HERE */}
                                     <Button 
                                         onClick={generateBrandAssets} 
                                         disabled={isLoading}
@@ -182,31 +182,30 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                         </div>
                         
                         {/* Output Section - Visually separated */}
+                        {/* Removed unnecessary nesting around the final CardContent tags to resolve the JSX error */}
                         <Card className="mt-12 shadow-2xl border border-gray-100">
                             <CardHeader className="border-b pb-4">
                                 <CardTitle className="text-2xl">Generated Brand Assets Package</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {/* FIX APPLIED HERE: Ensuring the entire conditional block is treated as a single element */}
-                                {isLoading && (
+                                {/* FIX: Simplifying the conditional structure to guarantee valid single element return */}
+                                {isLoading ? (
                                     <div className="text-center py-10 text-gray-500">
                                         <div className="flex flex-col items-center space-y-4">
                                             <Loader2 className="w-8 h-8 animate-spin text-red-600"/>
                                             <span>Drafting Strategic Tone...</span>
                                         </div>
                                     </div>
-                                )}
-                                {!generatedOutput.fullText && !isLoading && (
+                                ) : (!generatedOutput.fullText && !isLoading) ? (
                                     <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg text-gray-400">
                                         <Zap className="w-6 h-6 mx-auto mb-2"/>
                                         <p className="text-base">Generate assets here using the 3 Pillars above to see your professional brand positioning suite.</p>
-                                    </div>
-                                )}
-                                {generatedOutput.fullText && (
+                                    </div >
+                                ) : (
                                     <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-inner">
                                         <div dangerouslySetInnerHTML={{ __html: generatedOutput.fullText.replace(/\n\n/g, '</br><br>').replace(/\*\*/g, '<strong>') }} />
                                     </div>
-                                )}
+                                );
                             </CardContent>
                         </Card>
                     </Card>

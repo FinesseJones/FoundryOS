@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@/components/ui/separator"; // FIX: Separator imported correctly
 import { Clock, DollarSign, TrendingUp, Users, Zap, ClipboardList, CheckCircle, Loader, FileText, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ const Dashboard = () => {
       <div className="bg-gradient-to-r from-indigo-500 to-indigo-700 p-8 rounded-xl shadow-xl text-white">
         <div className="flex justify-between items-center">
             <div>
-                <h1 className="text-3xl font-extrabold">Welcome Back, Administrator!</h1 > {/* FIX APPLIED HERE */}
+                <h1 className="text-3xl font-extrabold">Welcome Back, Administrator!</h1 >
                 <p className="text-indigo-200 mt-1">Your strategic performance summary for today's readiness.</p>
             </div >
             <button className="bg-white text-indigo-700 hover:bg-gray-100 px-4 py-2 rounded-lg font-semibold shadow-md">
@@ -66,7 +66,7 @@ const Dashboard = () => {
         ))}
       </div >
 
-      <Separater />
+      <Separator />
 
       {/* Main Content Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -111,7 +111,7 @@ const Dashboard = () => {
                         <p className="text-sm text-indigo-700">Project 'Beta Launch' wireframe approval is scheduled for tomorrow. Prepare documentation.</p>
                     </div>
                 </div>
-            </div >
+            </div>
 
             <Button className="w-full mt-6" variant="outline" onClick={() => toast("View Alerts", { description: 'Opening the full task and alert management center.' })}>
                 View All Alerts & Tasks

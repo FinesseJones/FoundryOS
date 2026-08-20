@@ -9,8 +9,9 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 import ProjectDashboardPage from './pages/ProjectDashboard';
+import Leads from './pages/Leads';
 import AuditLog from './pages/AuditLog';
-import Leads from './pages/Leads'; // <-- Import the new Leads page
+import Analytics from './pages/Analytics'; // <-- Import the new Analytics page
 
 // =============================================================
 // SIMULATED AUTHENTICATED USER STATE
@@ -48,11 +49,12 @@ const mockProjectProps = {
     initialProject: {
         name: "Global Platform Overhaul",
         client: "TechCorp Global",
-        status: 'Active',
-        progress: 65,
+        status: 'Discovery', // Starting at Discovery for fresh view
+        progress: 10, // Starting at 10% to show work needed
         totalBudget: 500000,
-        budgetSpent: 325000,
-        dueDate: '2024-12-31',
+        budgetSpent: 0,
+        dueDate: '2025-06-30',
+        currentPhase: 'Initiation',
     }
 }
 
@@ -72,15 +74,16 @@ const AppRouter = () => {
                     <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wider">Logged In As:</p>
                     <p className="font-bold text-lg text-indigo-800">{MOCK_CURRENT_USER.role}</p>
                     <p className="text-sm text-indigo-600 mt-1">Permissions: {Object.keys(MOCK_CURRENT_USER.permissions).filter(key => MOCK_CURRENT_USER.permissions[key]).join(', ').toUpperCase()}</p>
-                </div>
+                </div >
 
                 <nav className="space-y-2">
                     {[
                         { name: 'Dashboard', page: 'dashboard', icon: 'LayoutDashboard' },
                         { name: 'Users', page: 'users', icon: 'Users' },
                         { name: 'Projects', page: 'projects', icon: 'ClipboardList' },
-                        { name: 'Leads CRM', page: 'leads', icon: 'Users' }, // <-- New Link
+                        { name: 'Leads CRM', page: 'leads', icon: 'Users' },
                         { name: 'Settings', page: 'settings', icon: 'SlidersHorizontal' },
+                        { name: 'Analytics', page: 'analytics', icon: 'TrendingUp' }, // <-- New Link
                         { name: 'Audit Log', page: 'audit', icon: 'Clock' }
                     ].map((item) => (
                         <button
@@ -102,7 +105,7 @@ const AppRouter = () => {
             <main className="flex-grow max-w-full">
                 <div className="pt-4 pb-20"> 
                     <Suspense fallback={<div className="text-center py-20 text-gray-500">Loading...</div >}>
-                        {/* Router logic updated to handle the new Leads page */}
+                        {/* Router logic updated to handle all new and existing pages */}
                         {selectedPage === 'dashboard' && <Dashboard currentUser={MOCK_CURRENT_USER} />}
                         {selectedPage === 'users' && <Users initialUsers={mockUsers} currentUser={MOCK_CURRENT_USER} />}
                         {selectedPage === 'settings' && <Settings currentUser={MOCK_CURRENT_USER} />}
@@ -112,8 +115,9 @@ const AppRouter = () => {
                             initialProject={mockProjectProps.initialProject} 
                             currentUser={MOCK_CURRENT_USER}
                         />}
+                        {selectedPage === 'leads' && <Leads initialLeads={mockUsers} currentUser={MOCK_CURRENT_USER} />}
                         {selectedPage === 'audit' && <AuditLog initialLogs={[]} currentUser={MOCK_CURRENT_USER} />}
-                        {selectedPage === 'leads' && <Leads initialLeads={mockUsers} currentUser={MOCK_CURRENT_USER} />} {/* <-- New Page Render */}
+                        {selectedPage === 'analytics' && <Analytics currentUser={MOCK_CURRENT_USER} />} {/* <-- New Page Render */}
                     </Suspense>
                 </div >
             </main>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Clock, FolderOpen, ListChecks, MessageCircle, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner"; // Make sure to use the toast library
+import { toast } from "sonner"; // Use sonner toast for professional feedback
 
 // Mock Data Structures (kept for context)
 interface Task {
@@ -83,22 +83,48 @@ const ProjectDashboardContent: React.FC<ProjectDashboardContentProps> = ({ proje
                 progress: nextStatus === 'Active' ? Math.min(100, project.progress + 10) : project.progress
             };
             setProject(updatedProject);
-
-            // 3. Success feedback + Triggering Notifications
-            let notificationMessage = `Project status updated to ${nextStatus}.`;
-            if (nextStatus === 'Review') {
-                notificationMessage = `ACTION REQUIRED: Project moved to Review status. Please check the assets.`;
-                toast.warning("🚨 Project Alert!", { description: `The project '${projectName}' is ready for internal review.` });
-            } else if (nextStatus === 'Completed') {
-                notificationMessage = `✨ Congratulations! Project ${projectName} has been marked as Completed.`;
-                toast.success("Project Closed!", { description: `All milestones met. Ready for final invoicing.` });
-            }
             
-            // Simulate internal activity
-            toast.info(notificationMessage, { 
-                description: `Status change successfully recorded and team members notified.` 
+            // 3. --- MULTI-CHANNEL NOTIFICATION TRIGGER ---
+            let notificationTitle: string;
+            let notificationMessage: string;
+            let notificationType: 'warning' | 'success' | 'info';
+
+            if (nextStatus === 'Review') {
+                notificationTitle = "Project Review Needed";
+                notificationMessage = `The '${projectName}' project is ready for review. Check required assets.`;
+                notificationType = 'warning';
+            } else if (nextStatus === 'Completed') {
+                notificationTitle = "Project Complete!";
+                notificationMessage = `Congratulations! ${projectName} has been marked as completed. We will now initiate client feedback surveys.`;
+                notificationType = 'success';
+            } else {
+                notificationTitle = "Project Milestone Reached";
+                notificationMessage = `Status successfully updated. Next milestone: Wireframe Approval.`;
+                notificationType = 'info';
+            }
+
+            // A. In-App Notification (Toast)
+            toast(notificationTitle, { 
+                description: notificationMessage, 
+                action: <Button variant="default" onClick={() => toast("View Activity", { description: 'Viewing recent project activity in the feed.' })}>View Activity</Button>,
+                actionOpen: true,
+                duration: 7000
+            });
+
+            // B. Simulate Email Notification
+            await new Promise(resolve => setTimeout(resolve, 500)); // Short delay for realism
+            toast.info("📧 Email Sent", { 
+                description: `Email notification sent to primary contacts (${project.client} team).`,
+                duration: 3000
             });
             
+            // C. Simulate Calendar Event Booking
+            await new Promise(resolve => setTimeout(resolve, 500));
+            toast.success("🗓️ Calendar Updated", { 
+                description: `Related internal call scheduled for ${new Date().toLocaleDateString()} to ensure continuity.` 
+            });
+
+
         } catch (error) {
             // 4. Failure feedback
             toast.error("API Error!", { description: `Could not update project status. Please try again.` });
@@ -184,7 +210,7 @@ const ProjectDashboardContent: React.FC<ProjectDashboardContentProps> = ({ proje
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
-                {/* Column 1: Tasks & To-Dos (Minor updates for polish) */}
+                {/* Column 1: Tasks & To-Dos (unchanged/polished) */}
                 <div className="space-y-8">
                     <Card>
                         <CardHeader>
@@ -199,6 +225,7 @@ const ProjectDashboardContent: React.FC<ProjectDashboardContentProps> = ({ proje
                                 <Button variant="outline" className="text-sm">View All Tasks</Button>
                             </div >
                             <div className="space-y-3">
+                                {/* Task list items... (omitted for brevity but maintained structure) */}
                                 {tasks.map(task => (
                                     <div key={task.id} className={`flex items-start space-x-3 p-3 rounded-md border ${task.isComplete ? 'bg-green-50 border-green-200' : 'bg-white hover:bg-gray-50 border-gray-100'}`}>
                                         <button 
@@ -224,16 +251,18 @@ const ProjectDashboardContent: React.FC<ProjectDashboardContentProps> = ({ proje
                     </Card>
                 </div >
 
-                {/* Column 2: Milestones & Assets (Minor updates for polish) */}
+                {/* Column 2: Milestones & Assets (unchanged/polished) */}
                 <div className="space-y-8">
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center space-x-2 text-xl">
                                 <Clock className="w-5 h-5 text-red-600"/>
                                 <span>Milestones & Timeline</span>
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-3">
+                                {/* Milestone list items... (omitted for brevity but maintained structure) */}
                                 {milestones.map((m, index) => (
                                     <div key={index} className={`flex items-start space-x-3 ${m.completed ? 'text-green-600' : 'text-gray-800'}`}>
                                         <div className={`flex-shrink-0 ${m.completed ? 'text-green-500' : 'text-gray-300'}`}>
@@ -255,7 +284,7 @@ const ProjectDashboardContent: React.FC<ProjectDashboardContentProps> = ({ proje
                         </CardContent>
                     </Card>
                 </div >
-            </div>
+            </div >
         </div>
     );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense, useState, useMemo } from 'react';
-import { ToasterProvider } from './components/ToastProvider'; // <-- Import the new provider
+import { ToasterProvider } from './components/ToastProvider';
 import { Routes, Route } from 'react-router-dom';
 
 // Import all pages and the new log page
@@ -10,8 +10,9 @@ import Users from './pages/Users';
 import Settings from './pages/Settings';
 import ProjectDashboardPage from './pages/ProjectDashboard';
 import Leads from './pages/Leads';
+import Analytics from './pages/Analytics';
 import AuditLog from './pages/AuditLog';
-import Analytics from './pages/Analytics'; // <-- Import the new Analytics page
+import BrandingCenter from './pages/BrandingCenter'; // <-- Import the new Branding module
 
 // =============================================================
 // SIMULATED AUTHENTICATED USER STATE
@@ -28,7 +29,7 @@ const MOCK_CURRENT_USER: { role: string; permissions: { [key: string]: boolean }
     }
 };
 // =============================================================
-// MOCK DATA
+// MOCK DATA (Unchanged)
 const mockUsers = useMemo(() => ([
     { id: 1, name: 'Alice Smith', email: 'alice@corp.com', role: 'ADMIN', department: 'Executive', status: true },
     { id: 2, name: 'Bob Johnson', email: 'bob@corp.com', role: 'SUPPORT', department: 'Support', status: true },
@@ -49,8 +50,8 @@ const mockProjectProps = {
     initialProject: {
         name: "Global Platform Overhaul",
         client: "TechCorp Global",
-        status: 'Discovery', // Starting at Discovery for fresh view
-        progress: 10, // Starting at 10% to show work needed
+        status: 'Discovery',
+        progress: 10,
         totalBudget: 500000,
         budgetSpent: 0,
         dueDate: '2025-06-30',
@@ -69,7 +70,7 @@ const AppRouter = () => {
             <aside className="w-64 bg-white min-h-screen shadow-lg p-6 sticky top-0">
                 <div className="text-2xl font-bold text-indigo-700 mb-6">Dyad CMS</div>
                 
-                {/* Current User Display */}
+                {/* Current User Display (Unchanged) */}
                 <div className="mb-8 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
                     <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wider">Logged In As:</p>
                     <p className="font-bold text-lg text-indigo-800">{MOCK_CURRENT_USER.role}</p>
@@ -83,8 +84,8 @@ const AppRouter = () => {
                         { name: 'Projects', page: 'projects', icon: 'ClipboardList' },
                         { name: 'Leads CRM', page: 'leads', icon: 'Users' },
                         { name: 'Settings', page: 'settings', icon: 'SlidersHorizontal' },
-                        { name: 'Analytics', page: 'analytics', icon: 'TrendingUp' }, // <-- New Link
-                        { name: 'Audit Log', page: 'audit', icon: 'Clock' }
+                        { name: 'Analytics', page: 'analytics', icon: 'TrendingUp' },
+                        { name: 'Branding Center', page: 'branding', icon: 'Rocket' } // <-- New Link
                     ].map((item) => (
                         <button
                             key={item.page}
@@ -117,7 +118,8 @@ const AppRouter = () => {
                         />}
                         {selectedPage === 'leads' && <Leads initialLeads={mockUsers} currentUser={MOCK_CURRENT_USER} />}
                         {selectedPage === 'audit' && <AuditLog initialLogs={[]} currentUser={MOCK_CURRENT_USER} />}
-                        {selectedPage === 'analytics' && <Analytics currentUser={MOCK_CURRENT_USER} />} {/* <-- New Page Render */}
+                        {selectedPage === 'analytics' && <Analytics currentUser={MOCK_CURRENT_USER} />}
+                        {selectedPage === 'branding' && <BrandingCenter currentUser={MOCK_CURRENT_USER} />} {/* <-- New Page Render */}
                     </Suspense>
                 </div >
             </main>

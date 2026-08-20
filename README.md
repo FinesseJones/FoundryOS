@@ -1,6 +1,7 @@
 # TACF — Brand-First Autonomous Business AI Operating System
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict_Mode-blue.svg)](https://www.typescriptlang.org/)
+[![Version](https://img.shields.io/badge/Release-v1.0.0_Production-green.svg)](#)
 [![Tests](https://img.shields.io/badge/Tests-159_Passing-emerald.svg)](./tests)
 [![Architecture](https://img.shields.io/badge/Architecture-Closed_Loop_AI_OS-purple.svg)](#architecture)
 [![License](https://img.shields.io/badge/License-Proprietary-cyan.svg)](#)

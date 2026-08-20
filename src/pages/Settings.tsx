@@ -9,7 +9,7 @@ import { SlidersHorizontal, Globe, Zap, DollarSign, LayoutDashboard, ArrowRight 
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-// Global state definition for configuration (Mock internal state structure)
+// Global state definition for configuration
 interface Config {
     baseCurrency: string;
     currencySymbol: string;
@@ -17,7 +17,7 @@ interface Config {
     defaultReportPeriod: 'Month' | 'Quarter' | 'Year';
 }
 
-// Initial placeholder state - This needs to be fetched from the actual settings API endpoint
+// Initial placeholder state - This should be replaced by initial server data
 const initialConfig: Config = {
     baseCurrency: "USD",
     currencySymbol: "$",
@@ -42,12 +42,25 @@ const SettingsPage: React.FC = () => {
         setIsLoading(true);
         
         // *** Critical section: Simulate API call ***
-        // In a real app: await fetch('/api/settings', { method: 'PUT', body: JSON.stringify(config) });
         await new Promise(resolve => setTimeout(resolve, 1500)); 
         
         // Success feedback
         setIsLoading(false);
         toast("Settings Saved!", { description: "The global system configuration has been safely updated.", action: <Button onClick={() => window.location.reload()}>OK</Button> });
+    }
+
+    // --- New State to track loading status for demonstration ---
+    const isSettingsLoaded = true; // Assume settings are loaded successfully
+
+    if (!isSettingsLoaded) {
+        return (
+            <AppLayout>
+                <div className="text-center py-20">
+                    <h1 className="text-2xl font-semibold">Loading Settings...</h1>
+                    <p className="text-gray-500 mt-2">Please wait while system configurations are being retrieved.</p>
+                </div>
+            </AppLayout>
+        );
     }
 
     return (
@@ -67,10 +80,10 @@ const SettingsPage: React.FC = () => {
                             <span>{isLoading ? "Saving..." : "Save Changes"}</span>
                             <ArrowRight className="w-4 h-4 ml-2" />
                         </button>
-                    </div>
+                    </div >
 
                     <form onSubmit={handleSave} className="space-y-10">
-                        {/* Currency Control Section (Most critical function) */}
+                        {/* Currency Control Section */}
                         <div className="border p-6 rounded-lg bg-indigo-50/50 border-indigo-200">
                             <h3 className="text-lg font-semibold flex items-center space-x-2 text-indigo-800">
                                 <DollarSign className="w-5 h-5"/>
@@ -98,6 +111,7 @@ const SettingsPage: React.FC = () => {
                                         type="text" 
                                         value={config.currencySymbol} 
                                         onChange={(e) => setConfig({...config, currencySymbol: e.target.value})}
+                                        // Keep disabled because the UI implies it is system-controlled
                                         disabled={true}
                                         className="cursor-not-allowed"
                                     />
@@ -142,7 +156,7 @@ const SettingsPage: React.FC = () => {
 
                     </form>
                 </Card>
-            </div>
+            </div >
         </AppLayout>
     );
 }

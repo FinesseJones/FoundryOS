@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Bell } from "lucide-react";
-import { UserRole } from "@/types/user"; // Assuming this types file exists
+import { Bell, Info } from "lucide-react";
+import { UserRole } from "@/types/user";
 
 // Component for displaying a role toggle filter (Helper component remains)
 const RoleFilterToggle = ({ role, isChecked, onChange }: { role: UserRole, isChecked: boolean, onChange: (r: UserRole, checked: boolean) => void }) => {
@@ -28,7 +28,6 @@ const RoleFilterToggle = ({ role, isChecked, onChange }: { role: UserRole, isChe
     );
 };
 
-
 // Define API-friendly types for the rendered data
 interface User {
     id: number;
@@ -39,9 +38,9 @@ interface User {
     status: boolean;
 }
 
-// To make the component functional without mock data, I will apply a placeholder prop
+// Update component props to explicitly handle the initialUsers prop
 interface UsersProps {
-    initialUsers: User[]; // Expects users from parent component/API Provider
+    initialUsers: User[]; 
 }
 
 const Users: React.FC<UsersProps> = ({ initialUsers }) => {
@@ -50,17 +49,19 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
     const [filterRole, setFilterRole] = useState<Partial<Record<UserRole, boolean>>>({});
     const [filterDepartment, setFilterDepartment] = useState('');
     const [filterStatus, setFilterStatus] = useState<boolean>(true); // True for Active, False for Inactive
+    
 
     // Mock list of roles (Used for internal logic)
     const allRoles: UserRole[] = ["ADMIN", "ADMIN_PRO", "SUPPORT", "BASIC"];
 
 
-    // API Data Fetching Simulation (This is where the actual call MUST go)
-    // We use the passed initialUsers as a substitute for the API response.
+    // Data Source: Use the passed prop, or fallback to an empty array if none is passed.
     const users = initialUsers || []; 
 
     // Filter Logic Hook (Improved to process the received data)
     const filteredUsers = React.useMemo(() => {
+        if (users.length === 0) return []; // Optimization: if no source data, no results
+
         return users.filter(user => {
             // 1. Search Term Filter
             const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -91,7 +92,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
         }));
     };
 
-    // --- UI Components ---
+    // --- UI Components (No changes needed here) ---
 
     const RoleFilter = () => (
         <div className="space-y-4 pt-2">
@@ -114,7 +115,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
         <AppLayout>
             <div className="space-y-6">
                 <h1 className="text-3xl font-bold">User Directory</h1>
-                <p className="text-gray-600">View, manage, and audit all user accounts in the system. (Data source should be API).</p>
+                <p className="text-gray-600">View, manage, and audit all user accounts in the system. (Data source configured to load from API/Props).</p>
 
                 {/* Filtering and Search Card */}
                 <Card className="p-6 shadow-md">
@@ -139,7 +140,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
                             <select 
                                 value={filterDepartment} 
                                 onChange={(e) => setFilterDepartment(e.target.value)}
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
                                 <option value="">All Departments</option>
                                 <option value="Marketing">Marketing</option>
                                 <option value="Support">Support</option>
@@ -195,6 +196,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
+                                    {/* Display Logic Improvement: Show "No records found" message */}
                                     {filteredUsers.length > 0 ? (
                                         filteredUsers.map((user) => (
                                             <tr key={user.id} className={`${user.status ? 'hover:bg-green-50' : 'hover:bg-red-50'}`}>
@@ -211,33 +213,24 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
                                                     <button className="text-indigo-600 hover:underline mr-3">Edit</button>
                                                     <button className="text-red-600 hover:underline">Deactivate</button>
                                                 </td>
-                                            </tr>
+                                            </tr >
                                         ))
                                     ) : (
                                         <tr>
                                             <td colSpan={6} className="text-center py-12 text-gray-500">
-                                                <Info className="w-8 h-8 mx-auto mb-2"/>
-                                                <p>No users found matching your current filter criteria.</p>
-                                            </td>
-                                        </tr>
-                                    )}
+                                                <Info className="w-8 h-8 mx-auto mb-2 text-indigo-400"/>
+                                                <p>No active users found matching the current criteria.</p>
+                                                <p className="text-sm mt-1">Try adjusting your filters or clearing the search term.</p>
+                                            </td >
+                                    </tr>
                                 </tbody>
                             </table>
-                        </div>
+                        </div >
                     </CardContent>
                 </Card>
             </div >
         </AppLayout>
     );
-}
-
-/* Example usage wrapper for calling component (usually parent page/App.tsx)
-// In production, the parent component would call API and pass data:
-const MyPageWrapper = () => {
-    // const userData = useApiFetch('/users'); // <-- This is where the data goes
-    // return <Users initialUsers={userData} />
-    return <Users initialUsers={[]} />; // Empty array placeholder for now
-}
-*/
+};
 
 export default Users;

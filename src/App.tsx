@@ -3,17 +3,18 @@
 import React, { Suspense, useState, useMemo } from 'react';
 import { Routes, Route } from 'react-router-dom';
 
-// Import all pages
+// Import all pages and the new log page
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 import ProjectDashboardPage from './pages/ProjectDashboard';
+import AuditLog from './pages/AuditLog'; // <-- New import
 import { UserRole } from "@/types/user";
 
 // =============================================================
 // SIMULATED AUTHENTICATED USER STATE
-// In a real application, this data would come from a session or Auth hook.
-// We will default to an ADMIN user for best demonstration.
+// We maintain the same state for structural consistency.
+// =============================================================
 const MOCK_CURRENT_USER: { role: UserRole; permissions: Record<string, boolean> } = {
     role: "ADMIN",
     permissions: {
@@ -21,6 +22,7 @@ const MOCK_CURRENT_USER: { role: UserRole; permissions: Record<string, boolean> 
         settingsManagement: true, // Admin can change global settings
         ollamaAccess: true, // Admin can access AI models
         deleteCriticalRecords: true, // Admin can delete critical records
+        viewAuditLogs: true, // Explicit permission for viewing logs
     }
 };
 // =============================================================
@@ -69,7 +71,7 @@ const AppRouter = () => {
                     <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wider">Logged In As:</p>
                     <p className="font-bold text-lg text-indigo-800">{MOCK_CURRENT_USER.role}</p>
                     <p className="text-sm text-indigo-600 mt-1">Permissions: {Object.keys(MOCK_CURRENT_USER.permissions).filter(key => MOCK_CURRENT_USER.permissions[key]).join(', ').toUpperCase()}</p>
-                </div>
+                </div >
 
                 <nav className="space-y-2">
                     {[
@@ -77,6 +79,7 @@ const AppRouter = () => {
                         { name: 'Users', page: 'users', icon: 'Users' },
                         { name: 'Projects', page: 'projects', icon: 'ClipboardList' },
                         { name: 'Settings', page: 'settings', icon: 'SlidersHorizontal' },
+                        { name: 'Audit Log', page: 'audit', icon: 'Clock' } // <-- New Link
                     ].map((item) => (
                         <button
                             key={item.page}
@@ -96,7 +99,7 @@ const AppRouter = () => {
             {/* Main Content Area */}
             <main className="flex-grow max-w-full">
                 <div className="pt-4 pb-20"> 
-                    <Suspense fallback={<div className="text-center py-20 text-gray-500">Loading...</div>}>
+                    <Suspense fallback={<div className="text-center py-20 text-gray-500">Loading...</div >}>
                         {/* Pass the current user state object to all pages */}
                         {selectedPage === 'dashboard' && <Dashboard currentUser={MOCK_CURRENT_USER} />}
                         {selectedPage === 'users' && <Users initialUsers={mockUsers} currentUser={MOCK_CURRENT_USER} />}
@@ -107,6 +110,7 @@ const AppRouter = () => {
                             initialProject={mockProjectProps.initialProject} 
                             currentUser={MOCK_CURRENT_USER} // Passed down
                         />}
+                        {selectedPage === 'audit' && <AuditLog initialLogs={[]} currentUser={MOCK_CURRENT_USER} />} {/* <-- New Page Render */}
                     </Suspense>
                 </div >
             </main>

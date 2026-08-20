@@ -5,8 +5,7 @@ import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Zap, Search, ShieldCheck, Rocket } from "lucide-react";
-import { Settings, Loader2 } from "lucide-react"; // Added Loader2 import
+import { Zap, Search, ShieldCheck, Rocket, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 // Define types for clarity
@@ -65,7 +64,7 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
         }
     };
 
-    // Display component for structured output (Revised for better robust rendering)
+    // Display component for structured output (Remains polished)
     const DisplayedOutput = generatedOutput.fullText ? (
         <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-inner">
             <div dangerouslySetInnerHTML={{ __html: generatedOutput.fullText.replace(/\n\n/g, '</br><br>').replace(/\*\*/g, '<strong>') }} />
@@ -74,7 +73,7 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
         <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg text-gray-400">
             <Zap className="w-6 h-6 mx-auto mb-2"/>
             <p className="text-base">Generate assets here using the 3 Pillars above to see your professional brand positioning suite.</p>
-        </div>
+        </div >
     );
 
     return (
@@ -161,6 +160,8 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                                             />
                                         </div>
                                     </div>
+                                    
+                                    {/* FIX APPLIED HERE: Streamlining the button content structure */}
                                     <Button 
                                         onClick={generateBrandAssets} 
                                         disabled={isLoading}
@@ -168,12 +169,12 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                                     >
                                         {isLoading ? (
                                             <>
-                                                <Loader2 className="w-5 h-5 animate-spin mr-2"/> Analyzing Data...</>
-                                            </>
+                                                <Loader2 className="w-5 h-5 animate-spin mr-2"/> Analyzing Data...
+                                          </>
                                         ) : (
                                             <>
                                                 Generate Brand Positioning Suite <Rocket className="ml-2 h-5 w-5 inline transform transform-none"/>
-                                            </>
+                                          </>
                                         )}
                                     </Button>
                                 </div >
@@ -186,24 +187,26 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                                 <CardTitle className="text-2xl">Generated Brand Assets Package</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {/* FIX: Ensuring the ternary operator returns a single element */}
-                                {isLoading ? (
+                                {/* FIX APPLIED HERE: Ensuring the entire conditional block is treated as a single element */}
+                                {isLoading && (
                                     <div className="text-center py-10 text-gray-500">
-                                        <div className="flex items-center justify-center space-x-2">
+                                        <div className="flex flex-col items-center space-y-4">
                                             <Loader2 className="w-8 h-8 animate-spin text-red-600"/>
                                             <span>Drafting Strategic Tone...</span>
                                         </div>
-                                    </div> 
-                                : (!generatedOutput.fullText && !isLoading) ? (
+                                    </div>
+                                )}
+                                {!generatedOutput.fullText && !isLoading && (
                                     <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg text-gray-400">
                                         <Zap className="w-6 h-6 mx-auto mb-2"/>
-                                        <p className="text-base">Define the client pain points and click "Generate" to see your professional brand positioning suite.</p>
-                                    </div >
-                                ) : (
+                                        <p className="text-base">Generate assets here using the 3 Pillars above to see your professional brand positioning suite.</p>
+                                    </div>
+                                )}
+                                {generatedOutput.fullText && (
                                     <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-inner">
                                         <div dangerouslySetInnerHTML={{ __html: generatedOutput.fullText.replace(/\n\n/g, '</br><br>').replace(/\*\*/g, '<strong>') }} />
                                     </div>
-                                );
+                                )}
                             </CardContent>
                         </Card>
                     </Card>

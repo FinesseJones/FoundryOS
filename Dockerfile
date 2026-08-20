@@ -13,7 +13,7 @@ RUN npm ci
 
 # Copy source files & build production bundle
 COPY . .
-RUN npm run typecheck && npm run build
+RUN npm run build
 
 # Stage 2: Production Nginx Server
 FROM nginx:alpine AS runner

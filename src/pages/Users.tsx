@@ -92,7 +92,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
         }));
     };
 
-    // --- UI Components (No changes needed here) ---
+    // --- UI Components ---
 
     const RoleFilter = () => (
         <div className="space-y-4 pt-2">
@@ -193,7 +193,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
                                         <th className="px-6 py-3 text-left">Department</th>
                                         <th className="px-6 py-3 text-left">Status</th>
                                         <th className="px-6 py-3 text-right">Actions</th>
-                                    </tr>
+                                    </tr >
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {/* Display Logic Improvement: Show "No records found" message */}
@@ -222,10 +222,10 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
                                                 <p>No active users found matching the current criteria.</p>
                                                 <p className="text-sm mt-1">Try adjusting your filters or clearing the search term.</p>
                                             </td >
-                                    </tr>
+                                        </tr >
                                 </tbody>
                             </table>
-                        </div >
+                        </div>
                     </CardContent>
                 </Card>
             </div >

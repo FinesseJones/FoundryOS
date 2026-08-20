@@ -9,12 +9,13 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 import ProjectDashboardPage from './pages/ProjectDashboard';
-import AuditLog from './pages/AuditLog'; // <-- New page
+import AuditLog from './pages/AuditLog';
+import Leads from './pages/Leads'; // <-- Import the new Leads page
 
 // =============================================================
 // SIMULATED AUTHENTICATED USER STATE
 // =============================================================
-const MOCK_CURRENT_USER: { role: UserRole; permissions: Record<string, boolean> } = {
+const MOCK_CURRENT_USER: { role: string; permissions: { [key: string]: boolean } } = {
     role: "ADMIN",
     permissions: {
         userManagement: true,
@@ -22,7 +23,7 @@ const MOCK_CURRENT_USER: { role: UserRole; permissions: Record<string, boolean> 
         ollamaAccess: true,
         deleteCriticalRecords: true,
         viewAuditLogs: true,
-        userManagement: true, // Explicitly defining role-specific checks
+        userManagement: true,
     }
 };
 // =============================================================
@@ -78,6 +79,7 @@ const AppRouter = () => {
                         { name: 'Dashboard', page: 'dashboard', icon: 'LayoutDashboard' },
                         { name: 'Users', page: 'users', icon: 'Users' },
                         { name: 'Projects', page: 'projects', icon: 'ClipboardList' },
+                        { name: 'Leads CRM', page: 'leads', icon: 'Users' }, // <-- New Link
                         { name: 'Settings', page: 'settings', icon: 'SlidersHorizontal' },
                         { name: 'Audit Log', page: 'audit', icon: 'Clock' }
                     ].map((item) => (
@@ -100,6 +102,7 @@ const AppRouter = () => {
             <main className="flex-grow max-w-full">
                 <div className="pt-4 pb-20"> 
                     <Suspense fallback={<div className="text-center py-20 text-gray-500">Loading...</div >}>
+                        {/* Router logic updated to handle the new Leads page */}
                         {selectedPage === 'dashboard' && <Dashboard currentUser={MOCK_CURRENT_USER} />}
                         {selectedPage === 'users' && <Users initialUsers={mockUsers} currentUser={MOCK_CURRENT_USER} />}
                         {selectedPage === 'settings' && <Settings currentUser={MOCK_CURRENT_USER} />}
@@ -110,10 +113,11 @@ const AppRouter = () => {
                             currentUser={MOCK_CURRENT_USER}
                         />}
                         {selectedPage === 'audit' && <AuditLog initialLogs={[]} currentUser={MOCK_CURRENT_USER} />}
+                        {selectedPage === 'leads' && <Leads initialLeads={mockUsers} currentUser={MOCK_CURRENT_USER} />} {/* <-- New Page Render */}
                     </Suspense>
                 </div >
             </main>
-        </div>
+        </div >
     );
 };
 

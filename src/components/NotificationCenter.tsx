@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-// Define the structure for a single notification (Remains the contract with the API)
+// Define the structure for a single notification
 interface Notification {
     id: number;
     title: string;
@@ -24,6 +24,7 @@ interface NotificationCenterProps {
     notifications: Notification[]; // **CORE CHANGE: Data now passed via props**
 }
 
+// The component definition
 const NotificationCenter: React.FC<NotificationCenterProps> = ({ notifications }) => {
     return (
         <Card className="p-0 overflow-hidden shadow-md">
@@ -38,7 +39,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ notifications }
             </CardHeader>
             
             <CardContent className="p-0 p-6 pt-4">
-                {/* **CORE CHANGE: Map over the received 'notifications' prop instead of mock data.** */}
+                {/* Map over the received 'notifications' prop */}
                 {notifications && notifications.length > 0 ? (
                     <div className="space-y-4">
                          {notifications.map((notification) => (
@@ -68,4 +69,5 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ notifications }
     );
 }
 
-export default NotificationCenter;
+// Use named export ONLY
+export { NotificationCenter };

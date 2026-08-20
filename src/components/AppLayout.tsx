@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Users, Settings, Zap, ClipboardList } from 'lucide-react';
+import { BookOpen, Users, Settings, Zap, ClipboardList, BarChart2 } from 'lucide-react'; // Added BarChart2 icon
+import { Button } from '@/components/ui/button'; // Assuming Button component is available for AppLayout
 
 interface NavItem {
     icon: React.ReactNode;
@@ -15,14 +16,14 @@ const primaryNavigation: NavItem[] = [
     { icon: <BookOpen className="w-5 h-5" />, label: "Dashboard", path: "/" },
     { icon: <Users className="w-5 h-5" />, label: "Teams", path: "/users" },
     { icon: <ClipboardList className="w-5 h-5" />, label: "Projects", path: "/projects" },
-    { icon: <Zap className="w-5 h-5" />, label: "Automation", path: "/automation" }, // New Link
+    { icon: <BarChart2 className="w-5 h-5" />, label: "Reports", path: "/reports" }, // Updated/Added link
+    { icon: <Zap className="w-5 h-5" />, label: "Automation", path: "/automation" },
     { icon: <Settings className="w-5 h-5" />, label: "Settings", path: "/settings" },
 ];
 
 // Helper function to check if the current user role has access (simulated)
 function hasPermission(role: string): boolean {
     const rolesList: Array<'SuperAdmin' | 'Manager' | 'Client'>[] = [
-        // Since we are simulating, we treat all current users as at least 'Basic'
         ['SuperAdmin', 'Manager', 'Client', 'Basic'] 
     ];
     return rolesList.includes(role);
@@ -46,7 +47,9 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         // Check permission before rendering the link
                         if (!hasPermission(currentUserRole)) return null;
 
+                        // Determine the active link state
                         const isActive = location.pathname === item.path;
+                        
                         return (
                             <Link 
                                 key={item.label} 
@@ -69,20 +72,21 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
             
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 <header className="p-6 border-b flex justify-between items-center sticky top-0 bg-white z-10">
-                    <h1 className="text-2xl font-semibold">{/* Title will be derived from route */}</h1>
+                    {/* Title will be derived from route */}
+                    <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
                     <div className="flex items-center space-x-4">
                         <Button variant="outline">Logout</Button>
-                    </div>
+                    </div >
                 </header>
                 <main className="flex-1 overflow-y-auto">
                     {children}
                 </main>
-            </div>
+            </div >
         </div>
     );
 }

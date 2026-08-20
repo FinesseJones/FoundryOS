@@ -1,107 +1,135 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
+import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { TrendingUp, DollarSign, Users } from "lucide-react";
-import AppLayout from "@/components/AppLayout"; // The alias should work here
+import { DollarSign, TrendingUp, Clock, Users, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
-// Helper component (moved up for better readability)
-interface KpiCardProps {
+// Define the structure for a KPI card
+interface KPIData {
     title: string;
     value: string;
-    change: string;
     icon: React.ReactNode;
-    color: "text-indigo-600" | "text-green-600" | "text-red-600";
+    change: string; // e.g., "+12% vs last month"
+    colorClass: string; // Tailwind class for color
 }
 
-const KpiCard: React.FC<KpiCardProps> = ({ title, value, change, icon, color }) => (
-    <Card className="flex items-center justify-between p-4">
-        <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${color} bg-opacity-15`}>
-                {icon}
-            </div>
-            <h3 className="text-sm font-medium text-gray-500">{title}</h3>
-        </div>
-        <div>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
-            <p className={`text-sm ${color} font-semibold`}>{change}</p>
-        </div>
-    </Card>
-);
+const mockKPIs: KPIData[] = [
+    { title: "Total Projected Revenue", value: "$1.2M", icon: <DollarSign className="w-5 h-5" />, change: "+8.5%", colorClass: "text-green-500" },
+    { title: "Active Projects", value: "14", icon: <Clock className="w-5 h-5" />, change: "+1 since last month", colorClass: "text-indigo-500" },
+    { title: "Average Project Value", value: "$65,000", icon: <Users className="w-5 h-5" />, change: "Stable", colorClass: "text-yellow-500" },
+    { title: "Completion Rate", value: "78%", icon: <CheckCircle className="w-5 h-5" />, change: "2% increase", colorClass: "text-blue-500" },
+];
 
-export default function ReportsPage() {
+
+const ReportsContent: React.FC = () => {
+    const [timeframe, setTimeframe] = useState("Last 12 Months");
+
+    // Simulate fetching the data
+    const handleTimeframeChange = async (newTimeframe: string) => {
+        // Simulate network fetch delay
+        await new Promise(resolve => setTimeout(resolve, 500)); 
+        toast.info("Data Updated", { 
+            description: `Statistics refreshed for ${newTimeframe}.` 
+        });
+    };
+
     return (
-        <AppLayout>
-            <div className="space-y-8 max-w-7xl mx-auto pt-6">
-                <h1 className="text-4xl font-bold text-gray-900">Reports & Analytics</h1>
-                <p className="text-lg text-gray-600">Get a full overview of your agency's performance, finances, and project progress.</p>
-                
-                {/* KPI Section */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <KpiCard 
-                        title="Total Revenue" 
-                        value="$1.2M" 
-                        change="+12.5%" 
-                        icon={<DollarSign className="w-6 h-6" />}
-                        color="text-green-600"
-                    />
-                    <KpiCard 
-                        title="Active Projects" 
-                        value="14" 
-                        change="+2 from last month" 
-                        icon={<TrendingUp className="w-6 h-6" />}
-                        color="text-indigo-600"
-                    />
-                    <KpiCard 
-                        title="Client Satisfaction" 
-                        value="4.8/5" 
-                        change="+0.1 points" 
-                        icon={<Users className="w-6 h-6" />}
-                        color="text-green-600"
-                    />
-                    <KpiCard 
-                        title="Team Utilization" 
-                        value="85%" 
-                        change="-1% (Goal: 90%)" 
-                        icon={<Users className="w-6 h-6" />}
-                        color="text-red-600"
-                    />
-                </div >
+        <div className="space-y-8">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-3">
+                <ReportSquare className="w-6 h-6 text-green-600"/>
+                <span className="text-xl">Analytics & Reporting</span>
+            </h1>
+            <p className="text-lg text-gray-600">Analyze your performance, track key metrics, and identify growth opportunities.</p>
 
-                {/* Chart/Visualization Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    {/* Revenue Trend Chart (Mock) */}
-                    <Card className="lg:col-span-2">
-                        <CardHeader>
-                            <CardTitle class="flex items-center space-x-3"><TrendingUp className="w-5 h-5 text-indigo-600"/><span>Revenue Trend (Last 12 Months)</span></CardTitle>
-                        </CardHeader>
-                        <CardContent className="h-72 flex items-center justify-center">
-                            <div className="text-muted-foreground text-center">
-                                [Revenue Trend Graph Placeholder: Visualizing monthly revenue growth.]
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Project Status Pie Chart (Mock) */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle class="flex items-center space-x-3"><Users className="w-5 h-5 text-green-600"/><span>Project Status Breakdown</span></CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="text-center h-48 flex items-center justify-center">
-                                [Pie Chart Placeholder: Showing active vs. completed projects.]
-                            </div>
-                            <div className="space-y-2">
-                                <p className="font-medium text-gray-700">Active: 6 (Blue)</p>
-                                <p className="font-medium text-gray-700">Review: 3 (Orange)</p>
-                                <p className="font-medium text-gray-700">Completed: 5 (Green)</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+            {/* Report Filtering and Timeframe */}
+            <div className="flex justify-between items-center pt-2">
+                <div className="flex space-x-3">
+                    <Button 
+                        variant={timeframe === "Last 12 Months" ? "default" : "outline"}
+                        onClick={() => handleTimeframeChange("Last 12 Months")}
+                    >
+                        Last 12 Months
+                    </Button>
+                    <Button 
+                        variant={timeframe === "Last Quarter" ? "default" : "outline"}
+                        onClick={() => handleTimeframeChange("Last Quarter")}
+                    >
+                        Last Quarter
+                    </Button>
+                    <Button 
+                        variant={timeframe === "Custom" ? "default" : "outline"}
+                        onClick={() => { toast('Date Picker', { description: 'Opening advanced date range selection modal.' }); }}
+                    >
+                        Custom Range
+                    </Button>
                 </div>
+                <Button onClick={() => toast('Export', { description: 'Generating PDF report containing all displayed data.' })}>
+                    Export Report
+                </Button>
             </div>
-        </AppLayout>
+
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {mockKPIs.map((kpi) => (
+                    <Card key={kpi.title} className="shadow-lg hover:scale-[1.02] transition-transform">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-sm font-medium text-gray-500">{kpi.title}</CardTitle>
+                            <div className={`p-2 rounded-full ${kpi.colorClass}/20 ${kpi.colorClass}`}>
+                                {kpi.icon}
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-gray-900">{kpi.value}</div>
+                            <p className={`text-sm font-medium ${kpi.colorClass}`}>{kpi.change} vs previous period</p>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+
+            {/* Charting and Visualizations */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Column 1: Revenue Trend Chart (Primary Chart) */}
+                <Card className="lg:col-span-2 p-6">
+                    <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2"><TrendingUp className="w-5 h-5 text-indigo-600"/><span>Revenue Trend Overview</span></h3>
+                    <div className="h-[400px] bg-gray-50 rounded-lg border flex items-center justify-center text-gray-400">
+                        [DASHBOARD CHART CANVAS: Time-series graph showing monthly revenue projections.]
+                    </div>
+                    <p className="text-sm text-gray-500 mt-4">Source: Consolidated Project & Invoicing Data.</p>
+                </Card>
+
+                {/* Column 2: Status Breakdown (Secondary Chart/List) */}
+                <Card className="p-6">
+                    <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2"><Users className="w-5 h-5 text-green-600"/><span>Project Status Breakdown</span></h3>
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center border-b pb-2">
+                            <span className="flex items-center space-x-2"><Badge variant="outline" className="text-blue-600 bg-blue-50/80">{<Clock className="w-4 h-4"/>} <span>Active</span></Badge></span>
+                            <span className="font-bold text-gray-900">14</span>
+                        </div>
+                        <div className="flex justify-between items-center border-b pb-2">
+                            <span className="flex items-center space-x-2"><Badge variant="outline" className="text-amber-600 bg-amber-50/80">{<Pencil className="w-4 h-4"/>} <span>Planning</span></Badge></span>
+                            <span className="font-bold text-gray-900">3</span>
+                        </div>
+                        <div className="flex justify-between items-center border-b pb-2">
+                            <span className="flex items-center space-x-2"><Badge variant="outline" className="text-blue-600 bg-blue-50/80">{<CheckCircle className="w-4 h-4"/>} <span>Review</span></Badge></span>
+                            <span className="font-bold text-gray-900">1</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="flex items-center space-x-2"><Badge variant="outline" className="text-green-600 bg-green-50/80">{<CheckCircle className="w-4 h-4"/>} <span>Completed</span></Badge></span>
+                            <span className="font-bold text-gray-900">10</span>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+        </div>
     );
+}
+
+export default function ReportsPageWrapper() {
+    return <AppLayout><ReportsContent /></AppLayout>
 }

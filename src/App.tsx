@@ -30,6 +30,8 @@ import AuditLog from './pages/AuditLog';
 import BrandingCenter from './pages/BrandingCenter';
 import ServicesCatalog from './pages/ServicesCatalog';
 import WebsiteStudio from './pages/WebsiteStudio';
+import Reports from './pages/Reports';
+import CustomerIntelligence from './pages/CustomerIntelligence';
 
 // =============================================================
 // MOCK AUTHENTICATED USER STATE
@@ -86,12 +88,14 @@ interface NavItemConfig {
 
 const navItems: NavItemConfig[] = [
     { name: 'Dashboard', page: 'dashboard', icon: LayoutDashboard, section: 'core' },
+    { name: 'Business DNA OS', page: 'customer_intelligence', icon: Sparkles, badge: 'AI OS', section: 'core' },
     { name: 'Services Catalog', page: 'services', icon: Tag, badge: 'New', section: 'core' },
     { name: 'Branding Center', page: 'branding', icon: Rocket, badge: 'AI', section: 'core' },
     { name: 'Website Studio', page: 'studio', icon: Globe, badge: 'New', section: 'tools' },
     { name: 'Projects', page: 'projects', icon: ClipboardList, section: 'tools' },
     { name: 'Leads CRM', page: 'leads', icon: Zap, section: 'tools' },
     { name: 'Analytics & KPIs', page: 'analytics', icon: TrendingUp, section: 'tools' },
+    { name: 'Reports & Revenue', page: 'reports', icon: FileText, section: 'tools' },
     { name: 'Users & Teams', page: 'users', icon: UsersIcon, section: 'admin' },
     { name: 'Audit Trail', page: 'audit', icon: Shield, section: 'admin' },
     { name: 'Settings', page: 'settings', icon: SlidersHorizontal, section: 'admin' }
@@ -99,12 +103,14 @@ const navItems: NavItemConfig[] = [
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
     dashboard: { title: "Executive Dashboard", subtitle: "Real-time governance, revenue forecasting, and strategic consulting services." },
+    customer_intelligence: { title: "Business DNA & Customer Intelligence OS", subtitle: "Live multi-domain intelligence across Marketing, Sales, Operations, and Zero-Trust Security." },
     services: { title: "Services Catalog & Offerings", subtitle: "Strategic transformation blueprints, digital audits, and deliverables." },
     branding: { title: "AI Branding & Positioning Center", subtitle: "Generate automated market positioning, taglines, and value proposition guides." },
     studio: { title: "AI Website Studio & Staging Sandbox", subtitle: "Autonomously generate, preview, customize, and export client websites." },
     projects: { title: "Project Governance & Deep Dive", subtitle: "Track milestones, budget burn, risk ratings, and delivery phases." },
     leads: { title: "Client Pipeline & Opportunity CRM", subtitle: "Analyze economic feasibility, process gaps, and key executive sponsors." },
     analytics: { title: "Operations Analytics & Capacity", subtitle: "Departmental workload forecasting, lead time bottlenecks, and recommendations." },
+    reports: { title: "Financial & Operational Reports", subtitle: "Multi-currency financial forecasting, spent budget analysis, and delivery reports." },
     users: { title: "User & Team Directory", subtitle: "Manage enterprise accounts, RBAC permissions, and team assignments." },
     audit: { title: "System Audit Logs", subtitle: "Immutable chronological trail of security, data updates, and governance events." },
     settings: { title: "Global System Settings", subtitle: "Configure multi-currency baselines, time zones, and reporting defaults." }
@@ -310,6 +316,7 @@ const AppRouter = () => {
                     <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
                         <Suspense fallback={<div className="text-center py-20 text-slate-400">Loading module workspace...</div>}>
                             {selectedPage === 'dashboard' && <Dashboard currentUser={MOCK_CURRENT_USER} onNavigate={setSelectedPage} />}
+                            {selectedPage === 'customer_intelligence' && <CustomerIntelligence />}
                             {selectedPage === 'services' && <ServicesCatalog />}
                             {selectedPage === 'branding' && <BrandingCenter currentUser={MOCK_CURRENT_USER} />}
                             {selectedPage === 'studio' && <WebsiteStudio initialLead={activeStudioLead} allLeads={mockLeads} />}
@@ -329,6 +336,7 @@ const AppRouter = () => {
                                 }}
                             />}
                             {selectedPage === 'analytics' && <Analytics currentUser={MOCK_CURRENT_USER} />}
+                            {selectedPage === 'reports' && <Reports />}
                             {selectedPage === 'users' && <Users initialUsers={mockUsers} currentUser={MOCK_CURRENT_USER} />}
                             {selectedPage === 'audit' && <AuditLog initialLogs={[]} currentUser={MOCK_CURRENT_USER} />}
                             {selectedPage === 'settings' && <Settings currentUser={MOCK_CURRENT_USER} />}

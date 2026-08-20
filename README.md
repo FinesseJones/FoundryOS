@@ -1,7 +1,7 @@
 # TACF — Brand-First Autonomous Business AI Operating System
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict_Mode-blue.svg)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/Tests-121_Passing-emerald.svg)](./tests)
+[![Tests](https://img.shields.io/badge/Tests-159_Passing-emerald.svg)](./tests)
 [![Architecture](https://img.shields.io/badge/Architecture-Closed_Loop_AI_OS-purple.svg)](#architecture)
 [![License](https://img.shields.io/badge/License-Proprietary-cyan.svg)](#)
 
@@ -57,7 +57,7 @@ Business DNA Core     Intelligence Layer      Execution Engine
 - **Workflow Marketplace**: 8 pre-built templates plus customer workflow builder & versioning engine.
 
 ### 🛡️ 4. Enterprise Agent Governance
-- **Agent Identity Registry**: Bootstraps 7 core system agents (`@brand`, `@content`, `@publishing`, `@website`, `@security`, `@analytics`, `@learning`).
+- **Agent Identity Registry**: Bootstraps 8 core system agents (`@brand`, `@content`, `@publishing`, `@website`, `@security`, `@analytics`, `@learning`, `@lead`).
 - **Granular RBAC Permission Matrix**: 12 permission actions mapped across 4 data security classification levels (`PUBLIC`, `INTERNAL`, `CONFIDENTIAL`, `RESTRICTED`).
 - **Automation Versioning & Rollbacks**: `v1`, `v2`, `v3` snapshot tracking with pre-flight migration safety checks and atomic rollbacks.
 - **Marketplace Publishing**: Package submission, review/approval workflow, and single-click customer installation.
@@ -67,16 +67,16 @@ Business DNA Core     Intelligence Layer      Execution Engine
 
 ## 🛠️ Verification & Test Suite
 
-The platform is fully verified with **121 passing tests across 37 test files** and 0 TypeScript compilation errors.
+The platform is fully verified with **159 passing tests across 48 test files** and 0 TypeScript compilation errors.
 
 ### Type Check
 ```bash
-npx tsc --noEmit
+npm run typecheck
 ```
 
 ### Run Test Suite
 ```bash
-npx tsx --test tests/hardening/*.test.ts tests/e2e/*.test.ts
+npx tsx --test src/**/*.test.ts tests/e2e/*.test.ts tests/hardening/*.test.ts
 ```
 
 ---

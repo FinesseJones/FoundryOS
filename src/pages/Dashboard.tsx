@@ -6,9 +6,9 @@ import { Separator } from "@/components/ui/separator";
 import { Clock, DollarSign, TrendingUp, Users, Zap, ClipboardList, CheckCircle, Loader, FileText, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import NotificationCenter from "@/components/NotificationCenter"; // Import the new Notification Center
+import NotificationCenter from "@/components/NotificationCenter"; 
 
-// Component simulating a single KPI card (unchanged, re-used for clarity)
+// Component simulating a single KPI card (unchanged structure)
 const DashboardKpiCard = ({ title, value, icon: Icon, change, colorClass }: { title: string, value: string, icon: React.ReactNode, change: string, colorClass: string }) => (
     <Card className="shadow-lg hover:scale-[1.02] transition-transform border-l-4 border-indigo-500">
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -25,7 +25,6 @@ const DashboardKpiCard = ({ title, value, icon: Icon, change, colorClass }: { ti
 );
 
 const Dashboard = () => {
-  // Mock Data points used for the summary (unchanged)
   const kpis = [
     { title: "Total Revenue (YTD)", value: "$1.2M+", icon: <DollarSign className="w-5 h-5" />, change: "Up 8.5%", colorClass: "text-green-500" },
     { title: "Open Tasks", value: "12", icon: <ClipboardList className="w-5 h-5" />, change: "3 Overdue", colorClass: "text-red-500" },
@@ -36,10 +35,10 @@ const Dashboard = () => {
   return (
     <div className="space-y-10">
       
-      {/* Banner/Welcome Area (unchanged) */}
+      {/* Banner/Welcome Area (No major bug fix, kept for structure) */}
       <div className="bg-gradient-to-r from-indigo-500 to-indigo-700 p-8 rounded-xl shadow-xl text-white">
         <div className="flex justify-between items-center">
-            <div >
+            <div>
                 <h1 className="text-3xl font-extrabold">Welcome Back, Administrator!</h1>
                 <p className="text-indigo-200 mt-1">Your strategic performance summary for today's readiness.</p>
             </div >
@@ -50,7 +49,7 @@ const Dashboard = () => {
       </div>
 
 
-      {/* KPI Summary (unchanged) */}
+      {/* KPI Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpis.map((kpi, index) => (
             <DashboardKpiCard 
@@ -64,10 +63,12 @@ const Dashboard = () => {
         ))}
       </div >
 
-      {/* CENTRALIZED TASK / ACTIVITY AREA */}
+      <Separator />
+
+      {/* Main Content Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Column 1: Notification Center (The new focus) */}
+        {/* Column 1: Notification Center (Maintains position and function) */}
         <Card className="lg:col-span-2 p-0 shadow-xl">
             <NotificationCenter />
         </Card>
@@ -80,7 +81,7 @@ const Dashboard = () => {
             <p className="text-sm text-gray-500 mb-6">A summary of items needing immediate attention across all projects.</p>
             
             <div className="space-y-4">
-                {/* Alert 1 (Stays the same) */}
+                {/* Alert 1 */}
                 <div className="flex items-start space-x-3 p-3 border border-red-200 bg-red-50 rounded-md">
                     <AlertTriangle className="w-5 h-5 mt-1 flex-shrink-0 text-red-500"/>
                     <div>
@@ -88,7 +89,7 @@ const Dashboard = () => {
                         <p className="text-sm text-red-700">3 clients (Bob, David, AlphaCorp) have invoices over 30 days old.</p>
                     </div>
                 </div>
-                 {/* Alert 2 (Stays the same) */}
+                 {/* Alert 2 */}
                 <div className="flex items-start space-x-3 p-3 border border-yellow-200 bg-yellow-50 rounded-md">
                     <Loader className="w-5 h-5 mt-1 flex-shrink-0 text-yellow-500"/>
                     <div>
@@ -96,7 +97,7 @@ const Dashboard = () => {
                         <p className="text-sm text-amber-700">Project 'AlphaCorp Revamp' needs your sign-off before proceeding.</p>
                     </div>
                 </div>
-                 {/* Alert 3 (Stays the same) */}
+                 {/* Alert 3 */}
                 <div className="flex items-start space-x-3 p-3 border border-indigo-200 bg-indigo-50 rounded-md">
                     <FolderOpen className="w-5 h-5 mt-1 flex-shrink-0 text-indigo-500"/>
                     <div>
@@ -110,7 +111,7 @@ const Dashboard = () => {
                 View All Alerts & Tasks
             </Button>
         </Card>
-      </div>
+      </div >
     </div>
   );
 }

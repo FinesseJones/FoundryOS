@@ -38,12 +38,13 @@ interface User {
     status: boolean;
 }
 
-// Update component props to explicitly handle the initialUsers prop
+// Updated component props to receive current user state
 interface UsersProps {
     initialUsers: User[]; 
+    currentUser: { role: UserRole; permissions: Record<string, boolean> }; // Added currentUser prop
 }
 
-const Users: React.FC<UsersProps> = ({ initialUsers }) => {
+const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
     // Filtering states
     const [searchTerm, setSearchTerm] = useState('');
     const [filterRole, setFilterRole] = useState<Partial<Record<UserRole, boolean>>>({});
@@ -91,7 +92,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
         }));
     };
 
-    // --- UI Components (No changes needed here) ---
+    // --- UI Components ---
 
     const RoleFilter = () => (
         <div className="space-y-4 pt-2">
@@ -118,7 +119,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
 
                 {/* Filtering and Search Card */}
                 <Card className="p-6 shadow-md">
-                    <h2 className="text-xl font-semibold mb-4">Filter Criteria</h2>
+                    <h2 className="text-xl font-semibold mb-4">Filter Criteria ({currentUser.role})</h2>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {/* Search Bar */}
                         <div>
@@ -182,7 +183,8 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="overflow-x-auto">
+                        {/* USING FRAGMENT <>...</> TO AVOID JSX COMPILER ERROR */}
+                        <>
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr className="uppercase text-xs text-gray-500 tracking-wider">
@@ -209,8 +211,17 @@ const Users: React.FC<UsersProps> = ({ initialUsers }) => {
                                                     <Badge variant={user.status ? "success" : "destructive"} className="text-xs uppercase">{user.status ? "Active" : "Inactive"}</Badge>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button className="text-indigo-600 hover:underline mr-3">Edit</button>
-                                                    <button className="text-red-600 hover:underline">Deactivate</button>
+                                                    <button 
+                                                        onClick={() => console.log(`Editing ${user.name}`)} // Example interaction hook
+                                                        className="text-indigo-600 hover:underline mr-3"
+                                                    >Edit</button>
+                                                    {/* Implementing RBAC Guarding */}
+                                                    {currentUser.permissions.deleteCriticalRecords && (
+                                                        <button 
+                                                            onClick={() => console.log(`Deactivating global user ${user.id}`)}
+                                                            className="text-red-600 hover:underline"
+                                                        >Deactivate</button>
+                                                    )}
                                                 </td>
                                             </tr >
                                         ))

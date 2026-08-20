@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { BookOpen, Users, TrendingUp, Clock, Search, Zap, ClipboardList } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-
+import { toast } from "react-hot-toast";
 
 interface AnalyticsProps {
     currentUser: { role: string; permissions: { [key: string]: boolean } };
@@ -25,7 +25,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentUser }) => {
     };
 
     // Data aggregation logic
-    const { utilized, totalAvailable, bottleneckDepartment, avgLeadTimeDays, highRiskProjectsCount, strategicRecommendation } = dataContext;
+    const { userCapacity: { utilized, totalAvailable, bottleneckDepartment }, avgLeadTimeDays, highRiskProjectsCount, strategicRecommendation } = dataContext;
 
     // Calculate remaining capacity and risk metric
     const remainingCapacity = totalAvailable - utilized;
@@ -54,9 +54,9 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentUser }) => {
                                 <div className="flex justify-between mb-1 text-xs font-medium">
                                     <span>Total Capacity Utilized:</span>
                                     <span className={capacityUtilizationPercentage >= 80 ? "text-red-600" : "text-green-600"}>{capacityUtilizationPercentage}%</span>
-                                </div >
+                                </div>
                                 <Progress value={capacityUtilizationPercentage} className="w-full" />
-                            </div >
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -82,9 +82,9 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentUser }) => {
                             <Clock className="h-5 w-5 text-yellow-400"/>
                         </CardHeader>
                         <CardContent>
-                            <div className={`text-2xl font-bold text-gray-900 ${highRiskProjectsCount > 0 ? 'text-red-600' : 'text-green-600'}'}>
+                            <div className={`text-2xl font-bold text-gray-900 ${highRiskProjectsCount > 0 ? 'text-red-600' : 'text-green-600'}`}>
                                 {highRiskProjectsCount} High-Risk Projects
-                            </div >
+                            </div>
                             <p className="text-xs text-gray-500 pt-1">Projects flagged for budget or timeline deviation.</p>
                             <div className="mt-4 text-sm">
                                 <button onClick={() => toast.success("Navigating to Project Dashboard for risk remediation.")} className="text-sm text-yellow-600 hover:underline">Review Projects &rarr;</button>
@@ -98,7 +98,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ currentUser }) => {
                     <CardHeader>
                         <CardTitle className="flex items-center space-x-2 text-xl">
                             <Zap className="w-5 h-5 text-blue-600"/>
-                            <span >Strategic Recommendation Engine</span>
+                            <span>Strategic Recommendation Engine</span>
                         </CardTitle>
                     </CardHeader>
                     <CardContent>

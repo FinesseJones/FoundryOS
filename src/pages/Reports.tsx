@@ -84,10 +84,12 @@ const ReportsContent: React.FC = () => {
                 <div className="text-2xl font-bold text-gray-900">
                     {/* Displaying both USD (base) and Local Currency */}
                     {kpi.value.usd ? (
-                        <span className='text-lg text-gray-600 mr-2'>↓</span>
-                        <span className='text-3xl'>
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(kpi.value.usd)}
-                        </span>
+                        <>
+                            <span className='text-lg text-gray-600 mr-2'>↓</span>
+                            <span className='text-3xl'>
+                                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(kpi.value.usd)}
+                            </span>
+                        </>
                     ) : (
                         <span className='text-3xl'>{kpi.value.local}</span>
                     )}
@@ -102,7 +104,7 @@ const ReportsContent: React.FC = () => {
     return (
         <div className="space-y-8">
             <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-3">
-                <ReportSquare className="w-6 h-6 text-green-600"/>
+                <FileText className="w-6 h-6 text-green-600"/>
                 <span className="text-xl">Analytics & Reporting</span>
             </h1>
             <p className="text-lg text-gray-600">Analyze your performance, track key metrics, and identify growth opportunities using real-time, multi-currency data.</p>
@@ -116,7 +118,7 @@ const ReportsContent: React.FC = () => {
                 {/* Timeframe and Export Controls (Column 1/3) */}
                 <div className="lg:col-span-1 space-y-6">
                     <div className="p-6 border rounded-lg shadow-md">
-                        <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2"><CalendarIcon className="w-5 h-5 text-gray-700"/>Time Range</h3>
+                        <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2"><Calendar className="w-5 h-5 text-gray-700"/>Time Range</h3>
                         <div className="flex space-x-3 mb-6">
                             <Button 
                                 variant={timeframe === "Last 12 Months" ? "default" : "outline"}

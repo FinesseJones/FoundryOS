@@ -1,5 +1,3 @@
-import crypto from 'node:crypto';
-
 export type UserRole = 'ADMIN' | 'EXECUTIVE' | 'MARKETER' | 'MEMBER';
 
 export interface UserSession {
@@ -14,6 +12,12 @@ export interface UserSession {
   expiresAt: string;
 }
 
+function generateSecureToken(byteLength = 32): string {
+  const bytes = new Uint8Array(byteLength);
+  globalThis.crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export class SaaSAuthManager {
   private sessions: Map<string, UserSession> = new Map();
 
@@ -26,7 +30,7 @@ export class SaaSAuthManager {
     organizationName: string;
   }): UserSession {
     // 256-bit cryptographically secure session token
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = generateSecureToken(32);
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
 

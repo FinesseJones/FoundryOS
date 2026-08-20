@@ -1,0 +1,17 @@
+services:
+  brand-first-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: brand-first-production
+    restart: always
+    ports:
+      - "8088:80"
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s

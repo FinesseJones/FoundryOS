@@ -1,99 +1,78 @@
-# Deployment Process & Infrastructure Runbook
+# Production Deployment & Infrastructure Runbook
 
-This guide outlines the production deployment workflow, environment configuration, containerization, and continuous integration / continuous deployment (CI/CD) pipelines for **TACF**.
+This runbook outlines the production deployment workflow, environment configuration, containerization, and continuous integration / continuous deployment (CI/CD) pipelines for the **Brand-First CMS Platform**.
 
 ---
 
-## 1. Environment Requirements
+## 1. Environment & Prerequisites
 
 - **Node.js**: >= v20.0.0
-- **TypeScript**: strict mode (`npx tsc --noEmit`)
-- **Package Manager**: `npm` / `npx`
-- **Environment Variables**: Defined in `.env` (derived from `.env.example`)
-
-```env
-NODE_ENV=production
-PORT=3000
-DATABASE_URL=postgresql://user:password@localhost:5432/tacf_prod
-STRIPE_SECRET_KEY=sk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-LLM_GATEWAY_TOKEN_CAP=500000
-```
+- **TypeScript**: Strict mode (`npm run typecheck`)
+- **Containerization Engine**: Docker / Podman
+- **Web Server**: Nginx (Alpine) with SPA fallback routing and gzip compression
 
 ---
 
-## 2. Pre-Deployment Automated Quality Gate
+## 2. Automated Quality Gates
 
-Before any release artifact is built or deployed, the complete automated test suite must pass with 0 failures:
+Before any production deployment or release image is created, all quality gates must pass with 0 failures:
 
 ```bash
-# 1. Type Check
-npx tsc --noEmit
+# 1. Typecheck Validation
+npm run typecheck
 
-# 2. Execute Full E2E & Hardening Test Suite (37 Test Files)
-npx tsx --test src/core/knowledge/tests/schema.test.ts \
-               src/core/context/tests/context-engine.test.ts \
-               src/core/cognitive/tests/cognitive-engine.test.ts \
-               src/core/agents/tests/*.test.ts \
-               src/core/automation/tests/*.test.ts \
-               src/core/providers/tests/*.test.ts \
-               src/core/ingestion/tests/*.test.ts \
-               src/core/persistence/tests/*.test.ts \
-               src/core/saas/tests/*.test.ts \
-               tests/e2e/*.test.ts \
-               tests/hardening/*.test.ts
+# 2. Automated Test Suite (All 73 Hardening & E2E Tests)
+npm test
+
+# 3. Production Static Build
+npm run build
 ```
 
 ---
 
-## 3. Production Build & Deployment Pipeline
+## 3. Production Deployment Options
 
-```
-GitHub Push / Release Tag
-         │
-         ▼
-Automated CI Pipeline (Type Check + 121 Tests Pass)
-         │
-         ▼
-Production Build Artifact (`npm run build`)
-         │
-         ▼
-Docker Container Image Creation
-         │
-         ▼
-Staging Environment Automated Verification
-         │
-         ▼
-Zero-Downtime Production Deployment (Rolling Update)
-         │
-         ▼
-Post-Deploy Health Check & Alert Monitoring
-```
+### Option A: Docker Container Deployment (Recommended)
 
-### Docker Container Runbook
-```dockerfile
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json tsconfig.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
+1. **Build & Run with Docker Compose**:
+   ```bash
+   docker compose up --build -d
+   ```
+   The application will be live at `http://localhost:8080` with built-in health checks at `http://localhost:8080/health`.
 
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-EXPOSE 3000
-CMD ["npm", "start"]
-```
+2. **Standalone Docker Build**:
+   ```bash
+   # Build the production image
+   docker build -t brand-first-app:latest .
+
+   # Run container
+   docker run -d --name brand-first-production -p 80:80 brand-first-app:latest
+   ```
+
+### Option B: Cloud Static Hosting (Vercel / Netlify / Cloudflare Pages / Firebase)
+
+1. **Build the production bundle**:
+   ```bash
+   npm run build
+   ```
+2. **Publish Directory**: `dist`
+3. **SPA Rewrite Rule**: Redirect all routes (`/*`) to `/index.html` with status `200`.
+
+### Option C: AWS S3 + CloudFront CDN
+
+1. Sync the `dist/` folder to your target S3 bucket:
+   ```bash
+   aws s3 sync dist/ s3://your-production-bucket --delete
+   ```
+2. Invalidate the CloudFront distribution cache:
+   ```bash
+   aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
+   ```
 
 ---
 
-## 4. Monitoring & Health Verification
+## 4. Security & Production Best Practices
 
-- **Health Check Endpoint**: `/api/health` — Verifies database connection, memory repository status, and LLM gateway availability.
-- **Error Tracking**: Integrated Sentry / Application Performance Monitoring (APM).
-- **Quota Alert Monitoring**: Automated alerts dispatched if tenant token caps reach 90% threshold.
+- **Security Headers**: Standard Nginx configuration enforces `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, and restrictive `Content-Security-Policy`.
+- **Immutable Cache**: Static chunk assets in `/assets/*` are configured with 1-year immutable caching (`Cache-Control: public, immutable`).
+- **Health Checks**: Automated HTTP endpoint at `/health` returning `200 OK` for load balancer probes.

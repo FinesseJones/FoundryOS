@@ -5,7 +5,8 @@ import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Users, ClipboardList, Zap, GitCode, ShieldCheck, DollarSign, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Users, ClipboardList, Zap, Code2, ShieldCheck, DollarSign, Search } from "lucide-react";
 
 // Define the structure for a single service
 interface ServiceOffering {

@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Info, Clock, UserCheck, Trash2 } from "lucide-react";
-import { UserRole } from "@/types/user";
 
 // Define the structure for a single audit entry
 interface AuditEntry {
@@ -75,7 +74,7 @@ const AuditLog: React.FC<AuditLogProps> = ({ initialLogs, currentUser }) => {
                                         <th className="px-6 py-3 text-left">Module</th>
                                         <th className="px-6 py-3 text-left whitespace-nowrap">Action</th>
                                         <th className="px-6 py-3 text-left">Details</th>
-                                    </tr >
+                                    </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {visibleLogs.slice(0, 10).map((log, index) => (
@@ -92,14 +91,14 @@ const AuditLog: React.FC<AuditLogProps> = ({ initialLogs, currentUser }) => {
                                                 } className="text-xs uppercase">{log.action}</Badge>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs">{log.details}</td>
-                                        </td >
-                                    </tr >
-                                ))}
-                            </tbody>
-                        </div >
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </CardContent>
                 </Card>
-            </div >
+            </div>
         </AppLayout>
     );
 };

@@ -17,4 +17,5 @@ const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     );
 };
 
+export { ToastProvider, ToastProvider as ToasterProvider };
 export default ToastProvider;

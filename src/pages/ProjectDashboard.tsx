@@ -6,10 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, TrendingUp, Clock, Folder, Loader2, CheckCircle, Zap, Activity */}
-import { AiAssistantWidget } from "@/components/AiAssistantWidget";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { BookOpen, TrendingUp, Clock, Folder, Loader2, CheckCircle, Zap, Activity } from "lucide-react";
+import AiAssistantWidget from "@/components/AiAssistantWidget";
 import { useOllamaApi } from "@/hooks/useOllamaApi";
 import { logSystemEvent } from "@/utils/auditLogger"; // <-- Using the logger for governance
+import { toast } from "react-hot-toast";
 
 // Interface for project data
 interface ProjectDetails {
@@ -69,7 +72,7 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
                 }));
                 
                 // LOGGING: Log the state transition
-                const logDetails = `Status transitioned from ${currentStatus} to ${newStatus}. Progress set to ${formData.progress || prev.progress}.`;
+                const logDetails = `Status transitioned from ${currentStatus} to ${newStatus}. Progress set to ${formData.progress ?? project.progress}.`;
                 logSystemEvent('Projects', 'UPDATE', logDetails, currentUser.role);
 
                 toast.success(`✅ Project ${projectName} details saved successfully! Workflow advanced to ${newStatus}.`);
@@ -78,7 +81,7 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
             }
             setIsModalOpen(false);
         } else {
-            toast.warning(validationMessage);
+            toast.error(validationMessage);
             return;
         }
     };
@@ -234,7 +237,7 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
                 <Card className="shadow-md">
                     <CardHeader>
                         <CardTitle>{projectName} ({clientName})</CardTitle>
-                        <p className="text-sm text-gray-500">Current Workflow Phase: <Badge variant="default" className={`bg-green-100 text-green-800`}>{project.currentPhase} Phase</p>
+                        <p className="text-sm text-gray-500">Current Workflow Phase: <Badge variant="default" className="bg-green-100 text-green-800">{project.currentPhase} Phase</Badge></p>
                     </CardHeader>
                     <CardContent>
                         {/* Section 1: The Workflow Board */}
@@ -249,17 +252,12 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
                                 {/* Column: Proposal - The Current/Target Column */}
                                 <div className={`flex-1 p-3 rounded-lg ${project.status === 'Proposal' ? 'bg-green-100 border-green-500 border-2' : 'bg-white border-gray-200'}`}>
                                     <h3 className="font-semibold mb-2 text-green-700">Proposal</h3>
-                                    <p className="text-sm text-gray-600">Finalizing scope, budgeting, and securing signatures.</p>
-                                </div>
-                                {/* Column: Active */}
-                                <div className={`flex-1 p-3 rounded-lg ${project.status === 'Active' ? 'bg-yellow-100 border-yellow-500 border-2' : 'bg-white border-gray-200'}`}>
-                                    <h3 className="font-semibold mb-2 text-yellow-700">Active</h3>
-                                    <p className="text-sm text-gray-600">Implementation and Execution Phase.</p>
+                                    <p className="text-sm text-gray-600">Structure statement of work & estimate.</p>
                                 </div>
                                 {/* Column: Evaluation */}
-                                <div className="flex-1 p-3 rounded-lg bg-white border-gray-200">
-                                    <h3 className="font-semibold mb-2 text-blue-700">Evaluation</h3>
-                                    <p className="text-sm text-gray-600">Post-launch review and success measurement.</p>
+                                <div className={`flex-1 p-3 rounded-lg ${project.status === 'Evaluation' ? 'bg-yellow-100 border-yellow-500 border-2' : 'bg-white border-gray-200'}`}>
+                                    <h3 className="font-semibold mb-2 text-yellow-700">Evaluation</h3>
+                                    <p className="text-sm text-gray-600">Technical check & capacity planning.</p>
                                 </div>
                                 {/* Column: Completed */}
                                 <div className="flex-1 p-3 rounded-lg bg-white border-gray-200">
@@ -285,11 +283,11 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
                                         <div className="flex justify-between mb-1 text-xs font-medium">
                                             <span>Next Milestone: Beta Launch</span>
                                             <span className="text-indigo-600">Due Q1 Next Year</span>
-                                        </div >
+                                        </div>
                                         <div className="flex justify-between mb-1 text-xs font-medium">
                                             <span>Budget Utilization:</span>
                                             <span className={project.budgetSpent / project.totalBudget > 0.9 ? "text-red-600" : "text-green-600"}>{Math.round((project.budgetSpent / project.totalBudget) * 100)}%</span>
-                                        </div >
+                                        </div>
                                         <Progress value={project.progress} className="w-full" />
                                     </div>
                                 </CardContent>
@@ -306,7 +304,7 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
                                     <p className="text-xs text-gray-500 pt-1">Remaining Funds</p>
                                     <div className="mt-4">
                                         <button onClick={() => toast.success("Opening detailed budget breakdown...")} className="text-sm text-red-600 hover:underline">Review Spending Breakdown</button>
-                                    </div >
+                                    </div>
                                 </CardContent>
                             </Card>
                             
@@ -320,11 +318,11 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
                                     <div className="text-xl font-bold text-gray-900">Need to formalize handoff protocols between teams.</div>
                                     <p className="text-xs text-gray-500 pt-1">Requires policy documentation (next sprint).</p>
                                     <div className="mt-4">
-                                        <button onClick={() => toast.success("Simulated AI generating policy draft...")} className="text-sm text-yellow-600 hover:underline">Generate Policy Draft > (AI)</button>
-                                    </div >
+                                        <button onClick={() => toast.success("Simulated AI generating policy draft...")} className="text-sm text-yellow-600 hover:underline">Generate Policy Draft &gt; (AI)</button>
+                                    </div>
                                 </CardContent>
                             </Card>
-                        </div >
+                        </div>
                     </CardContent>
                 </Card>
                 

@@ -8,7 +8,7 @@ interface StatusBadgeProps {
     children: React.ReactNode;
 }
 
-const getBadgeClasses = (status: string, variant: typeof StatusBadgeProps['variant']): { className: string; text: string } => {
+const getBadgeClasses = (status: string, variant?: 'primary' | 'secondary' | 'destructive'): { className: string; text: string } => {
     switch (status) {
         case 'Active':
         case 'Qualified':

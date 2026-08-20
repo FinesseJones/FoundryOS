@@ -76,6 +76,11 @@ export const ROLE_PERMISSIONS_MATRIX: Record<AgentRole, AgentPolicyRule> = {
     maxClassification: 'CONFIDENTIAL',
     requiresApprovalForActions: [],
   },
+  lead: {
+    allowedActions: ['read:dna', 'read:content', 'read:analytics', 'write:analytics', 'read:memory', 'execute:workflow'],
+    maxClassification: 'CONFIDENTIAL',
+    requiresApprovalForActions: [],
+  },
 };
 
 // ─── Agent Authorization Service ────────────────────────────────────────────

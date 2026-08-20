@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +5,20 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Bell, Info, PlusCircle, UserPlus } from "lucide-react";
-import { UserRole } from "@/types/user";
 import { toast } from "react-hot-toast";
 import { logSystemEvent } from "@/utils/auditLogger"; // <-- Imported logger
+
+export type UserRole = 'ADMIN' | 'ADMIN_PRO' | 'SUPPORT' | 'BASIC';
+
+// Define API-friendly types for the rendered data
+export interface User {
+    id: number;
+    name: string;
+    email: string;
+    role: UserRole;
+    department: string;
+    status: boolean;
+}
 
 // Component for displaying a role toggle filter (Helper component remains)
 const RoleFilterToggle = ({ role, isChecked, onChange }: { role: UserRole, isChecked: boolean, onChange: (r: UserRole, checked: boolean) => void }) => {
@@ -28,16 +37,6 @@ const RoleFilterToggle = ({ role, isChecked, onChange }: { role: UserRole, isChe
         </div>
     );
 };
-
-// Define API-friendly types for the rendered data
-interface User {
-    id: number;
-    name: string;
-    email: string;
-    role: UserRole;
-    department: string;
-    status: boolean;
-}
 
 // Updated component props to receive current user state and manage internal state
 interface UsersProps {
@@ -160,10 +159,12 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
         }, [editingUser]);
 
         const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-            const { name, value, type, checked } = e.target;
+            const target = e.target;
+            const name = target.name;
+            const value = target.type === 'checkbox' ? (target as HTMLInputElement).checked : target.value;
             setFormState(prev => ({
                 ...prev,
-                [name]: type === 'checkbox' ? checked : value
+                [name]: value
             }));
         };
 
@@ -175,7 +176,6 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                 id: editingUser?.id || 0
             } as Omit<User, 'id'>; 
 
-            let result;
             if (editingUser) {
                 handleUpdateUser(submissionData);
             } else {
@@ -249,7 +249,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                                 id="status"
                                 type="checkbox"
                                 name="status"
-                                checked={!!formState.status?.(true as boolean)}
+                                checked={Boolean(formState.status)}
                                 onChange={handleChange}
                                 className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                             />
@@ -264,7 +264,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                         </Button>
                     </div>
                 </form>
-            </div >
+            </div>
         );
     };
 
@@ -327,7 +327,19 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                         </div>
 
                         {/* Roles Filter */}
-                        <RoleFilter />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Role</label>
+                            <div className="flex flex-wrap gap-2">
+                                {(['ADMIN', 'ADMIN_PRO', 'SUPPORT', 'BASIC'] as UserRole[]).map(role => (
+                                    <RoleFilterToggle
+                                        key={role}
+                                        role={role}
+                                        isChecked={!!filterRole[role]}
+                                        onChange={handleRoleToggle}
+                                    />
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </Card>
 
@@ -337,7 +349,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                     <CardHeader>
                         <CardTitle className="flex items-center space-x-2 text-xl">
                             <Bell className="w-5 h-5 text-indigo-600"/>
-                            <span >Found {filteredUsers.length} Users</span>
+                            <span>Found {filteredUsers.length} Users</span>
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -351,7 +363,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                                         <th className="px-6 py-3 text-left">Department</th>
                                         <th className="px-6 py-3 text-left">Status</th>
                                         <th className="px-6 py-3 text-right">Actions</th>
-                                    </tr >
+                                    </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {/* Display Logic Improvement: Show "No records found" message */}
@@ -365,7 +377,7 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.department}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <Badge variant={user.status ? "success" : "destructive"} className="text-xs uppercase">{user.status ? "Active" : "Inactive"}</Badge>
+                                                    <Badge variant={user.status ? "default" : "destructive"} className="text-xs uppercase">{user.status ? "Active" : "Inactive"}</Badge>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <button 
@@ -388,8 +400,9 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
                                                 <Info className="w-8 h-8 mx-auto mb-2 text-indigo-400"/>
                                                 <p>No active users found matching the current criteria.</p>
                                                 <p className="text-sm mt-1">Try adjusting your filters or clearing the search term.</p>
-                                            </td >
-                                        </tr >
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div >

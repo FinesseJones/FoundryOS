@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "@/components/ui/alert";
-import { CheckCircle } from "@/components/ui/check-circle";
+import { AlertCircle, CheckCircle, SlidersHorizontal, BookOpen, Clock, Loader2 } from "lucide-react";
 
 // Defines the structure for all global settings
 interface GlobalSettings {
@@ -40,7 +39,7 @@ const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
     const canModifySettings = currentUser.permissions.settingsManagement || currentUser.role === "ADMIN";
 
     // Handler for submitting the form
-    const handleSaveSettings = (e: React.FormEvent) => {
+    const handleSaveSettings = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!canModifySettings) {
             setMessage({ type: 'error', text: "❌ Permission Denied: You do not have the required rights to modify global system settings." });
@@ -50,13 +49,19 @@ const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
         setIsSaving(true);
         setMessage({ type: null, text: "Saving changes..." });
 
+        const form = e.currentTarget;
+        const baseCurrency = (form.elements.namedItem('baseCurrency') as HTMLInputElement)?.value || settings.baseCurrency;
+        const currencySymbol = (form.elements.namedItem('currencySymbol') as HTMLInputElement)?.value || settings.currencySymbol;
+        const timeZone = (form.elements.namedItem('timeZone') as HTMLSelectElement)?.value || settings.timeZone;
+        const defaultReportPeriod = (form.elements.namedItem('defaultReportPeriod') as HTMLSelectElement)?.value || settings.defaultReportPeriod;
+
         // Simulate API delay
         setTimeout(() => {
             setSettings({
-                baseCurrency: (e.target.baseCurrency as HTMLInputElement).value,
-                currencySymbol: (e.target.currencySymbol as HTMLInputElement).value,
-                timeZone: (e.target.timeZone as HTMLSelectElement).value,
-                defaultReportPeriod: (e.target.defaultReportPeriod as HTMLSelectElement).value
+                baseCurrency,
+                currencySymbol,
+                timeZone,
+                defaultReportPeriod
             });
             setMessage({ type: 'success', text: "✅ Global settings updated successfully. Changes are now live across the system." });
             setIsSaving(false);

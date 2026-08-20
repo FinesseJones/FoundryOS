@@ -29,4 +29,5 @@ export { WebsiteAgent } from './website-agent';
 export { SecurityAgent } from './security-agent';
 export { AnalyticsAgent } from './analytics-agent';
 export { LearningAgent } from './learning-agent';
+export { LeadAgent, type DiscoveredLead, type LeadDiscoveryParams } from './lead-agent';
 export { AgentRegistry } from './agent-registry';

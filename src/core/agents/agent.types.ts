@@ -11,7 +11,8 @@ export type AgentRole =
   | 'website'
   | 'security'
   | 'analytics'
-  | 'learning';
+  | 'learning'
+  | 'lead';
 
 /**
  * Access rights matrix permissions per agent.

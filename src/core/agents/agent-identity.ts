@@ -93,6 +93,14 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<AgentRole, AgentCapabilityModel> 
     requiresHumanApprovalFor: [],
     rateLimitPerMinute: 80,
   },
+  lead: {
+    allowedReadDomains: ['leads', 'market_intelligence', 'website', 'brand'],
+    allowedWriteDomains: ['leads', 'pipeline_opportunities', 'lead_discovery'],
+    maxTokenBudgetPerTask: 12000,
+    maxDelegationDepth: 2,
+    requiresHumanApprovalFor: [],
+    rateLimitPerMinute: 60,
+  },
 };
 
 // ─── Agent Identity Foundation Registry ─────────────────────────────────────
@@ -116,6 +124,7 @@ export class AgentIdentityRegistry {
       { role: 'security', name: 'Security & Governance Auditor', description: 'Audits access controls, agent delegation, and data isolation.' },
       { role: 'analytics', name: 'Performance Analytics Engine', description: 'Evaluates performance metrics across marketing, sales, and ops.' },
       { role: 'learning', name: 'Pattern Learning Agent', description: 'Extracts winning patterns and updates long-term business memory.' },
+      { role: 'lead', name: 'Lead Prospecting Agent', description: 'Autonomously identifies high-value prospective clients and synthesizes CRM leads.' },
     ];
 
     for (const sys of roles) {

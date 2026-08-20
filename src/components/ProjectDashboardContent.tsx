@@ -89,8 +89,10 @@ const ProjectDashboardContent: React.FC<{
             // Global toast for immediate feedback
             toast(notificationTitle, { 
                 description: notificationMessage, 
-                action: <Button variant="default" onClick={() => toast("View Inbox", { description: 'Detailed records are available in the Notification Center.' })}>View Inbox</Button>,
-                actionOpen: true,
+                action: {
+                    label: "View Inbox",
+                    onClick: () => toast("View Inbox", { description: 'Detailed records are available in the Notification Center.' })
+                },
                 duration: 7000
             });
 

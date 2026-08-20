@@ -6,11 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProjectCard from "@/components/ProjectCard";
 import ProjectDashboardContent from "@/components/ProjectDashboardContent"; 
-import { Users } from "./Users";
-import { Settings } from "./Settings";
-import { TrendingUp } from "lucide-react";
-import { ReportSquare } from "lucide-react";
-import ActivityFeed from "@/components/ActivityFeed"; // Import new component
+import { Users, Settings, TrendingUp, BarChart3, ClipboardList, Zap } from "lucide-react";
+import ActivityFeed from "@/components/ActivityFeed";
 
 // Mock Project Data Structure
 interface Project {
@@ -34,9 +31,36 @@ interface ActivityItem {
     color: string; // Class string for color
 }
 
+const mockProjects: Project[] = [
+    {
+        id: "proj-1",
+        name: "Global Platform Overhaul",
+        client: "TechCorp Global",
+        status: "Active",
+        progress: 45,
+        totalBudget: 500000,
+        budgetSpent: 180000,
+        dueDate: "2025-06-30"
+    },
+    {
+        id: "proj-2",
+        name: "Brand Identity Redesign",
+        client: "Acme Corp",
+        status: "Planning",
+        progress: 15,
+        totalBudget: 120000,
+        budgetSpent: 15000,
+        dueDate: "2025-09-15"
+    }
+];
+
+const fetchProjects = async (): Promise<Project[]> => {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return mockProjects;
+};
+
 // Mock Activity Fetching Function (Simulating API Call)
 const fetchActivityFeed = async (): Promise<ActivityItem[]> => {
-    console.log("Fetching activity feed from the database...");
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 300)); 
     
@@ -68,11 +92,10 @@ const fetchActivityFeed = async (): Promise<ActivityItem[]> => {
     ];
 };
 
-
 export default function IndexPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedProject, setSelectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([]);
 
     useEffect(() => {
@@ -169,7 +192,7 @@ export default function IndexPage() {
                 {/* Reporting Module Link */}
                  <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = "/reports/*"}>
                     <CardHeader>
-                        <CardTitle className="flex items-center space-x-3 text-green-600"><ReportSquare className="w-5 h-5"/><span>Reports & Analytics</span></CardTitle>
+                        <CardTitle className="flex items-center space-x-3 text-green-600"><BarChart3 className="w-5 h-5"/><span>Reports & Analytics</span></CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">View performance metrics and financial reports.</p>

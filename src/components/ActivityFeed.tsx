@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Users, ClipboardList, Zap, Clock, MessageCircle, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface ActivityItem {
     id: number;
@@ -26,7 +27,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ items }) => {
                 <CardTitle className="flex items-center space-x-3 text-xl">
                     <MessageCircle className="w-5 h-5 text-indigo-600"/>
                     <span className="text-full">Activity Feed</span>
-                </span >
+                </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-4">

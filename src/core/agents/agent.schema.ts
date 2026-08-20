@@ -9,6 +9,7 @@ export const AgentRoleSchema = z.enum([
   'security',
   'analytics',
   'learning',
+  'lead',
 ]);
 
 export const AgentAccessRightsSchema = z.object({

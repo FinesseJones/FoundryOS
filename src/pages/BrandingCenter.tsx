@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Zap, Search, ShieldCheck, Rocket, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { useOllamaApi } from "@/hooks/useOllamaApi";
 
 // Define types for clarity
 interface BrandingProps {
@@ -14,6 +15,7 @@ interface BrandingProps {
 }
 
 const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
+    const { generateContent } = useOllamaApi();
     const [financialPain, setFinancialPain] = useState('');
     const [processGap, setProcessGap] = useState('');
     const [stakeholderGap, setStakeholderGap] = useState('');
@@ -51,7 +53,7 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
         `;
 
         try {
-            const result = await generateContent(promptMessage, "The response must be formatted with markdown headers and lists for readability.");
+            const result = await generateContent(promptMessage + "\n\nThe response must be formatted with markdown headers and lists for readability.");
             setGeneratedOutput({
                 fullText: result || "Error generating content. Please try simplifying the input.",
             });
@@ -108,7 +110,7 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                                         rows={3}
                                         className="w-full border p-3 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 resize-none"
                                     ></textarea>
-                                </div >
+                                </div>
 
                                 <div className="space-y-2 border-l-4 border-yellow-400 pl-4 py-3 bg-yellow-50/50">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">2. Process Gap (The Process)</label>
@@ -119,7 +121,7 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                                         rows={3}
                                         className="w-full border p-3 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 resize-none"
                                     ></textarea>
-                                </div >
+                                </div>
 
                                 <div className="space-y-2 border-l-4 border-blue-400 pl-4 py-3 bg-blue-50/50">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">3. Stakeholder Alignment (The People)</label>
@@ -130,8 +132,8 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                                         rows={3}
                                         className="w-full border p-3 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 resize-none"
                                     ></textarea>
-                                </div >
-                            </div >
+                                </div>
+                            </div>
 
                             {/* Input Column 2: Tone & Action */}
                             <div className="lg:col-span-2 space-y-6">
@@ -170,15 +172,15 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                                         {isLoading ? (
                                             <>
                                                 <Loader2 className="w-5 h-5 animate-spin mr-2"/> Analyzing Data...
-                                          </>
+                                            </>
                                         ) : (
                                             <>
                                                 Generate Brand Positioning Suite <Rocket className="ml-2 h-5 w-5 inline transform transform-none"/>
-                                          </>
+                                            </>
                                         )}
                                     </Button>
-                                </div >
-                            </div >
+                                </div>
+                            </div>
                         </div>
                         
                         {/* Output Section - Visually separated */}
@@ -187,7 +189,6 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                                 <CardTitle className="text-2xl">Generated Brand Assets Package</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {/* FIX APPLIED HERE: Correctly closing the overall content area */}
                                 {isLoading ? (
                                     <div className="text-center py-10 text-gray-500">
                                         <div className="flex flex-col items-center space-y-4">
@@ -199,17 +200,17 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                                     <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg text-gray-400">
                                         <Zap className="w-6 h-6 mx-auto mb-2"/>
                                         <p className="text-base">Generate assets here using the 3 Pillars above to see your professional brand positioning suite.</p>
-                                    </div >
+                                    </div>
                                 ) : (
                                     <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-inner">
-                                        <div dangerouslySetInnerHTML={{ __html: generatedOutput.fullText.replace(/\n\n/g, '</br><br>').replace(/\*\*/g, '<strong>') }} />
+                                        <div dangerouslySetInnerHTML={{ __html: (generatedOutput.fullText || '').replace(/\n\n/g, '<br/><br/>').replace(/\*\*/g, '<strong>') }} />
                                     </div>
-                                );
+                                )}
                             </CardContent>
                         </Card>
-                    </Card>
+                    </CardContent>
                 </Card>
-            </div >
+            </div>
         </AppLayout>
     );
 };

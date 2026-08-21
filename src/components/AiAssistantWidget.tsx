@@ -24,46 +24,46 @@ const AiAssistantWidget: React.FC<AiAssistantWidgetProps> = ({ isVisible, title 
         if (!prompt) return;
 
         setResponse(null);
-        setPrompt('');
 
         try {
             const generatedText = await generateContent(prompt);
             setResponse(generatedText);
+            setPrompt('');
         } catch (e) {
-            // Catch the error simulated in the hook
-            setResponse(`🚨 Error: ${e instanceof Error ? e.message : 'Could not connect to the AI model.'}`);
+            // Catch error and preserve user's prompt
+            setResponse(null);
         }
     };
 
     return (
-        <div className="p-6 bg-white border border-indigo-100 rounded-xl shadow-lg mt-4">
-            <h3 className="text-xl font-bold mb-4 text-indigo-700">{title}</h3>
+        <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl shadow-lg mt-4 text-slate-100">
+            <h3 className="text-lg font-bold mb-3 text-indigo-400">{title}</h3>
             
-            <div className="space-y-6">
+            <div className="space-y-4">
                 {/* 1. Input Form */}
                 <form onSubmit={handleSubmit} className="space-y-3">
-                    <Label htmlFor="ai-prompt">What do you need help with?</Label>
+                    <Label htmlFor="ai-prompt" className="text-slate-300 text-xs font-mono">What do you need assistance with?</Label>
                     <Textarea
                         id="ai-prompt"
-                        placeholder="E.g., 'Draft a new policy on remote work based on our company mission.'"
+                        placeholder="E.g., 'Formulate an enterprise value narrative based on our Business DNA.'"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
-                        className="resize-none min-h-[100px]"
+                        className="resize-none min-h-[100px] bg-slate-950 border-slate-800 text-slate-100"
                         required
                         disabled={isLoading}
                     />
                     <Button 
                         type="submit"
-                        className="w-full"
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold"
                         disabled={isLoading || !prompt}
                     >
                         {isLoading ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Processing with Ollama...
+                                Processing with NVIDIA AI...
                             </>
                         ) : (
-                            "Generate Content with AI"
+                            "Generate with NVIDIA AI"
                         )}
                     </Button>
                 </form>

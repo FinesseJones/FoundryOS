@@ -37,6 +37,7 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
     const [stakeholderGap, setStakeholderGap] = useState(authoritativeDna?.opportunityPillars.stakeholderAlignment || '');
     const [tone, setTone] = useState(authoritativeDna?.brandVoice.primaryTone || 'Authoritative');
     const [isLoading, setIsLoading] = useState(false);
+    const [aiError, setAiError] = useState<string | null>(null);
     const [generatedOutput, setGeneratedOutput] = useState<Record<string, string>>({});
 
     // Keep fields synchronized when DNA loads or updates
@@ -63,6 +64,7 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
             setProcessGap(authoritativeDna.opportunityPillars.processGap);
             setStakeholderGap(authoritativeDna.opportunityPillars.stakeholderAlignment);
             setTone(authoritativeDna.brandVoice.primaryTone);
+            setAiError(null);
             toast.success("✨ Resynced inputs from Authoritative Business DNA!");
         }
     };
@@ -75,6 +77,7 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
         }
 
         setIsLoading(true);
+        setAiError(null);
         setGeneratedOutput({});
 
         const promptMessage = `
@@ -113,16 +116,52 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
                 fullText: result || "Error generating content. Please try simplifying the input.",
             });
             toast.success("✨ Brand assets generated successfully from Business DNA!");
-        } catch (e) {
-            console.error(e);
-            toast.error("❌ Failed to generate assets. Check the API endpoint or try again.");
+        } catch (e: any) {
+            console.error("AI Generation Error:", e);
+            const friendlyErr = e.message || "AI provider temporarily unavailable. Your Business DNA remains intact. Retry generation or check your configured AI provider.";
+            setAiError(friendlyErr);
+            toast.error("⚠️ AI Provider temporarily unavailable.");
         } finally {
             setIsLoading(false);
         }
     };
 
     // Display component for structured output
-    const DisplayedOutput = generatedOutput.fullText ? (
+    const DisplayedOutput = aiError ? (
+        <div className="p-6 bg-slate-900/90 border border-amber-500/30 rounded-xl shadow-xl space-y-4 animate-in fade-in">
+            <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div className="space-y-1 flex-1">
+                    <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-bold text-white tracking-tight">AI Provider Temporarily Unavailable</h4>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            DNA Preserved
+                        </span>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                        {aiError}
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-mono mt-1">
+                        Primary Provider: <strong className="text-slate-200">NVIDIA NIM (meta/llama-3.1-70b-instruct)</strong> · Secondary: <strong className="text-slate-200">Ollama Local</strong>
+                    </p>
+                </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between border-t border-white/[0.08]">
+                <span className="text-[11px] text-slate-400">All input fields, mission, and opportunity pillars remain intact.</span>
+                <Button 
+                    onClick={generateBrandAssets}
+                    disabled={isLoading}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-md shadow-indigo-600/30"
+                >
+                    {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                    <span>Retry Generation</span>
+                </Button>
+            </div>
+        </div>
+    ) : generatedOutput.fullText ? (
         <div className="p-6 bg-slate-900 border border-slate-700 rounded-xl shadow-inner text-slate-100 space-y-4">
             <div dangerouslySetInnerHTML={{ __html: generatedOutput.fullText.replace(/\n\n/g, '<br/><br/>').replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-300">$1</strong>') }} />
         </div>

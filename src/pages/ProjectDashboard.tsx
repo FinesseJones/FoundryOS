@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { BookOpen, TrendingUp, Clock, Folder, Loader2, CheckCircle, Zap, Activity } from "lucide-react";
 import AiAssistantWidget from "@/components/AiAssistantWidget";
-import { useOllamaApi } from "@/hooks/useOllamaApi";
 import { logSystemEvent } from "@/utils/auditLogger"; // <-- Using the logger for governance
 import { toast } from "react-hot-toast";
 
@@ -39,9 +38,6 @@ const ProjectDashboardPage: React.FC<ProjectProps> = ({ projectName, clientName,
     // Initial default phase must be handled
     const [project, setProject] = useState<ProjectDetails>(initialProject);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    
-    // Hooks for AI interaction
-    const { generateContent, isLoading: isAILoading, error: olllamaError } = useOllamaApi();
 
     // --- GOVERNANCE/WORKFLOW HANDLERS ---
     const handleProjectUpdate = async (formData: Partial<ProjectDetails>) => {

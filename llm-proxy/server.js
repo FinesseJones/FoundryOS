@@ -614,34 +614,82 @@ app.put("/api/tenant/dna/:organizationId", authenticateSession, async (req, res)
   }
 });
 
-// ─── 8. LLM Proxy Route (NVIDIA Nim) ────────────────────────────────────────
+// ─── 8. LLM Proxy Route (NVIDIA NIM Primary, Ollama Fallback) ──────────────
+
+const OLLAMA_URL = process.env.OLLAMA_HOST ? `${process.env.OLLAMA_HOST}/api/chat` : "http://localhost:11434/api/chat";
 
 app.post("/api/chat", async (req, res) => {
-  if (!NVIDIA_KEY) {
-    return res.status(500).json({ error: "NVIDIA_API_KEY not set" });
+  const model = req.body.model || "meta/llama-3.1-70b-instruct";
+  const messages = req.body.messages || [];
+  const temperature = req.body.temperature ?? 0.6;
+  const max_tokens = req.body.max_tokens ?? 1500;
+
+  // 1. Primary: NVIDIA NIM Cloud Models
+  if (NVIDIA_KEY) {
+    try {
+      const r = await fetch(NVIDIA_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${NVIDIA_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature,
+          max_tokens,
+          stream: false,
+        }),
+      });
+
+      if (r.ok) {
+        const data = await r.json();
+        return res.status(200).json(data);
+      } else {
+        const errData = await r.json().catch(() => ({}));
+        console.warn("[LLM Proxy] NVIDIA NIM returned non-200:", r.status, errData);
+      }
+    } catch (e) {
+      console.warn("[LLM Proxy] NVIDIA NIM connection error:", e.message);
+    }
   }
 
+  // 2. Secondary Fallback: Local Ollama Instance (if available)
   try {
-    const r = await fetch(NVIDIA_URL, {
+    const ollamaResp = await fetch(OLLAMA_URL, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${NVIDIA_KEY}`,
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: req.body.model || "meta/llama-3.1-70b-instruct",
-        messages: req.body.messages || [],
-        temperature: req.body.temperature ?? 0.6,
-        max_tokens: req.body.max_tokens ?? 1024,
+        model: "llama3",
+        messages,
         stream: false,
       }),
     });
 
-    const data = await r.json();
-    res.status(r.status).json(data);
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+    if (ollamaResp.ok) {
+      const data = await ollamaResp.json();
+      return res.status(200).json({
+        choices: [
+          {
+            message: {
+              role: "assistant",
+              content: data.message?.content || data.response || "",
+            }
+          }
+        ],
+        provider: "ollama-local",
+      });
+    }
+  } catch (_ollamaErr) {
+    // Local Ollama unavailable
   }
+
+  // 3. Clean Enterprise Error: No Fake Output, Preserves State
+  return res.status(503).json({
+    error: "AI provider temporarily unavailable. Your Business DNA remains intact. Please configure your NVIDIA_API_KEY or ensure an AI provider is reachable.",
+    code: "AI_PROVIDER_UNAVAILABLE",
+    provider: "none",
+  });
 });
 
 // ─── 9. Startup & Initialization ───────────────────────────────────────────

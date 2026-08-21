@@ -69,6 +69,16 @@ export abstract class BaseAgent {
     const financialPain = (dna as any)?.opportunityPillars?.financialPain?.value || (dna as any)?.opportunityPillars?.financialPain || '';
     const processGap = (dna as any)?.opportunityPillars?.processGap?.value || (dna as any)?.opportunityPillars?.processGap || '';
     const stakeholder = (dna as any)?.opportunityPillars?.stakeholderAlignment?.value || (dna as any)?.opportunityPillars?.stakeholderAlignment || '';
+    const decisions = (context as any)?.decisionRecords || [];
+    const memories = context.memories || [];
+    const decisionSection = decisions.length > 0
+      ? `\nINSTITUTIONAL DECISION HISTORY & EXECUTIVE PREFERENCES:\n` +
+        decisions.map((d: any) => `- [${d.authorityLevel || 'DECISION'}] "${d.decision}" (Rationale: "${d.rationale}", Authorized by: ${d.authorizedBy})`).join('\n')
+      : '';
+    const memorySection = memories.length > 0
+      ? `\nRELEVANT ORGANIZATIONAL MEMORY:\n` +
+        memories.map((m: any) => `- [${m.memoryType || 'MEMORY'}] (${(m.tags || []).join(', ')}): ${typeof m.content === 'object' && m.content.summary ? m.content.summary : JSON.stringify(m.content)}`).join('\n')
+      : '';
 
     return `You are the ${this.name} (${this.role} agent) for ${brandName}.
 Domain Description: ${this.description}
@@ -88,10 +98,12 @@ OPPORTUNITY PILLARS:
 BRAND GUARDRAILS:
 ${wordsToUse.length > 0 ? `- Approved Vocabulary: ${wordsToUse.join(', ')}` : ''}
 ${wordsToAvoid.length > 0 ? `- Guardrail Words to Avoid: ${wordsToAvoid.join(', ')}` : ''}
+${decisionSection}${memorySection}
 
 CRITICAL RULES:
 1. Adhere strictly to the ${tone} brand voice and avoid all disallowed words.
-2. Produce specific, high-converting, actionable intelligence. Never use generic corporate placeholders.`;
+2. Respect all institutional decisions and executive preferences (higher authority outranks general defaults).
+3. Produce specific, high-converting, actionable intelligence. Never use generic corporate placeholders.`;
   }
 
   /**

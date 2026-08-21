@@ -27,14 +27,52 @@ export interface ContextRequest {
 }
 
 /**
- * Memory Record primitive.
+ * Memory Record primitive & Authority Hierarchy.
  */
-export type MemoryType = 'long_term' | 'short_term' | 'episodic' | 'semantic';
+export type MemoryType = 'long_term' | 'short_term' | 'episodic' | 'semantic' | 'decision_record';
+
+export type MemoryAuthority =
+  | 'SYSTEM'
+  | 'LEGAL_COMPLIANCE'
+  | 'ORGANIZATION_POLICY'
+  | 'BRAND_DNA'
+  | 'EXECUTIVE_DECISION'
+  | 'CAMPAIGN_DECISION'
+  | 'AGENT_INFERENCE';
+
+export const MEMORY_AUTHORITY_WEIGHTS: Record<MemoryAuthority, number> = {
+  SYSTEM: 1.0,
+  LEGAL_COMPLIANCE: 0.95,
+  ORGANIZATION_POLICY: 0.9,
+  BRAND_DNA: 0.85,
+  EXECUTIVE_DECISION: 0.8,
+  CAMPAIGN_DECISION: 0.65,
+  AGENT_INFERENCE: 0.5,
+};
+
+export interface DecisionRecord {
+  id: string;
+  organizationId: string;
+  businessId: string;
+  decision: string;
+  rationale: string;
+  authorizedBy: string;
+  authorityLevel: MemoryAuthority;
+  decidedAt: string;
+  expectedOutcome?: string;
+  actualOutcome?: string;
+  variance?: string;
+  lessonLearned?: string;
+  status: 'ACTIVE' | 'SUPERSEDED' | 'EVALUATED';
+  tags: string[];
+}
 
 export interface MemoryRecord {
   id: string;
   businessId: string;
+  organizationId?: string;
   memoryType: MemoryType;
+  authority?: MemoryAuthority;
   content: Record<string, unknown>;
   importance: number; // [0.0 - 1.0]
   tags: string[];

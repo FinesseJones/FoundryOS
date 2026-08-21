@@ -54,9 +54,9 @@ export const ExecutionIntelligenceView: React.FC<ExecutionIntelligenceViewProps>
   const activeWorkflows = plans.filter((p) => p.status === 'EXECUTING' || p.status === 'COMPLETED');
 
   const tabs = [
-    { key: 'plans', label: 'Execution Plans' },
-    { key: 'approvals', label: `Approval Center (${pendingApprovals.length})` },
-    { key: 'active', label: `Active Workflows (${activeWorkflows.length})` },
+    { key: 'plans', label: 'Campaign Staging Plans' },
+    { key: 'approvals', label: `Approval Gate Center (${pendingApprovals.length})` },
+    { key: 'active', label: `Staged & Active Workflows (${activeWorkflows.length})` },
     { key: 'learning', label: `Execution Learning (${learnings.length})` },
   ] as const;
 
@@ -66,22 +66,22 @@ export const ExecutionIntelligenceView: React.FC<ExecutionIntelligenceViewProps>
       {/* Header */}
       <div>
         <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3.5 py-1 border border-emerald-500/30 text-xs font-semibold text-emerald-400">
-          <span>Autonomous Business Execution Workflows</span>
+          <span>Autonomous Campaign Preparation & Content Staging</span>
         </div>
         <h1 className="text-3xl font-extrabold text-slate-100 mt-2">
-          Autonomous Business <span className="text-gradient">Execution</span>
+          Autonomous Campaign <span className="text-gradient">Staging</span>
         </h1>
         <p className="text-xs text-slate-400">
-          Transform AI intelligence recommendations into controlled, risk-evaluated, agent-orchestrated business execution.
+          Transform Business DNA intelligence into controlled, risk-evaluated, human-approved content drafts and staged campaign artifacts.
         </p>
       </div>
 
       {/* Stats Header */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Plans', value: plans.length, color: 'text-cyan-400' },
+          { label: 'Staging Plans', value: plans.length, color: 'text-cyan-400' },
           { label: 'Pending Approvals', value: pendingApprovals.length, color: 'text-amber-400' },
-          { label: 'Active / Completed', value: activeWorkflows.length, color: 'text-emerald-400' },
+          { label: 'Staged / Ready', value: activeWorkflows.length, color: 'text-emerald-400' },
           { label: 'Learnings Recorded', value: learnings.length, color: 'text-purple-400' },
         ].map((s) => (
           <div key={s.label} className="glass-card p-4 text-center">
@@ -112,11 +112,11 @@ export const ExecutionIntelligenceView: React.FC<ExecutionIntelligenceViewProps>
       {activeTab === 'plans' && (
         <div className="space-y-5">
           <div className="glass-card p-5 space-y-3 border-emerald-500/20">
-            <h3 className="font-bold text-slate-100 text-sm">Create Execution Plan</h3>
+            <h3 className="font-bold text-slate-100 text-sm">Stage Campaign / Workflow</h3>
             <div className="flex flex-wrap gap-3">
               <input
                 type="text"
-                placeholder='Objective e.g. "Launch Q3 Re-engagement Campaign"'
+                placeholder='Objective e.g. "Stage Q3 Enterprise Re-engagement Campaign"'
                 value={objective}
                 onChange={(e) => setObjective(e.target.value)}
                 className="flex-1 min-w-[280px] rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
@@ -135,13 +135,13 @@ export const ExecutionIntelligenceView: React.FC<ExecutionIntelligenceViewProps>
                 onClick={() => { onCreatePlan?.(objective, domain); setObjective(''); }}
                 className="rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs px-5 py-2 hover:opacity-90 transition-opacity shadow"
               >
-                Create Plan →
+                Stage Content & Workflow →
               </button>
             </div>
           </div>
 
           {plans.length === 0 ? (
-            <p className="text-center py-8 text-slate-500 text-xs">No execution plans created yet.</p>
+            <p className="text-center py-8 text-slate-500 text-xs">No campaign plans staged yet.</p>
           ) : (
             <div className="space-y-4">
               {plans.map((p) => (
@@ -167,7 +167,7 @@ export const ExecutionIntelligenceView: React.FC<ExecutionIntelligenceViewProps>
                         onClick={() => onExecutePlan?.(p.executionId)}
                         className="rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 shadow"
                       >
-                        Execute Now →
+                        Stage & Prepare Content →
                       </button>
                     )}
                   </div>
@@ -222,7 +222,7 @@ export const ExecutionIntelligenceView: React.FC<ExecutionIntelligenceViewProps>
                         onClick={() => onApproveExecution?.(req.approvalId)}
                         className="rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 shadow"
                       >
-                        ✓ Approve Execution
+                        ✓ Approve & Stage Artifact
                       </button>
                       <button
                         onClick={() => onRejectExecution?.(req.approvalId)}

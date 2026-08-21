@@ -146,7 +146,7 @@ export const ContentWorkspaceView: React.FC<ContentWorkspaceViewProps> = ({
     { id: 'recommendations', label: 'Recommendations 💡', badge: recommendations.length },
     { id: 'generate', label: 'Generate ⚡' },
     { id: 'approvals', label: 'Approve 🛡️', badge: approvalManager.listPendingRequests(businessId).length },
-    { id: 'publishing', label: 'Publish 📢' },
+    { id: 'publishing', label: 'Staged Publishing 📢' },
   ];
 
   return (

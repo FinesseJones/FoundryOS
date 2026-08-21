@@ -28,16 +28,16 @@ export const PublishingView: React.FC<PublishingViewProps> = ({ setActiveTab }) 
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-100">
-            Publishing Log — <span className="text-gradient">Publishing Agent</span>
+            Publishing Log — <span className="text-gradient">Content Staging & Queue</span>
           </h1>
           <p className="text-xs text-slate-400">
-            Audit history of staged, approved, and published content across digital channels.
+            Audit history of intelligence-grounded, human-approved content staged and prepared for digital channels.
           </p>
         </div>
       </div>
 
       <div className="glass-card p-6 space-y-4">
-        <h3 className="font-bold text-slate-200 text-sm border-b border-white/10 pb-3">Delivery Queue & History</h3>
+        <h3 className="font-bold text-slate-200 text-sm border-b border-white/10 pb-3">Staged Content Queue & Delivery History</h3>
 
         <div className="divide-y divide-white/10 text-xs">
           {stagedLogs.map((log) => (

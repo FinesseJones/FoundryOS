@@ -18,6 +18,8 @@ services:
       - "8787"
     environment:
       - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+    volumes:
+      - proxy_data:/app/data
 
   caddy:
     image: caddy:2-alpine
@@ -37,3 +39,4 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  proxy_data:

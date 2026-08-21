@@ -152,19 +152,20 @@ export default function App() {
         );
     }
 
-    // ──────────────── Authenticated View: Active Workspace OS ──────────────
-    const currentMeta = pageTitles[selectedPage] || { title: "TACF Operating System", subtitle: "Enterprise Platform" };
+    const isDemoMode = session.role === 'DEMO_VIEWER';
 
     const currentUserContext = {
         role: session.role || 'ADMIN',
         permissions: {
-            userManagement: session.role === 'ADMIN' || session.role === 'EXECUTIVE',
-            settingsManagement: session.role === 'ADMIN',
+            userManagement: !isDemoMode && (session.role === 'ADMIN' || session.role === 'EXECUTIVE'),
+            settingsManagement: !isDemoMode && session.role === 'ADMIN',
             ollamaAccess: true,
-            deleteCriticalRecords: session.role === 'ADMIN',
-            viewAuditLogs: true,
+            deleteCriticalRecords: !isDemoMode && session.role === 'ADMIN',
+            viewAuditLogs: !isDemoMode,
         }
     };
+
+    const currentMeta = pageTitles[selectedPage] || { title: "TACF Operating System", subtitle: "Enterprise Platform" };
 
     return (
         <ToasterProvider>
@@ -230,7 +231,9 @@ export default function App() {
                                 </div>
                             </div>
 
-                            {/* Section: Tools & Execution */}
+
+
+                            {/* Section: Execution & Pipeline */}
                             <div>
                                 <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-3">
                                     Execution & Pipeline
@@ -298,21 +301,18 @@ export default function App() {
                     <div className="p-4 border-t border-slate-800/80 bg-slate-900/60">
                         <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50">
                             <div className="flex items-center space-x-3 min-w-0">
-                                <div className="relative shrink-0">
-                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-xs text-white">
-                                        {session.name ? session.name.substring(0, 2).toUpperCase() : 'US'}
-                                    </div>
-                                    <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+                                <div className="h-8 w-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-xs font-mono font-bold text-indigo-300 shrink-0">
+                                    {session.name.charAt(0).toUpperCase()}
                                 </div>
-                                <div className="overflow-hidden">
-                                    <p className="text-xs font-bold text-white truncate">{session.name || 'User'}</p>
-                                    <p className="text-[10px] text-slate-400 truncate">{session.email}</p>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-bold text-white truncate">{session.name}</p>
+                                    <p className="text-[10px] font-mono text-slate-400 uppercase">{session.role}</p>
                                 </div>
                             </div>
                             <button
                                 onClick={handleLogout}
                                 title="Sign Out"
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/40 border border-transparent hover:border-red-500/30 transition-all cursor-pointer"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700/50 transition-colors cursor-pointer"
                             >
                                 <LogOut className="w-4 h-4" />
                             </button>
@@ -322,6 +322,22 @@ export default function App() {
 
                 {/* Main Content Viewport */}
                 <div className="flex-1 flex flex-col min-w-0 bg-slate-950">
+                    {/* Isolated Demo Sandbox Persistent Banner */}
+                    {isDemoMode && (
+                        <div className="bg-emerald-950/90 border-b border-emerald-500/30 px-6 py-2 flex items-center justify-between text-xs font-mono text-emerald-300 shadow-md">
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                                <span><strong>Isolated Demo Sandbox</strong> · Simulated data only · Zero administrative access to production systems.</span>
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="underline hover:text-white cursor-pointer font-bold"
+                            >
+                                Exit Sandbox & Sign Up ➔
+                            </button>
+                        </div>
+                    )}
+
                     {/* Top Unified Header Bar */}
                     <header className="sticky top-0 z-20 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-8 py-3.5 flex items-center justify-between">
                         <div>

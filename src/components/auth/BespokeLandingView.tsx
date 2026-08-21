@@ -16,7 +16,7 @@ import {
   Eye
 } from 'lucide-react';
 import { OnboardingWizard } from './OnboardingWizard';
-import { UserSession } from '../../core/saas/auth';
+import { AccountManager, UserSession } from '../../core/saas/auth';
 
 interface BespokeLandingViewProps {
   onAuthenticated: (session: UserSession) => void;
@@ -113,20 +113,30 @@ export const BespokeLandingView: React.FC<BespokeLandingViewProps> = ({ onAuthen
             Synthesizes marketing intelligence, website automation, and risk-governed autonomous execution for modern enterprises.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-4">
             <button
               onClick={() => setAuthModalMode('signup')}
-              className="w-full sm:w-auto px-8 py-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-[0_0_30px_rgba(99,102,241,0.4)] transition-all cursor-pointer flex items-center justify-center gap-2 border border-indigo-400/40"
+              className="w-full sm:w-auto px-7 py-3.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-[0_0_25px_rgba(99,102,241,0.4)] transition-all cursor-pointer flex items-center justify-center gap-2 border border-indigo-400/40"
             >
               <span>Get Started with TACF OS</span>
               <ChevronRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => setAuthModalMode('login')}
-              className="w-full sm:w-auto px-6 py-4 rounded-xl text-sm font-mono text-slate-300 bg-slate-900/80 hover:bg-slate-800/80 border border-white/10 hover:border-white/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-5 py-3.5 rounded-xl text-xs font-mono text-slate-300 bg-slate-900/80 hover:bg-slate-800/80 border border-white/10 hover:border-white/20 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
-              <Lock className="w-4 h-4 text-indigo-400" />
-              <span>Access Existing Workspace</span>
+              <Lock className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Sign In to Workspace</span>
+            </button>
+            <button
+              onClick={async () => {
+                const demo = await AccountManager.getInstance().launchDemoSession();
+                onAuthenticated(demo.session);
+              }}
+              className="w-full sm:w-auto px-5 py-3.5 rounded-xl text-xs font-mono text-emerald-300 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/30 hover:border-emerald-500/50 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Explore Demo Sandbox</span>
             </button>
           </div>
         </section>

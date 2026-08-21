@@ -1,12 +1,594 @@
 import express from "express";
+import crypto from "node:crypto";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 const app = express();
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "2mb" }));
 
 const NVIDIA_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 
-app.get("/api/health", (_req, res) => res.json({ ok: true, key: !!NVIDIA_KEY }));
+const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "data");
+const DB_FILE = path.join(DATA_DIR, "db.json");
+
+// ─── 1. Server-Side Scrypt Password Hashing ─────────────────────────────────
+
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const derivedKey = crypto.scryptSync(password, salt, 64);
+  return `${salt}:${derivedKey.toString("hex")}`;
+}
+
+function verifyPassword(password, storedHash) {
+  if (!storedHash || !storedHash.includes(":")) return false;
+  const [salt, key] = storedHash.split(":");
+  const keyBuffer = Buffer.from(key, "hex");
+  const derivedKey = crypto.scryptSync(password, salt, 64);
+  return crypto.timingSafeEqual(keyBuffer, derivedKey);
+}
+
+function generateSessionToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+// ─── 2. Persistent Server Database ─────────────────────────────────────────
+
+let db = {
+  users: {},         // userId -> user
+  usersByEmail: {},  // email -> userId
+  organizations: {}, // orgId -> org
+  workspaces: {},    // orgId -> [workspaces]
+  companyProfiles: {}, // orgId -> profile
+  dnaModels: {},     // orgId -> DNA
+  sessions: {},      // token -> session
+};
+
+async function initDatabase() {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    const raw = await fs.readFile(DB_FILE, "utf-8");
+    db = JSON.parse(raw);
+    console.log("[DB] Restored server database successfully from:", DB_FILE);
+  } catch (err) {
+    console.log("[DB] Initializing fresh server database at:", DB_FILE);
+    await saveDatabase();
+  }
+}
+
+async function saveDatabase() {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
+  } catch (err) {
+    console.error("[DB] Failed to save database to disk:", err);
+  }
+}
+
+// ─── 3. Server Authentication Middleware ────────────────────────────────────
+
+function authenticateSession(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Authentication required. Bearer token missing." });
+  }
+
+  const token = authHeader.split(" ")[1];
+  const session = db.sessions[token];
+
+  if (!session) {
+    return res.status(401).json({ error: "Invalid session token. Please sign in again." });
+  }
+
+  if (new Date(session.expiresAt).getTime() < Date.now()) {
+    delete db.sessions[token];
+    saveDatabase();
+    return res.status(401).json({ error: "Session expired. Please sign in again." });
+  }
+
+  req.session = session;
+  req.user = db.users[session.userId];
+  next();
+}
+
+function assertOrgOwnership(req, res, organizationId) {
+  const org = db.organizations[organizationId];
+  if (!org) {
+    res.status(404).json({ error: `Organization '${organizationId}' not found.` });
+    return null;
+  }
+
+  // Demo viewers are strictly isolated to their demo sandbox
+  if (req.session.role === "DEMO_VIEWER") {
+    if (organizationId !== "org_demo_sandbox") {
+      res.status(403).json({ error: "Access Denied: Demo viewers cannot access live tenant data." });
+      return null;
+    }
+    return org;
+  }
+
+  if (org.ownerUserId !== req.session.userId) {
+    res.status(403).json({ error: "Security Violation: Cross-tenant access denied." });
+    return null;
+  }
+
+  return org;
+}
+
+// ─── 4. Health Check Endpoint ───────────────────────────────────────────────
+
+app.get("/api/health", (_req, res) => {
+  res.json({
+    ok: true,
+    service: "tacf-api-server",
+    key: !!NVIDIA_KEY,
+    database: "persistent-server-file",
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ─── 5. Server-Side Authentication Endpoints ────────────────────────────────
+
+// Register
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+    const normalizedEmail = (email || "").trim().toLowerCase();
+
+    if (!normalizedEmail || !password) {
+      return res.status(400).json({ error: "Email and password are required." });
+    }
+
+    if (db.usersByEmail[normalizedEmail]) {
+      return res.status(409).json({ error: `Account '${normalizedEmail}' already exists.` });
+    }
+
+    const userId = `usr_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+    const passwordHash = hashPassword(password);
+    const now = new Date().toISOString();
+
+    const user = {
+      id: userId,
+      email: normalizedEmail,
+      name: (name || "").trim() || normalizedEmail.split("@")[0],
+      role: "ADMIN",
+      passwordHash,
+      createdAt: now,
+    };
+
+    db.users[userId] = user;
+    db.usersByEmail[normalizedEmail] = userId;
+
+    // Create secure server session (7 days)
+    const token = generateSessionToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const session = {
+      token,
+      userId,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      organizationId: "",
+      organizationName: "",
+      createdAt: now,
+      expiresAt,
+    };
+
+    db.sessions[token] = session;
+    await saveDatabase();
+
+    const { passwordHash: _, ...safeUser } = user;
+    res.status(201).json({ user: safeUser, session });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Login
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const normalizedEmail = (email || "").trim().toLowerCase();
+
+    const userId = db.usersByEmail[normalizedEmail];
+    const user = userId ? db.users[userId] : null;
+
+    if (!user || !verifyPassword(password, user.passwordHash)) {
+      return res.status(401).json({ error: "Invalid email or password." });
+    }
+
+    // Find primary organization & workspace
+    const userOrgs = Object.values(db.organizations).filter(o => o.ownerUserId === user.id);
+    const primaryOrg = userOrgs[0];
+    let primaryWs = null;
+    let businessDNA = null;
+
+    if (primaryOrg) {
+      const wsList = db.workspaces[primaryOrg.id] || [];
+      primaryWs = wsList[0] || null;
+      businessDNA = db.dnaModels[primaryOrg.id] || null;
+    }
+
+    const token = generateSessionToken();
+    const now = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const session = {
+      token,
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      organizationId: primaryOrg ? primaryOrg.id : "",
+      organizationName: primaryOrg ? primaryOrg.name : "",
+      workspaceId: primaryWs ? primaryWs.id : "",
+      workspaceName: primaryWs ? primaryWs.name : "",
+      createdAt: now,
+      expiresAt,
+    };
+
+    db.sessions[token] = session;
+    await saveDatabase();
+
+    const { passwordHash: _, ...safeUser } = user;
+    res.json({
+      user: safeUser,
+      session,
+      organization: primaryOrg || null,
+      workspace: primaryWs || null,
+      businessDNA: businessDNA || null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Verify Session
+app.get("/api/auth/session", authenticateSession, (req, res) => {
+  const { passwordHash: _, ...safeUser } = req.user;
+  res.json({
+    user: safeUser,
+    session: req.session,
+  });
+});
+
+// Logout
+app.post("/api/auth/logout", authenticateSession, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  delete db.sessions[token];
+  await saveDatabase();
+  res.json({ success: true, message: "Logged out successfully." });
+});
+
+// ─── 6. Isolated Demo Workspace Endpoint (Zero Admin Privileges) ────────────
+
+app.post("/api/auth/demo", async (_req, res) => {
+  try {
+    const demoToken = `demo_${generateSessionToken()}`;
+    const now = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(); // 2 hours
+
+    // Ensure Demo Org & Workspace exist in sandbox
+    if (!db.organizations["org_demo_sandbox"]) {
+      db.organizations["org_demo_sandbox"] = {
+        id: "org_demo_sandbox",
+        name: "Acme Corp (Demo Sandbox)",
+        ownerUserId: "usr_demo_sandbox",
+        industry: "technology_saas",
+        planTier: "starter",
+        createdAt: now,
+      };
+
+      db.workspaces["org_demo_sandbox"] = [
+        {
+          id: "ws_demo_sandbox",
+          organizationId: "org_demo_sandbox",
+          name: "Evaluation Sandbox",
+          slug: "evaluation-sandbox",
+          createdAt: now,
+        }
+      ];
+
+      db.dnaModels["org_demo_sandbox"] = {
+        id: "dna_demo_sandbox",
+        businessId: "biz_demo_sandbox",
+        organizationId: "org_demo_sandbox",
+        schemaVersion: "1.0",
+        confidenceScore: 0.92,
+        companyIdentity: {
+          companyName: "Acme Corp (Demo Sandbox)",
+          industry: "technology_saas",
+          stage: "growth",
+          mission: "Demonstrating autonomous business operating system capabilities.",
+          uniqueValueProposition: "Sandboxed AI intelligence and automated website generation.",
+          coreValues: ["Safe Evaluation", "Zero Mutation", "Simulated Telemetry"],
+        },
+        opportunityPillars: {
+          financialPain: "$850k annual evaluation benchmark.",
+          processGap: "Sample manual workflow friction for testing.",
+          stakeholderAlignment: "Demo Evaluation Sponsor",
+        },
+        brandVoice: {
+          primaryTone: "authoritative",
+          wordsToUse: ["autonomous", "intelligent", "verified", "sample"],
+          wordsToAvoid: ["production-leak", "admin-mutation"],
+        },
+        customerProfile: {
+          targetAudience: "Evaluating guests and prospective enterprise clients.",
+          primaryPainPoints: ["Testing functionality before signup"],
+          buyerPersonas: [
+            { name: "Prospective Buyer", role: "Evaluator", challenges: ["Feature validation"] }
+          ],
+        },
+        competitivePositioning: {
+          marketPosition: "Demo Evaluation Sandbox",
+          primaryCompetitors: ["Generic SaaS"],
+          keyDifferentiators: ["Strict sandbox isolation"],
+        },
+        websiteAnalysis: {
+          primaryUrl: "https://acme-demo.example.com",
+          colors: ["#6366f1", "#10b981", "#0f172a"],
+          fonts: ["Inter", "Space Grotesk"],
+        },
+        updatedAt: now,
+      };
+    }
+
+    const demoSession = {
+      token: demoToken,
+      userId: "usr_demo_sandbox",
+      email: "guest.demo@tacfos.tech",
+      name: "Demo Guest",
+      role: "DEMO_VIEWER", // Restricted Read-Only Role
+      organizationId: "org_demo_sandbox",
+      organizationName: "Acme Corp (Demo Sandbox)",
+      workspaceId: "ws_demo_sandbox",
+      workspaceName: "Evaluation Sandbox",
+      createdAt: now,
+      expiresAt,
+    };
+
+    db.sessions[demoToken] = demoSession;
+    await saveDatabase();
+
+    res.json({
+      session: demoSession,
+      organization: db.organizations["org_demo_sandbox"],
+      workspace: db.workspaces["org_demo_sandbox"][0],
+      businessDNA: db.dnaModels["org_demo_sandbox"],
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── 7. Server-Side Tenant Endpoints (Strict ISOL-01 Enforcement) ───────────
+
+// Create Organization
+app.post("/api/tenant/organization", authenticateSession, async (req, res) => {
+  try {
+    if (req.session.role === "DEMO_VIEWER") {
+      return res.status(403).json({ error: "Demo viewers cannot create organizations. Please create a real account." });
+    }
+
+    const { name, industry, planTier } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: "Organization name is required." });
+    }
+
+    const orgId = `org_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+    const now = new Date().toISOString();
+
+    const org = {
+      id: orgId,
+      name: name.trim(),
+      ownerUserId: req.session.userId,
+      industry: industry || "technology_saas",
+      planTier: planTier || "growth",
+      createdAt: now,
+    };
+
+    db.organizations[orgId] = org;
+    req.session.organizationId = org.id;
+    req.session.organizationName = org.name;
+    db.sessions[req.session.token] = req.session;
+
+    await saveDatabase();
+    res.status(201).json(org);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create Workspace
+app.post("/api/tenant/workspace", authenticateSession, async (req, res) => {
+  try {
+    if (req.session.role === "DEMO_VIEWER") {
+      return res.status(403).json({ error: "Demo viewers cannot create workspaces." });
+    }
+
+    const { organizationId, name, slug } = req.body;
+    const org = assertOrgOwnership(req, res, organizationId);
+    if (!org) return;
+
+    const wsId = `ws_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+    const now = new Date().toISOString();
+
+    const ws = {
+      id: wsId,
+      organizationId,
+      name: (name || "").trim() || "Primary Workspace",
+      slug: (slug || name || "primary").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      createdAt: now,
+    };
+
+    if (!db.workspaces[organizationId]) {
+      db.workspaces[organizationId] = [];
+    }
+    db.workspaces[organizationId].push(ws);
+
+    req.session.workspaceId = ws.id;
+    req.session.workspaceName = ws.name;
+    db.sessions[req.session.token] = req.session;
+
+    await saveDatabase();
+    res.status(201).json(ws);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Save Company Profile & Generate Business DNA
+app.post("/api/tenant/dna", authenticateSession, async (req, res) => {
+  try {
+    if (req.session.role === "DEMO_VIEWER") {
+      return res.status(403).json({ error: "Demo viewers cannot modify Business DNA." });
+    }
+
+    const {
+      organizationId,
+      workspaceId,
+      companyName,
+      websiteUrl,
+      industry,
+      mission,
+      uvp,
+      processGap,
+      financialPain,
+      targetAudience
+    } = req.body;
+
+    const org = assertOrgOwnership(req, res, organizationId);
+    if (!org) return;
+
+    const cleanName = (companyName || org.name).trim();
+    const cleanUrl = (websiteUrl || "https://").trim();
+    const cleanIndustry = industry || org.industry || "technology_saas";
+    const cleanMission = (mission || `To lead and transform the ${cleanIndustry.replace("_", " ")} space through automated intelligence.`).trim();
+    const cleanUvp = (uvp || `Autonomous brand intelligence, real-time website compilation, and automated execution for ${cleanName}.`).trim();
+    const cleanProcessGap = (processGap || "Manual departmental workflows, fragmented tool stacks, and operational lead time drag.").trim();
+    const cleanFinancialPain = (financialPain || "$1.2M in annual overhead lost to execution friction.").trim();
+    const cleanTargetAudience = (targetAudience || "Modern enterprise executives, operations directors, and growing commercial teams.").trim();
+
+    const businessId = `biz_${organizationId.replace(/^org_/, "")}`;
+    const now = new Date().toISOString();
+
+    const companyProfile = {
+      organizationId,
+      workspaceId: workspaceId || "",
+      businessId,
+      companyName: cleanName,
+      websiteUrl: cleanUrl,
+      industry: cleanIndustry,
+      mission: cleanMission,
+      uvp: cleanUvp,
+      processGap: cleanProcessGap,
+      financialPain: cleanFinancialPain,
+      targetAudience: cleanTargetAudience,
+      updatedAt: now,
+    };
+
+    const businessDNA = {
+      id: `dna_${organizationId.replace(/^org_/, "")}`,
+      businessId,
+      organizationId,
+      schemaVersion: "1.0",
+      confidenceScore: 0.94,
+      companyIdentity: {
+        companyName: cleanName,
+        industry: cleanIndustry,
+        stage: "growth",
+        mission: cleanMission,
+        uniqueValueProposition: cleanUvp,
+        coreValues: ["Operational Speed", "Customer Excellence", "Deterministic Accuracy", "Zero-Trust Integrity"],
+      },
+      opportunityPillars: {
+        financialPain: cleanFinancialPain,
+        processGap: cleanProcessGap,
+        stakeholderAlignment: "Executive Leadership (Direct Sponsor)",
+      },
+      brandVoice: {
+        primaryTone: "authoritative",
+        wordsToUse: ["autonomous", "precision", "streamlined", "enterprise", "intelligence"],
+        wordsToAvoid: ["manual", "slow", "legacy", "approximate"],
+      },
+      customerProfile: {
+        targetAudience: cleanTargetAudience,
+        primaryPainPoints: [cleanProcessGap, cleanFinancialPain, "Lack of unified operational visibility"],
+        buyerPersonas: [
+          { name: "VP of Growth & Operations", role: "Executive Champion", challenges: [cleanProcessGap, "Budget efficiency"] },
+          { name: "Head of Brand Strategy", role: "Brand Custodian", challenges: ["Consistency across channels", "Fast turnaround"] },
+        ],
+      },
+      competitivePositioning: {
+        marketPosition: "Market Leader & Autonomous Pioneer",
+        primaryCompetitors: ["Legacy Consultancies", "Manual SaaS Point Tools"],
+        keyDifferentiators: ["Closed-loop Business DNA", "Self-generating websites", "Multi-domain zero-trust governance"],
+      },
+      websiteAnalysis: {
+        primaryUrl: cleanUrl,
+        colors: ["#4f46e5", "#10b981", "#0f172a", "#6366f1", "#38bdf8"],
+        fonts: ["Inter", "Space Grotesk", "JetBrains Mono"],
+      },
+      updatedAt: now,
+    };
+
+    db.companyProfiles[organizationId] = companyProfile;
+    db.dnaModels[organizationId] = businessDNA;
+
+    await saveDatabase();
+    res.status(201).json({ companyProfile, businessDNA });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get Business DNA (Strictly verified on server)
+app.get("/api/tenant/dna/:organizationId", authenticateSession, (req, res) => {
+  const { organizationId } = req.params;
+  const org = assertOrgOwnership(req, res, organizationId);
+  if (!org) return;
+
+  const dna = db.dnaModels[organizationId];
+  if (!dna) {
+    return res.status(404).json({ error: `Business DNA not found for organization '${organizationId}'.` });
+  }
+
+  res.json(dna);
+});
+
+// Update Business DNA
+app.put("/api/tenant/dna/:organizationId", authenticateSession, async (req, res) => {
+  try {
+    if (req.session.role === "DEMO_VIEWER") {
+      return res.status(403).json({ error: "Demo viewers cannot modify Business DNA." });
+    }
+
+    const { organizationId } = req.params;
+    const org = assertOrgOwnership(req, res, organizationId);
+    if (!org) return;
+
+    const existing = db.dnaModels[organizationId];
+    if (!existing) {
+      return res.status(404).json({ error: `Business DNA not found for organization '${organizationId}'.` });
+    }
+
+    const updated = {
+      ...existing,
+      ...req.body,
+      updatedAt: new Date().toISOString(),
+    };
+
+    db.dnaModels[organizationId] = updated;
+    await saveDatabase();
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── 8. LLM Proxy Route (NVIDIA Nim) ────────────────────────────────────────
 
 app.post("/api/chat", async (req, res) => {
   if (!NVIDIA_KEY) {
@@ -36,4 +618,11 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-app.listen(8787, () => console.log("llm-proxy listening on :8787"));
+// ─── 9. Startup & Initialization ───────────────────────────────────────────
+
+const PORT = process.env.PORT || 8787;
+initDatabase().then(() => {
+  app.listen(PORT, () => {
+    console.log(`[TACF API Server] Listening on :${PORT} with persistent server database.`);
+  });
+});

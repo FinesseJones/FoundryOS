@@ -1,9 +1,9 @@
-export type UserRole = 'ADMIN' | 'EXECUTIVE' | 'MARKETER' | 'MEMBER';
+export type UserRole = 'ADMIN' | 'EXECUTIVE' | 'MARKETER' | 'MEMBER' | 'DEMO_VIEWER';
 
 export interface UserAccount {
   id: string;
   email: string;
-  passwordHash: string;
+  passwordHash?: string;
   name: string;
   role: UserRole;
   createdAt: string;
@@ -110,7 +110,6 @@ export async function hashPassword(password: string): Promise<string> {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
-  // Deterministic fallback for environments without subtle crypto
   let hash = 0;
   for (let i = 0; i < password.length; i++) {
     const chr = password.charCodeAt(i);
@@ -120,17 +119,17 @@ export async function hashPassword(password: string): Promise<string> {
   return `sha256_${Math.abs(hash).toString(16)}`;
 }
 
-const STORAGE_KEY_AUTH = 'tacf_auth_store_v1';
-const ACTIVE_SESSION_KEY = 'tacf_active_session_token_v1';
+const STORAGE_KEY_AUTH = 'tacf_auth_store_v2';
+const ACTIVE_SESSION_KEY = 'tacf_active_session_token_v2';
 
 export class AccountManager {
   private static instance: AccountManager;
-  private users: Map<string, UserAccount> = new Map(); // email -> account
-  private organizations: Map<string, OrganizationRecord> = new Map(); // orgId -> org
-  private workspaces: Map<string, WorkspaceRecord[]> = new Map(); // orgId -> workspaces[]
-  private companyProfiles: Map<string, CompanyInfoRecord> = new Map(); // orgId -> companyInfo
-  private dnaModels: Map<string, StoredBusinessDNA> = new Map(); // orgId -> StoredBusinessDNA
-  private sessions: Map<string, UserSession> = new Map(); // token -> session
+  private users: Map<string, UserAccount> = new Map();
+  private organizations: Map<string, OrganizationRecord> = new Map();
+  private workspaces: Map<string, WorkspaceRecord[]> = new Map();
+  private companyProfiles: Map<string, CompanyInfoRecord> = new Map();
+  private dnaModels: Map<string, StoredBusinessDNA> = new Map();
+  private sessions: Map<string, UserSession> = new Map();
 
   constructor() {
     this.loadState();
@@ -141,6 +140,19 @@ export class AccountManager {
       AccountManager.instance = new AccountManager();
     }
     return AccountManager.instance;
+  }
+
+  private isBrowserRuntime(): boolean {
+    return typeof window !== 'undefined' && typeof window.location !== 'undefined';
+  }
+
+  private async safeServerFetch(endpoint: string, options: RequestInit): Promise<Response | null> {
+    if (!this.isBrowserRuntime()) return null;
+    try {
+      return await fetch(endpoint, options);
+    } catch {
+      return null;
+    }
   }
 
   private isLocalStorageAvailable(): boolean {
@@ -161,7 +173,7 @@ export class AccountManager {
         if (data.sessions) this.sessions = new Map(Object.entries(data.sessions));
       }
     } catch (e) {
-      console.warn('TACF AccountManager: Failed to restore state from localStorage', e);
+      console.warn('TACF AccountManager: Failed to restore state from storage', e);
     }
   }
 
@@ -178,22 +190,42 @@ export class AccountManager {
       };
       window.localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(data));
     } catch (e) {
-      console.warn('TACF AccountManager: Failed to save state to localStorage', e);
+      console.warn('TACF AccountManager: Failed to save state to storage', e);
     }
   }
 
-  // ─── 1. Account Registration ──────────────────────────────────────────────
+  // ─── 1. Account Registration (Server-First with Local Mirror) ─────────────
 
   async registerAccount(params: {
     email: string;
     password: string;
     name: string;
     role?: UserRole;
-  }): Promise<{ user: Omit<UserAccount, 'passwordHash'>; session: UserSession }> {
+  }): Promise<{ user: UserAccount; session: UserSession }> {
     const normalizedEmail = params.email.trim().toLowerCase();
     if (!normalizedEmail || !params.password) {
       throw new Error('Registration Error: Email and password are required.');
     }
+
+    // Try server endpoint first in browser
+    const resp = await this.safeServerFetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+
+    if (resp) {
+      if (resp.ok) {
+        const data = await resp.json();
+        this.cacheSession(data.session);
+        return data;
+      } else {
+        const errData = await resp.json();
+        if (errData.error) throw new Error(errData.error);
+      }
+    }
+
+    // Local Sandbox Registration
     if (this.users.has(normalizedEmail)) {
       throw new Error(`Registration Error: Account with email '${normalizedEmail}' already exists.`);
     }
@@ -212,8 +244,6 @@ export class AccountManager {
     };
 
     this.users.set(normalizedEmail, user);
-
-    // Automatically create session upon successful registration
     const session = this.createSessionInternal(user);
     this.saveState();
 
@@ -221,13 +251,13 @@ export class AccountManager {
     return { user: safeUser, session };
   }
 
-  // ─── 2. Authentication / Login ───────────────────────────────────────────
+  // ─── 2. Authentication / Login (Server-First with Local Mirror) ───────────
 
   async login(params: {
     email: string;
     password: string;
   }): Promise<{
-    user: Omit<UserAccount, 'passwordHash'>;
+    user: UserAccount;
     session: UserSession;
     organization?: OrganizationRecord;
     workspace?: WorkspaceRecord;
@@ -235,6 +265,26 @@ export class AccountManager {
     businessDNA?: StoredBusinessDNA;
   }> {
     const normalizedEmail = params.email.trim().toLowerCase();
+
+    // Try server endpoint first in browser
+    const resp = await this.safeServerFetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+
+    if (resp) {
+      if (resp.ok) {
+        const data = await resp.json();
+        this.cacheSession(data.session);
+        return data;
+      } else {
+        const errData = await resp.json();
+        if (errData.error) throw new Error(errData.error);
+      }
+    }
+
+    // Local Sandbox Verification
     const user = this.users.get(normalizedEmail);
     if (!user) {
       throw new Error('Authentication Error: Invalid email or password.');
@@ -245,7 +295,6 @@ export class AccountManager {
       throw new Error('Authentication Error: Invalid email or password.');
     }
 
-    // Identify user's organizations
     const userOrgs = Array.from(this.organizations.values()).filter(o => o.ownerUserId === user.id);
     const primaryOrg = userOrgs[0];
     let primaryWs: WorkspaceRecord | undefined;
@@ -273,7 +322,120 @@ export class AccountManager {
     };
   }
 
-  // ─── 3. Create Organization ──────────────────────────────────────────────
+  // ─── 3. Isolated Demo Workspace (Zero Admin Permissions) ──────────────────
+
+  async launchDemoSession(): Promise<{
+    session: UserSession;
+    organization: OrganizationRecord;
+    workspace: WorkspaceRecord;
+    businessDNA: StoredBusinessDNA;
+  }> {
+    // Try server endpoint first in browser
+    const resp = await this.safeServerFetch('/api/auth/demo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (resp && resp.ok) {
+      const data = await resp.json();
+      this.cacheSession(data.session);
+      return data;
+    }
+
+    // Local Isolated Demo Sandbox
+    const now = new Date().toISOString();
+    const demoToken = `demo_${generateSecureToken(32)}`;
+
+    const demoOrg: OrganizationRecord = {
+      id: 'org_demo_sandbox',
+      name: 'Acme Corp (Demo Sandbox)',
+      ownerUserId: 'usr_demo_sandbox',
+      industry: 'technology_saas',
+      planTier: 'starter',
+      createdAt: now,
+    };
+
+    const demoWs: WorkspaceRecord = {
+      id: 'ws_demo_sandbox',
+      organizationId: 'org_demo_sandbox',
+      name: 'Evaluation Sandbox',
+      slug: 'evaluation-sandbox',
+      createdAt: now,
+    };
+
+    const demoDna: StoredBusinessDNA = {
+      id: 'dna_demo_sandbox',
+      businessId: 'biz_demo_sandbox',
+      organizationId: 'org_demo_sandbox',
+      schemaVersion: '1.0',
+      confidenceScore: 0.92,
+      companyIdentity: {
+        companyName: 'Acme Corp (Demo Sandbox)',
+        industry: 'technology_saas',
+        stage: 'growth',
+        mission: 'Demonstrating autonomous business operating system capabilities in a secure sandbox.',
+        uniqueValueProposition: 'Sandboxed AI intelligence and automated website generation.',
+        coreValues: ['Safe Evaluation', 'Zero Mutation', 'Simulated Telemetry'],
+      },
+      opportunityPillars: {
+        financialPain: '$850k annual evaluation benchmark.',
+        processGap: 'Sample manual workflow friction for testing.',
+        stakeholderAlignment: 'Demo Evaluation Sponsor',
+      },
+      brandVoice: {
+        primaryTone: 'authoritative',
+        wordsToUse: ['autonomous', 'intelligent', 'verified', 'sample'],
+        wordsToAvoid: ['production-leak', 'admin-mutation'],
+      },
+      customerProfile: {
+        targetAudience: 'Evaluating guests and prospective enterprise clients.',
+        primaryPainPoints: ['Testing functionality before signup'],
+        buyerPersonas: [
+          { name: 'Prospective Buyer', role: 'Evaluator', challenges: ['Feature validation'] }
+        ],
+      },
+      competitivePositioning: {
+        marketPosition: 'Demo Evaluation Sandbox',
+        primaryCompetitors: ['Generic SaaS'],
+        keyDifferentiators: ['Strict sandbox isolation'],
+      },
+      websiteAnalysis: {
+        primaryUrl: 'https://acme-demo.example.com',
+        colors: ['#6366f1', '#10b981', '#0f172a'],
+        fonts: ['Inter', 'Space Grotesk'],
+      },
+      updatedAt: now,
+    };
+
+    const demoSession: UserSession = {
+      token: demoToken,
+      userId: 'usr_demo_sandbox',
+      email: 'guest.demo@tacfos.tech',
+      name: 'Demo Guest',
+      role: 'DEMO_VIEWER',
+      organizationId: 'org_demo_sandbox',
+      organizationName: 'Acme Corp (Demo Sandbox)',
+      workspaceId: 'ws_demo_sandbox',
+      workspaceName: 'Evaluation Sandbox',
+      createdAt: now,
+      expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    };
+
+    this.sessions.set(demoToken, demoSession);
+    this.organizations.set('org_demo_sandbox', demoOrg);
+    this.workspaces.set('org_demo_sandbox', [demoWs]);
+    this.dnaModels.set('org_demo_sandbox', demoDna);
+    this.cacheSession(demoSession);
+
+    return {
+      session: demoSession,
+      organization: demoOrg,
+      workspace: demoWs,
+      businessDNA: demoDna,
+    };
+  }
+
+  // ─── 4. Create Organization (Server-First with Local Mirror) ──────────────
 
   async createOrganization(params: {
     sessionToken: string;
@@ -282,6 +444,28 @@ export class AccountManager {
     planTier?: string;
   }): Promise<OrganizationRecord> {
     const session = this.assertSession(params.sessionToken);
+
+    if (session.role === 'DEMO_VIEWER') {
+      throw new Error('Demo viewers cannot create organizations. Please register a real account.');
+    }
+
+    const resp = await this.safeServerFetch('/api/tenant/organization', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${params.sessionToken}`,
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (resp && resp.ok) {
+      const org = await resp.json();
+      session.organizationId = org.id;
+      session.organizationName = org.name;
+      this.cacheSession(session);
+      return org;
+    }
+
     const orgId = `org_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const now = new Date().toISOString();
 
@@ -295,17 +479,14 @@ export class AccountManager {
     };
 
     this.organizations.set(orgId, org);
-
-    // Update active session with this organization
     session.organizationId = org.id;
     session.organizationName = org.name;
     this.sessions.set(session.token, session);
-
     this.saveState();
     return org;
   }
 
-  // ─── 4. Create Workspace ──────────────────────────────────────────────────
+  // ─── 5. Create Workspace (Server-First with Local Mirror) ─────────────────
 
   async createWorkspace(params: {
     sessionToken: string;
@@ -315,6 +496,27 @@ export class AccountManager {
   }): Promise<WorkspaceRecord> {
     const session = this.assertSession(params.sessionToken);
     this.assertOrganizationOwnership(session, params.organizationId);
+
+    if (session.role === 'DEMO_VIEWER') {
+      throw new Error('Demo viewers cannot create workspaces.');
+    }
+
+    const resp = await this.safeServerFetch('/api/tenant/workspace', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${params.sessionToken}`,
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (resp && resp.ok) {
+      const ws = await resp.json();
+      session.workspaceId = ws.id;
+      session.workspaceName = ws.name;
+      this.cacheSession(session);
+      return ws;
+    }
 
     const wsId = `ws_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const now = new Date().toISOString();
@@ -331,16 +533,14 @@ export class AccountManager {
     const existing = this.workspaces.get(params.organizationId) || [];
     this.workspaces.set(params.organizationId, [...existing, ws]);
 
-    // Update session
     session.workspaceId = ws.id;
     session.workspaceName = ws.name;
     this.sessions.set(session.token, session);
-
     this.saveState();
     return ws;
   }
 
-  // ─── 5. Enter & Save Company Profile (Business DNA Synthesis) ──────────────
+  // ─── 6. Save Company Profile & Business DNA (Server-First) ────────────────
 
   async saveCompanyProfile(params: {
     sessionToken: string;
@@ -357,6 +557,27 @@ export class AccountManager {
   }): Promise<{ companyProfile: CompanyInfoRecord; businessDNA: StoredBusinessDNA }> {
     const session = this.assertSession(params.sessionToken);
     this.assertOrganizationOwnership(session, params.organizationId);
+
+    if (session.role === 'DEMO_VIEWER') {
+      throw new Error('Demo viewers cannot modify live Business DNA.');
+    }
+
+    const resp = await this.safeServerFetch('/api/tenant/dna', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${params.sessionToken}`,
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (resp && resp.ok) {
+      const data = await resp.json();
+      this.companyProfiles.set(params.organizationId, data.companyProfile);
+      this.dnaModels.set(params.organizationId, data.businessDNA);
+      this.saveState();
+      return data;
+    }
 
     const businessId = `biz_${params.organizationId.replace(/^org_/, '')}`;
     const cleanName = params.companyName.trim();
@@ -383,7 +604,6 @@ export class AccountManager {
       updatedAt: new Date().toISOString(),
     };
 
-    // Construct authoritative 13-node Business DNA graph
     const businessDNA: StoredBusinessDNA = {
       id: `dna_${params.organizationId.replace(/^org_/, '')}`,
       businessId,
@@ -405,8 +625,8 @@ export class AccountManager {
       },
       brandVoice: {
         primaryTone: 'authoritative',
-        wordsToUse: ['autonomous', 'precision', 'streamlined', 'transformative', 'enterprise', 'intelligence'],
-        wordsToAvoid: ['manual', 'slow', 'legacy', 'approximate', 'clunky'],
+        wordsToUse: ['autonomous', 'precision', 'streamlined', 'enterprise', 'intelligence'],
+        wordsToAvoid: ['manual', 'slow', 'legacy', 'approximate'],
       },
       customerProfile: {
         targetAudience: cleanTargetAudience,
@@ -436,7 +656,7 @@ export class AccountManager {
     return { companyProfile, businessDNA };
   }
 
-  // ─── 6. Tenant-Isolated Queries & Updates ────────────────────────────────
+  // ─── 7. Tenant-Isolated Queries & Updates ────────────────────────────────
 
   getOrganizations(sessionToken: string): OrganizationRecord[] {
     const session = this.assertSession(sessionToken);
@@ -471,6 +691,10 @@ export class AccountManager {
     const session = this.assertSession(sessionToken);
     this.assertOrganizationOwnership(session, organizationId);
 
+    if (session.role === 'DEMO_VIEWER') {
+      throw new Error('Demo viewers cannot modify Business DNA.');
+    }
+
     const existing = this.dnaModels.get(organizationId);
     if (!existing) {
       throw new Error(`Business DNA not found for organization '${organizationId}'.`);
@@ -487,7 +711,14 @@ export class AccountManager {
     return updated;
   }
 
-  // ─── 7. Session Validation & Lifecycle ────────────────────────────────────
+  // ─── 8. Session Validation & Lifecycle ────────────────────────────────────
+
+  private cacheSession(session: UserSession): void {
+    this.sessions.set(session.token, session);
+    if (this.isLocalStorageAvailable()) {
+      window.localStorage.setItem(ACTIVE_SESSION_KEY, session.token);
+    }
+  }
 
   private createSessionInternal(
     user: UserAccount,
@@ -496,7 +727,7 @@ export class AccountManager {
   ): UserSession {
     const token = generateSecureToken(32);
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
+    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const session: UserSession = {
       userId: user.id,
@@ -512,10 +743,7 @@ export class AccountManager {
       expiresAt,
     };
 
-    this.sessions.set(token, session);
-    if (this.isLocalStorageAvailable()) {
-      window.localStorage.setItem(ACTIVE_SESSION_KEY, token);
-    }
+    this.cacheSession(session);
     return session;
   }
 
@@ -543,6 +771,11 @@ export class AccountManager {
   }
 
   logout(token: string): void {
+    this.safeServerFetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
     this.sessions.delete(token);
     if (this.isLocalStorageAvailable()) {
       window.localStorage.removeItem(ACTIVE_SESSION_KEY);
@@ -550,7 +783,7 @@ export class AccountManager {
     this.saveState();
   }
 
-  // ─── 8. Security Guard Assertions ─────────────────────────────────────────
+  // ─── 9. Security Guard Assertions ─────────────────────────────────────────
 
   private assertSession(token: string): UserSession {
     const session = this.validateSession(token);
@@ -565,13 +798,20 @@ export class AccountManager {
     if (!org) {
       throw new Error(`Security Violation: Organization '${organizationId}' not found.`);
     }
+
+    if (session.role === 'DEMO_VIEWER') {
+      if (organizationId !== 'org_demo_sandbox') {
+        throw new Error(`Security Violation: Demo viewers cannot access live tenant '${organizationId}'.`);
+      }
+      return org;
+    }
+
     if (org.ownerUserId !== session.userId) {
       throw new Error(`Security Violation: User '${session.userId}' is not authorized to access organization '${organizationId}'.`);
     }
     return org;
   }
 
-  // Helper for testing resets
   clearAll(): void {
     this.users.clear();
     this.organizations.clear();
@@ -586,7 +826,7 @@ export class AccountManager {
   }
 }
 
-// Backwards compatibility layer for existing services
+// Backwards compatibility layer
 export class SaaSAuthManager {
   private sessions: Map<string, UserSession> = new Map();
 
@@ -625,6 +865,10 @@ export class SaaSAuthManager {
   }
 
   hasPermission(session: UserSession, action: 'execute_agent' | 'approve_task' | 'manage_billing' | 'manage_team'): boolean {
+    if (session.role === 'DEMO_VIEWER') {
+      return false; // Zero administrative permissions in demo mode
+    }
+
     switch (action) {
       case 'manage_billing':
       case 'manage_team':

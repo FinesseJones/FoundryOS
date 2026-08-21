@@ -147,6 +147,13 @@ export class AccountManager {
   private workspaces: Map<string, WorkspaceRecord[]> = new Map();
   private companyProfiles: Map<string, CompanyInfoRecord> = new Map();
   private dnaModels: Map<string, StoredBusinessDNA> = new Map();
+  private insights: Map<string, any[]> = new Map();
+  private recommendations: Map<string, any[]> = new Map();
+  private artifacts: Map<string, any[]> = new Map();
+  private agentTasks: Map<string, any[]> = new Map();
+  private approvals: Map<string, any[]> = new Map();
+  private executions: Map<string, any[]> = new Map();
+  private auditEvents: Map<string, any[]> = new Map();
   private sessions: Map<string, UserSession> = new Map();
 
   constructor() {
@@ -188,6 +195,13 @@ export class AccountManager {
         if (data.workspaces) this.workspaces = new Map(Object.entries(data.workspaces));
         if (data.companyProfiles) this.companyProfiles = new Map(Object.entries(data.companyProfiles));
         if (data.dnaModels) this.dnaModels = new Map(Object.entries(data.dnaModels));
+        if (data.insights) this.insights = new Map(Object.entries(data.insights));
+        if (data.recommendations) this.recommendations = new Map(Object.entries(data.recommendations));
+        if (data.artifacts) this.artifacts = new Map(Object.entries(data.artifacts));
+        if (data.agentTasks) this.agentTasks = new Map(Object.entries(data.agentTasks));
+        if (data.approvals) this.approvals = new Map(Object.entries(data.approvals));
+        if (data.executions) this.executions = new Map(Object.entries(data.executions));
+        if (data.auditEvents) this.auditEvents = new Map(Object.entries(data.auditEvents));
         if (data.sessions) this.sessions = new Map(Object.entries(data.sessions));
       }
     } catch (e) {
@@ -204,6 +218,13 @@ export class AccountManager {
         workspaces: Object.fromEntries(this.workspaces),
         companyProfiles: Object.fromEntries(this.companyProfiles),
         dnaModels: Object.fromEntries(this.dnaModels),
+        insights: Object.fromEntries(this.insights),
+        recommendations: Object.fromEntries(this.recommendations),
+        artifacts: Object.fromEntries(this.artifacts),
+        agentTasks: Object.fromEntries(this.agentTasks),
+        approvals: Object.fromEntries(this.approvals),
+        executions: Object.fromEntries(this.executions),
+        auditEvents: Object.fromEntries(this.auditEvents),
         sessions: Object.fromEntries(this.sessions),
       };
       window.localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(data));
@@ -865,7 +886,259 @@ export class AccountManager {
     this.saveState();
   }
 
-  // ─── 9. Security Guard Assertions ─────────────────────────────────────────
+  // ─── 9. Authoritative Organization System of Record ────────────────────────
+
+  async loadOrganizationState(sessionToken: string, organizationId: string): Promise<any> {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+
+    const resp = await this.safeServerFetch(`/api/tenant/organization/${organizationId}/state`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${sessionToken}`,
+      },
+    });
+
+    if (resp && resp.ok) {
+      const data = await resp.json();
+      if (data.organization) this.organizations.set(organizationId, data.organization);
+      if (data.companyProfile) this.companyProfiles.set(organizationId, data.companyProfile);
+      if (data.businessDNA) this.dnaModels.set(organizationId, data.businessDNA);
+      if (data.workspaces) this.workspaces.set(organizationId, data.workspaces);
+      if (data.insights) this.insights.set(organizationId, data.insights);
+      if (data.recommendations) this.recommendations.set(organizationId, data.recommendations);
+      if (data.artifacts) this.artifacts.set(organizationId, data.artifacts);
+      if (data.agentTasks) this.agentTasks.set(organizationId, data.agentTasks);
+      if (data.approvals) this.approvals.set(organizationId, data.approvals);
+      if (data.executions) this.executions.set(organizationId, data.executions);
+      if (data.auditEvents) this.auditEvents.set(organizationId, data.auditEvents);
+      this.saveState();
+      return data;
+    }
+
+    return {
+      organization: this.organizations.get(organizationId) || null,
+      companyProfile: this.companyProfiles.get(organizationId) || null,
+      businessDNA: this.dnaModels.get(organizationId) || null,
+      workspaces: this.workspaces.get(organizationId) || [],
+      insights: this.insights.get(organizationId) || [],
+      recommendations: this.recommendations.get(organizationId) || [],
+      artifacts: this.artifacts.get(organizationId) || [],
+      agentTasks: this.agentTasks.get(organizationId) || [],
+      approvals: this.approvals.get(organizationId) || [],
+      executions: this.executions.get(organizationId) || [],
+      auditEvents: this.auditEvents.get(organizationId) || [],
+    };
+  }
+
+  async saveInsight(sessionToken: string, organizationId: string, insight: any): Promise<any> {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+
+    const list = this.insights.get(organizationId) || [];
+    const item = {
+      id: insight.id || `ins_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ...insight,
+      organizationId,
+      createdAt: insight.createdAt || new Date().toISOString(),
+    };
+    list.unshift(item);
+    this.insights.set(organizationId, list.slice(0, 100));
+    this.saveState();
+
+    this.safeServerFetch(`/api/tenant/organization/${organizationId}/insights`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+      body: JSON.stringify(item),
+    }).catch(err => console.warn('TACF AccountManager: Server sync warning for insight', err));
+
+    return item;
+  }
+
+  getInsights(sessionToken: string, organizationId: string): any[] {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+    return this.insights.get(organizationId) || [];
+  }
+
+  async saveRecommendation(sessionToken: string, organizationId: string, recommendation: any): Promise<any> {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+
+    const list = this.recommendations.get(organizationId) || [];
+    const item = {
+      id: recommendation.id || `rec_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ...recommendation,
+      organizationId,
+      createdAt: recommendation.createdAt || new Date().toISOString(),
+    };
+    list.unshift(item);
+    this.recommendations.set(organizationId, list.slice(0, 100));
+    this.saveState();
+
+    this.safeServerFetch(`/api/tenant/organization/${organizationId}/recommendations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+      body: JSON.stringify(item),
+    }).catch(err => console.warn('TACF AccountManager: Server sync warning for recommendation', err));
+
+    return item;
+  }
+
+  getRecommendations(sessionToken: string, organizationId: string): any[] {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+    return this.recommendations.get(organizationId) || [];
+  }
+
+  async saveArtifact(sessionToken: string, organizationId: string, artifact: any): Promise<any> {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+
+    const list = this.artifacts.get(organizationId) || [];
+    const item = {
+      id: artifact.id || `art_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ...artifact,
+      organizationId,
+      createdAt: artifact.createdAt || new Date().toISOString(),
+    };
+    list.unshift(item);
+    this.artifacts.set(organizationId, list.slice(0, 100));
+    this.saveState();
+
+    this.safeServerFetch(`/api/tenant/organization/${organizationId}/artifacts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+      body: JSON.stringify(item),
+    }).catch(err => console.warn('TACF AccountManager: Server sync warning for artifact', err));
+
+    return item;
+  }
+
+  getArtifacts(sessionToken: string, organizationId: string): any[] {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+    return this.artifacts.get(organizationId) || [];
+  }
+
+  async saveAgentTask(sessionToken: string, organizationId: string, task: any): Promise<any> {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+
+    const list = this.agentTasks.get(organizationId) || [];
+    const item = {
+      id: task.id || `task_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ...task,
+      organizationId,
+      createdAt: task.createdAt || new Date().toISOString(),
+    };
+    list.unshift(item);
+    this.agentTasks.set(organizationId, list.slice(0, 100));
+    this.saveState();
+
+    this.safeServerFetch(`/api/tenant/organization/${organizationId}/agent-tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+      body: JSON.stringify(item),
+    }).catch(err => console.warn('TACF AccountManager: Server sync warning for agent-task', err));
+
+    return item;
+  }
+
+  getAgentTasks(sessionToken: string, organizationId: string): any[] {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+    return this.agentTasks.get(organizationId) || [];
+  }
+
+  async saveApproval(sessionToken: string, organizationId: string, approval: any): Promise<any> {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+
+    const list = this.approvals.get(organizationId) || [];
+    const item = {
+      id: approval.id || `appr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ...approval,
+      organizationId,
+      status: approval.status || 'PENDING',
+      createdAt: approval.createdAt || new Date().toISOString(),
+    };
+    list.unshift(item);
+    this.approvals.set(organizationId, list);
+    this.saveState();
+
+    this.safeServerFetch(`/api/tenant/organization/${organizationId}/approvals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+      body: JSON.stringify(item),
+    }).catch(err => console.warn('TACF AccountManager: Server sync warning for approval', err));
+
+    return item;
+  }
+
+  async updateApproval(sessionToken: string, organizationId: string, approvalId: string, status: 'APPROVED' | 'REJECTED', notes?: string): Promise<any> {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+
+    const list = this.approvals.get(organizationId) || [];
+    const item = list.find(a => a.id === approvalId);
+    if (!item) {
+      throw new Error(`Approval '${approvalId}' not found.`);
+    }
+
+    item.status = status;
+    item.reviewedBy = session.email;
+    item.reviewedAt = new Date().toISOString();
+    item.reviewNotes = notes || item.reviewNotes;
+
+    this.saveState();
+
+    this.safeServerFetch(`/api/tenant/organization/${organizationId}/approvals/${approvalId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+      body: JSON.stringify({ status, reviewNotes: notes }),
+    }).catch(err => console.warn('TACF AccountManager: Server sync warning for approval update', err));
+
+    return item;
+  }
+
+  getApprovals(sessionToken: string, organizationId: string): any[] {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+    return this.approvals.get(organizationId) || [];
+  }
+
+  async logAuditEvent(sessionToken: string, organizationId: string, event: any): Promise<any> {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+
+    const list = this.auditEvents.get(organizationId) || [];
+    const item = {
+      id: event.id || `evt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ...event,
+      organizationId,
+      timestamp: event.timestamp || new Date().toISOString(),
+    };
+    list.unshift(item);
+    this.auditEvents.set(organizationId, list.slice(0, 500));
+    this.saveState();
+
+    this.safeServerFetch(`/api/tenant/organization/${organizationId}/audit-events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
+      body: JSON.stringify(item),
+    }).catch(err => console.warn('TACF AccountManager: Server sync warning for audit event', err));
+
+    return item;
+  }
+
+  getAuditEvents(sessionToken: string, organizationId: string): any[] {
+    const session = this.assertSession(sessionToken);
+    this.assertOrganizationOwnership(session, organizationId);
+    return this.auditEvents.get(organizationId) || [];
+  }
+
+  // ─── 10. Security Guard Assertions ────────────────────────────────────────
 
   private assertSession(token: string): UserSession {
     const session = this.validateSession(token);

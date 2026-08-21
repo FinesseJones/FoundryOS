@@ -35,20 +35,43 @@ function generateSessionToken() {
 // ─── 2. Persistent Server Database ─────────────────────────────────────────
 
 let db = {
-  users: {},         // userId -> user
-  usersByEmail: {},  // email -> userId
-  organizations: {}, // orgId -> org
-  workspaces: {},    // orgId -> [workspaces]
-  companyProfiles: {}, // orgId -> profile
-  dnaModels: {},     // orgId -> DNA
-  sessions: {},      // token -> session
+  users: {},            // userId -> user
+  usersByEmail: {},     // email -> userId
+  organizations: {},    // orgId -> org
+  workspaces: {},       // orgId -> [workspaces]
+  companyProfiles: {},  // orgId -> profile
+  dnaModels: {},        // orgId -> DNA
+  insights: {},         // orgId -> [sales/marketing/ops insights]
+  recommendations: {},  // orgId -> [strategy recommendations]
+  artifacts: {},        // orgId -> [generated copy/code/briefs/websites]
+  agentTasks: {},       // orgId -> [scheduled & completed agent tasks]
+  approvals: {},        // orgId -> [human approval items]
+  executions: {},       // orgId -> [pipeline execution states]
+  auditEvents: {},      // orgId -> [audit log events]
+  sessions: {},         // token -> session
 };
 
 async function initDatabase() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
     const raw = await fs.readFile(DB_FILE, "utf-8");
-    db = JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    db = {
+      users: parsed.users || {},
+      usersByEmail: parsed.usersByEmail || {},
+      organizations: parsed.organizations || {},
+      workspaces: parsed.workspaces || {},
+      companyProfiles: parsed.companyProfiles || {},
+      dnaModels: parsed.dnaModels || {},
+      insights: parsed.insights || {},
+      recommendations: parsed.recommendations || {},
+      artifacts: parsed.artifacts || {},
+      agentTasks: parsed.agentTasks || {},
+      approvals: parsed.approvals || {},
+      executions: parsed.executions || {},
+      auditEvents: parsed.auditEvents || {},
+      sessions: parsed.sessions || {},
+    };
     console.log("[DB] Restored server database successfully from:", DB_FILE);
   } catch (err) {
     console.log("[DB] Initializing fresh server database at:", DB_FILE);
@@ -614,7 +637,235 @@ app.put("/api/tenant/dna/:organizationId", authenticateSession, async (req, res)
   }
 });
 
-// ─── 8. LLM Proxy Route (NVIDIA NIM Primary, Ollama Fallback) ──────────────
+// ─── 8. Authoritative Organization System of Record Endpoints ───────────────
+
+// 8.1 Full Organization State Bundle (Single round-trip bootstrap)
+app.get("/api/tenant/organization/:organizationId/state", authenticateSession, (req, res) => {
+  const { organizationId } = req.params;
+  const org = assertOrgOwnership(req, res, organizationId);
+  if (!org) return;
+
+  res.json({
+    organization: org,
+    companyProfile: db.companyProfiles[organizationId] || null,
+    businessDNA: db.dnaModels[organizationId] || null,
+    workspaces: db.workspaces[organizationId] || [],
+    insights: db.insights[organizationId] || [],
+    recommendations: db.recommendations[organizationId] || [],
+    artifacts: db.artifacts[organizationId] || [],
+    agentTasks: db.agentTasks[organizationId] || [],
+    approvals: db.approvals[organizationId] || [],
+    executions: db.executions[organizationId] || [],
+    auditEvents: db.auditEvents[organizationId] || [],
+  });
+});
+
+// 8.2 Insights (Sales, Marketing, Operations, Security)
+app.get("/api/tenant/organization/:organizationId/insights", authenticateSession, (req, res) => {
+  const { organizationId } = req.params;
+  const org = assertOrgOwnership(req, res, organizationId);
+  if (!org) return;
+  res.json(db.insights[organizationId] || []);
+});
+
+app.post("/api/tenant/organization/:organizationId/insights", authenticateSession, async (req, res) => {
+  try {
+    const { organizationId } = req.params;
+    const org = assertOrgOwnership(req, res, organizationId);
+    if (!org) return;
+
+    const list = db.insights[organizationId] || [];
+    const item = {
+      id: req.body.id || `ins_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ...req.body,
+      organizationId,
+      createdAt: req.body.createdAt || new Date().toISOString(),
+    };
+    list.unshift(item);
+    db.insights[organizationId] = list.slice(0, 100);
+    await saveDatabase();
+    res.status(201).json(item);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 8.3 Recommendations (Strategies, CRO, Positioning)
+app.get("/api/tenant/organization/:organizationId/recommendations", authenticateSession, (req, res) => {
+  const { organizationId } = req.params;
+  const org = assertOrgOwnership(req, res, organizationId);
+  if (!org) return;
+  res.json(db.recommendations[organizationId] || []);
+});
+
+app.post("/api/tenant/organization/:organizationId/recommendations", authenticateSession, async (req, res) => {
+  try {
+    const { organizationId } = req.params;
+    const org = assertOrgOwnership(req, res, organizationId);
+    if (!org) return;
+
+    const list = db.recommendations[organizationId] || [];
+    const item = {
+      id: req.body.id || `rec_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ...req.body,
+      organizationId,
+      createdAt: req.body.createdAt || new Date().toISOString(),
+    };
+    list.unshift(item);
+    db.recommendations[organizationId] = list.slice(0, 100);
+    await saveDatabase();
+    res.status(201).json(item);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 8.4 Generated Artifacts (Copy, HTML Websites, Proposals, Briefs)
+app.get("/api/tenant/organization/:organizationId/artifacts", authenticateSession, (req, res) => {
+  const { organizationId } = req.params;
+  const org = assertOrgOwnership(req, res, organizationId);
+  if (!org) return;
+  res.json(db.artifacts[organizationId] || []);
+});
+
+app.post("/api/tenant/organization/:organizationId/artifacts", authenticateSession, async (req, res) => {
+  try {
+    const { organizationId } = req.params;
+    const org = assertOrgOwnership(req, res, organizationId);
+    if (!org) return;
+
+    const list = db.artifacts[organizationId] || [];
+    const item = {
+      id: req.body.id || `art_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ...req.body,
+      organizationId,
+      createdAt: req.body.createdAt || new Date().toISOString(),
+    };
+    list.unshift(item);
+    db.artifacts[organizationId] = list.slice(0, 100);
+    await saveDatabase();
+    res.status(201).json(item);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 8.5 Agent Tasks
+app.get("/api/tenant/organization/:organizationId/agent-tasks", authenticateSession, (req, res) => {
+  const { organizationId } = req.params;
+  const org = assertOrgOwnership(req, res, organizationId);
+  if (!org) return;
+  res.json(db.agentTasks[organizationId] || []);
+});
+
+app.post("/api/tenant/organization/:organizationId/agent-tasks", authenticateSession, async (req, res) => {
+  try {
+    const { organizationId } = req.params;
+    const org = assertOrgOwnership(req, res, organizationId);
+    if (!org) return;
+
+    const list = db.agentTasks[organizationId] || [];
+    const item = {
+      id: req.body.id || `task_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ...req.body,
+      organizationId,
+      createdAt: req.body.createdAt || new Date().toISOString(),
+    };
+    list.unshift(item);
+    db.agentTasks[organizationId] = list.slice(0, 100);
+    await saveDatabase();
+    res.status(201).json(item);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 8.6 Human Approvals
+app.get("/api/tenant/organization/:organizationId/approvals", authenticateSession, (req, res) => {
+  const { organizationId } = req.params;
+  const org = assertOrgOwnership(req, res, organizationId);
+  if (!org) return;
+  res.json(db.approvals[organizationId] || []);
+});
+
+app.post("/api/tenant/organization/:organizationId/approvals", authenticateSession, async (req, res) => {
+  try {
+    const { organizationId } = req.params;
+    const org = assertOrgOwnership(req, res, organizationId);
+    if (!org) return;
+
+    const list = db.approvals[organizationId] || [];
+    const item = {
+      id: req.body.id || `appr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ...req.body,
+      organizationId,
+      status: req.body.status || 'PENDING',
+      createdAt: req.body.createdAt || new Date().toISOString(),
+    };
+    list.unshift(item);
+    db.approvals[organizationId] = list;
+    await saveDatabase();
+    res.status(201).json(item);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch("/api/tenant/organization/:organizationId/approvals/:approvalId", authenticateSession, async (req, res) => {
+  try {
+    const { organizationId, approvalId } = req.params;
+    const org = assertOrgOwnership(req, res, organizationId);
+    if (!org) return;
+
+    const list = db.approvals[organizationId] || [];
+    const item = list.find((a) => a.id === approvalId);
+    if (!item) {
+      return res.status(404).json({ error: `Approval item '${approvalId}' not found.` });
+    }
+
+    item.status = req.body.status || item.status;
+    item.reviewedBy = req.user.email;
+    item.reviewedAt = new Date().toISOString();
+    item.reviewNotes = req.body.reviewNotes || item.reviewNotes;
+
+    await saveDatabase();
+    res.json(item);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 8.7 Audit Events
+app.get("/api/tenant/organization/:organizationId/audit-events", authenticateSession, (req, res) => {
+  const { organizationId } = req.params;
+  const org = assertOrgOwnership(req, res, organizationId);
+  if (!org) return;
+  res.json(db.auditEvents[organizationId] || []);
+});
+
+app.post("/api/tenant/organization/:organizationId/audit-events", authenticateSession, async (req, res) => {
+  try {
+    const { organizationId } = req.params;
+    const org = assertOrgOwnership(req, res, organizationId);
+    if (!org) return;
+
+    const list = db.auditEvents[organizationId] || [];
+    const item = {
+      id: req.body.id || `evt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ...req.body,
+      organizationId,
+      timestamp: req.body.timestamp || new Date().toISOString(),
+    };
+    list.unshift(item);
+    db.auditEvents[organizationId] = list.slice(0, 500);
+    await saveDatabase();
+    res.status(201).json(item);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── 9. LLM Proxy Route (NVIDIA NIM Primary, Ollama Fallback) ──────────────
 
 const OLLAMA_URL = process.env.OLLAMA_HOST ? `${process.env.OLLAMA_HOST}/api/chat` : "http://localhost:11434/api/chat";
 

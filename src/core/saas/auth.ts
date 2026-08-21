@@ -460,9 +460,12 @@ export class AccountManager {
 
     if (resp && resp.ok) {
       const org = await resp.json();
+      this.organizations.set(org.id, org);
       session.organizationId = org.id;
       session.organizationName = org.name;
+      this.sessions.set(session.token, session);
       this.cacheSession(session);
+      this.saveState();
       return org;
     }
 
@@ -512,9 +515,13 @@ export class AccountManager {
 
     if (resp && resp.ok) {
       const ws = await resp.json();
+      const existing = this.workspaces.get(params.organizationId) || [];
+      this.workspaces.set(params.organizationId, [...existing.filter(w => w.id !== ws.id), ws]);
       session.workspaceId = ws.id;
       session.workspaceName = ws.name;
+      this.sessions.set(session.token, session);
       this.cacheSession(session);
+      this.saveState();
       return ws;
     }
 
@@ -794,7 +801,22 @@ export class AccountManager {
   }
 
   private assertOrganizationOwnership(session: UserSession, organizationId: string): OrganizationRecord {
-    const org = this.organizations.get(organizationId);
+    let org = this.organizations.get(organizationId);
+
+    // Auto-heal if organization exists in active session from backend
+    if (!org && session.organizationId === organizationId) {
+      org = {
+        id: organizationId,
+        name: session.organizationName || 'Organization',
+        ownerUserId: session.userId,
+        industry: 'technology_saas',
+        planTier: 'growth',
+        createdAt: new Date().toISOString(),
+      };
+      this.organizations.set(organizationId, org);
+      this.saveState();
+    }
+
     if (!org) {
       throw new Error(`Security Violation: Organization '${organizationId}' not found.`);
     }

@@ -70,14 +70,87 @@ export default function CustomerIntelligence({
   organizationId = 'org_tacf_enterprise',
   businessId = 'biz_tacf_enterprise'
 }: CustomerIntelligenceProps) {
-  const [activeTab, setActiveTab] = useState<CustomerIntelligenceTab>('today');
+  const [activeTab, setActiveTab] = useState<CustomerIntelligenceTab>('dna');
 
-  // 1. Initialize Authoritative DNA Model
+  // 1. Authoritative Business DNA Store Retrieval
+  const currentSession = useMemo(() => AccountManager.getInstance().getCurrentSession(), []);
+  const storedDna = useMemo<StoredBusinessDNA>(() => {
+    if (currentSession && currentSession.organizationId) {
+      const found = AccountManager.getInstance().getBusinessDNA(currentSession.token, currentSession.organizationId);
+      if (found) return found;
+    }
+    return {
+      id: `dna_${organizationId}`,
+      businessId,
+      organizationId,
+      schemaVersion: '1.0',
+      confidenceScore: 0.94,
+      companyIdentity: {
+        companyName: 'TACF Autonomous Systems',
+        industry: 'technology_saas',
+        stage: 'growth',
+        mission: 'To empower and transform modern business operations through verified autonomous intelligence.',
+        uniqueValueProposition: 'Closed-loop Business DNA, real-time website compilation, and zero-trust execution.',
+        coreValues: ['Operational Speed', 'Customer Excellence', 'Deterministic Accuracy', 'Zero-Trust Integrity'],
+      },
+      opportunityPillars: {
+        financialPain: '$1.2M in annual overhead lost to execution friction.',
+        processGap: 'Manual departmental workflows and tool fragmentation.',
+        stakeholderAlignment: 'Executive Leadership (Direct Sponsor)',
+      },
+      brandVoice: {
+        primaryTone: 'authoritative',
+        wordsToUse: ['autonomous', 'precision', 'streamlined', 'enterprise', 'intelligence'],
+        wordsToAvoid: ['manual', 'slow', 'legacy', 'approximate'],
+      },
+      customerProfile: {
+        targetAudience: 'Modern enterprise executives, operations directors, and growing commercial teams.',
+        primaryPainPoints: ['Manual departmental workflows', '$1.2M annual overhead', 'Lack of unified operational visibility'],
+        buyerPersonas: [
+          { name: 'VP of Growth & Operations', role: 'Executive Champion', challenges: ['Process bottlenecks', 'Budget efficiency'] },
+          { name: 'Head of Brand Strategy', role: 'Brand Custodian', challenges: ['Consistency across channels', 'Fast turnaround'] },
+        ],
+      },
+      competitivePositioning: {
+        marketPosition: 'Market Leader & Autonomous Pioneer',
+        primaryCompetitors: ['Legacy Consultancies', 'Manual SaaS Point Tools'],
+        keyDifferentiators: ['Closed-loop Business DNA', 'Self-generating websites', 'Multi-domain zero-trust governance'],
+      },
+      websiteAnalysis: {
+        primaryUrl: 'https://brandfirst.ai',
+        colors: ['#4f46e5', '#10b981', '#0f172a', '#6366f1', '#38bdf8'],
+        fonts: ['Inter', 'Space Grotesk', 'JetBrains Mono'],
+      },
+      updatedAt: new Date().toISOString(),
+    };
+  }, [currentSession, organizationId, businessId]);
+
+  // 2. Initialize Authoritative DNA Model populated with storedDna
   const dna = useMemo<BusinessDNA>(() => {
-    return initialDna || createDefaultBusinessDNA(businessId);
-  }, [initialDna, businessId]);
+    if (initialDna) return initialDna;
+    const base = createDefaultBusinessDNA(businessId);
+    base.companyIdentity.companyName.value = storedDna.companyIdentity.companyName;
+    base.companyIdentity.mission.value = storedDna.companyIdentity.mission;
+    base.companyIdentity.uniqueValueProposition.value = storedDna.companyIdentity.uniqueValueProposition;
+    base.companyIdentity.industry.value = storedDna.companyIdentity.industry;
+    base.companyIdentity.coreValues.value = storedDna.companyIdentity.coreValues;
+    base.brandVoice.primaryTone.value = storedDna.brandVoice.primaryTone;
+    base.brandVoice.wordsToUse.value = storedDna.brandVoice.wordsToUse;
+    base.brandVoice.wordsToAvoid.value = storedDna.brandVoice.wordsToAvoid;
+    base.customerProfile.targetAudience.value = storedDna.customerProfile.targetAudience;
+    base.customerProfile.primaryPainPoints.value = storedDna.customerProfile.primaryPainPoints;
+    base.competitivePositioning.marketPosition.value = storedDna.competitivePositioning.marketPosition;
+    base.competitivePositioning.primaryCompetitors.value = storedDna.competitivePositioning.primaryCompetitors;
+    base.competitivePositioning.keyDifferentiators.value = storedDna.competitivePositioning.keyDifferentiators;
+    if (base.websiteAnalysis) {
+      base.websiteAnalysis.primaryUrl.value = storedDna.websiteAnalysis.primaryUrl;
+      if (base.websiteAnalysis.colors) base.websiteAnalysis.colors.value = storedDna.websiteAnalysis.colors;
+      if (base.websiteAnalysis.fonts) base.websiteAnalysis.fonts.value = storedDna.websiteAnalysis.fonts;
+    }
+    return base;
+  }, [initialDna, businessId, storedDna]);
 
-  // 2. Initialize Repositories & Context
+  // 3. Initialize Repositories & Context
   const dnaRepo = useMemo(() => {
     const r = new BusinessDNARepository();
     r.saveDNA(dna, organizationId);
@@ -93,7 +166,7 @@ export default function CustomerIntelligence({
     return cb;
   }, [dna]);
 
-  // 3. Initialize Domain Intelligence Services
+  // 4. Initialize Domain Intelligence Services
   const execService = useMemo(() => new AutonomousExecutionService(dnaRepo, auditRepo, memoryRepo, contextBuilder), [dnaRepo, auditRepo, memoryRepo, contextBuilder]);
   const autoService = useMemo(() => new CustomerAutomationService(dnaRepo, auditRepo, memoryRepo, contextBuilder, execService), [dnaRepo, auditRepo, memoryRepo, contextBuilder, execService]);
   const dataSourceService = useMemo(() => new DataSourceService(auditRepo), [auditRepo]);
@@ -221,58 +294,6 @@ export default function CustomerIntelligence({
       nextRefreshAt: new Date(Date.now() + 86400000).toISOString(),
     },
   });
-
-  const currentSession = useMemo(() => AccountManager.getInstance().getCurrentSession(), []);
-  const storedDna = useMemo<StoredBusinessDNA>(() => {
-    if (currentSession && currentSession.organizationId) {
-      const found = AccountManager.getInstance().getBusinessDNA(currentSession.token, currentSession.organizationId);
-      if (found) return found;
-    }
-    return {
-      id: `dna_${organizationId}`,
-      businessId,
-      organizationId,
-      schemaVersion: '1.0',
-      confidenceScore: 0.94,
-      companyIdentity: {
-        companyName: dna.companyIdentity.companyName.value,
-        industry: typeof dna.companyIdentity.industry.value === 'string' ? dna.companyIdentity.industry.value : 'technology_saas',
-        stage: 'growth',
-        mission: dna.companyIdentity.mission.value,
-        uniqueValueProposition: dna.companyIdentity.uniqueValueProposition.value,
-        coreValues: ['Operational Speed', 'Customer Excellence', 'Deterministic Accuracy', 'Zero-Trust Integrity'],
-      },
-      opportunityPillars: {
-        financialPain: '$1.2M in annual overhead lost to execution friction.',
-        processGap: 'Manual departmental workflows and tool fragmentation.',
-        stakeholderAlignment: 'Executive Leadership (Direct Sponsor)',
-      },
-      brandVoice: {
-        primaryTone: typeof dna.brandVoice.primaryTone.value === 'string' ? dna.brandVoice.primaryTone.value : 'authoritative',
-        wordsToUse: ['autonomous', 'precision', 'streamlined', 'enterprise', 'intelligence'],
-        wordsToAvoid: ['manual', 'slow', 'legacy', 'approximate'],
-      },
-      customerProfile: {
-        targetAudience: dna.customerProfile.targetAudience.value,
-        primaryPainPoints: ['Manual departmental workflows', '$1.2M annual overhead', 'Lack of unified operational visibility'],
-        buyerPersonas: [
-          { name: 'VP of Growth & Operations', role: 'Executive Champion', challenges: ['Process bottlenecks', 'Budget efficiency'] },
-          { name: 'Head of Brand Strategy', role: 'Brand Custodian', challenges: ['Consistency across channels', 'Fast turnaround'] },
-        ],
-      },
-      competitivePositioning: {
-        marketPosition: 'Market Leader & Autonomous Pioneer',
-        primaryCompetitors: ['Legacy Consultancies', 'Manual SaaS Point Tools'],
-        keyDifferentiators: ['Closed-loop Business DNA', 'Self-generating websites', 'Multi-domain zero-trust governance'],
-      },
-      websiteAnalysis: {
-        primaryUrl: 'https://brandfirst.ai',
-        colors: ['#4f46e5', '#10b981', '#0f172a', '#6366f1', '#38bdf8'],
-        fonts: ['Inter', 'Space Grotesk', 'JetBrains Mono'],
-      },
-      updatedAt: new Date().toISOString(),
-    };
-  }, [currentSession, organizationId, businessId, dna]);
 
   const navTabs: { id: CustomerIntelligenceTab; label: string; icon: React.ElementType }[] = [
     { id: 'dna', label: 'Business DNA Graph', icon: Sparkles },

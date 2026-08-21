@@ -17,7 +17,8 @@ import {
   AccountManager, 
   UserSession, 
   OrganizationRecord, 
-  WorkspaceRecord 
+  WorkspaceRecord,
+  normalizeCompanyUrl
 } from '../../core/saas/auth';
 
 interface OnboardingWizardProps {
@@ -60,9 +61,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   const [wsName, setWsName] = useState('Primary Production');
   const [wsSlug, setWsSlug] = useState('primary-prod');
 
-  // State: Step 4 Company Information
+  // State: Step 4 Company Information & Multi-Tier Entity
   const [companyName, setCompanyName] = useState('');
-  const [websiteUrl, setWebsiteUrl] = useState('https://');
+  const [legalCompanyName, setLegalCompanyName] = useState('The AI CONTENT FOUNDRY, LLC');
+  const [operatingBrand, setOperatingBrand] = useState('TACF Global');
+  const [websiteUrl, setWebsiteUrl] = useState('https://tacfos.tech');
   const [mission, setMission] = useState('');
   const [uvp, setUvp] = useState('');
   const [processGap, setProcessGap] = useState('');
@@ -85,6 +88,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         setActiveSession(result.session);
         setOrgName(`${result.user.name}'s Enterprise`);
         setCompanyName(result.user.name);
+        setOperatingBrand(`${result.user.name}'s Enterprise`);
         setStep('organization');
       } else {
         const result = await accountManager.login({
@@ -102,6 +106,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         } else {
           setOrgName(`${result.user.name}'s Enterprise`);
           setCompanyName(result.user.name);
+          setOperatingBrand(`${result.user.name}'s Enterprise`);
           setStep('organization');
         }
       }
@@ -128,6 +133,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       });
       setCreatedOrg(org);
       setCompanyName(org.name);
+      setOperatingBrand(org.name);
       setStep('workspace');
     } catch (err: any) {
       setError(err.message || 'Failed to create organization.');
@@ -171,8 +177,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         sessionToken: activeSession.token,
         organizationId: createdOrg.id,
         workspaceId: createdWorkspace.id,
-        companyName: companyName.trim() || createdOrg.name,
-        websiteUrl: websiteUrl.trim(),
+        companyName: companyName.trim() || operatingBrand.trim() || createdOrg.name,
+        legalCompanyName: legalCompanyName.trim() || undefined,
+        operatingBrand: operatingBrand.trim() || createdOrg.name,
+        websiteUrl: normalizeCompanyUrl(websiteUrl),
         industry: orgIndustry,
         mission: mission.trim() || undefined,
         uvp: uvp.trim() || undefined,
@@ -487,26 +495,52 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-mono text-slate-300">Company Name</label>
+                  <label className="text-xs font-mono text-slate-300">Legal Company Entity</label>
                   <input
                     type="text"
-                    required
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    placeholder="e.g. Apex AI"
+                    value={legalCompanyName}
+                    onChange={(e) => setLegalCompanyName(e.target.value)}
+                    placeholder="e.g. The AI CONTENT FOUNDRY, LLC"
                     className="w-full rounded-xl bg-slate-900/90 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-mono text-slate-300">Website URL</label>
+                  <label className="text-xs font-mono text-slate-300">Operating Brand / Organization</label>
+                  <input
+                    type="text"
+                    value={operatingBrand}
+                    onChange={(e) => {
+                      setOperatingBrand(e.target.value);
+                      setCompanyName(e.target.value);
+                    }}
+                    placeholder="e.g. TACF Global"
+                    className="w-full rounded-xl bg-slate-900/90 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-mono text-slate-300">Website URL (Auto-Sanitized)</label>
                   <input
                     type="text"
                     required
                     value={websiteUrl}
                     onChange={(e) => setWebsiteUrl(e.target.value)}
-                    placeholder="https://company.com"
+                    onBlur={() => setWebsiteUrl(normalizeCompanyUrl(websiteUrl))}
+                    placeholder="https://tacfos.tech"
                     className="w-full rounded-xl bg-slate-900/90 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-mono text-slate-300">Industry Architecture</label>
+                  <input
+                    type="text"
+                    disabled
+                    value={orgIndustry.replace('_', ' ')}
+                    className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-slate-400 capitalize"
                   />
                 </div>
               </div>
@@ -517,30 +551,30 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                   rows={2}
                   value={uvp}
                   onChange={(e) => setUvp(e.target.value)}
-                  placeholder="e.g. Autonomous enterprise operating system reducing overhead by 40%."
+                  placeholder="e.g. Autonomous Business AI Operating System delivering deterministic workflows."
                   className="w-full rounded-xl bg-slate-900/90 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none resize-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-mono text-slate-300">Primary Financial Pain</label>
+                  <label className="text-xs font-mono text-slate-300">Financial Pain (Actual or Benchmark)</label>
                   <input
                     type="text"
                     value={financialPain}
                     onChange={(e) => setFinancialPain(e.target.value)}
-                    placeholder="e.g. $1.2M annual operational drag"
+                    placeholder="e.g. Inferred operational friction"
                     className="w-full rounded-xl bg-slate-900/90 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-mono text-slate-300">Primary Process Gap</label>
+                  <label className="text-xs font-mono text-slate-300">Process Gap (Opportunity Pillar)</label>
                   <input
                     type="text"
                     value={processGap}
                     onChange={(e) => setProcessGap(e.target.value)}
-                    placeholder="e.g. Manual departmental silos"
+                    placeholder="e.g. Manual departmental handoffs"
                     className="w-full rounded-xl bg-slate-900/90 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   />
                 </div>

@@ -16,9 +16,13 @@ import {
   ChevronRight,
   ExternalLink,
   BookOpen,
+  Building,
+  Cpu,
+  Globe,
+  Info,
   X
 } from 'lucide-react';
-import { StoredBusinessDNA, AccountManager, UserSession } from '../../core/saas/auth';
+import { StoredBusinessDNA, AccountManager, UserSession, normalizeCompanyUrl } from '../../core/saas/auth';
 
 interface BusinessDNADashboardProps {
   dna: StoredBusinessDNA;
@@ -36,21 +40,37 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [copiedNotification, setCopiedNotification] = useState(false);
 
-  // Edit Form State
+  // Multi-Tier Identity Edit Form State
+  const [editLegalCompany, setEditLegalCompany] = useState(currentDna.companyIdentity.legalCompanyName || 'The AI CONTENT FOUNDRY, LLC');
+  const [editOperatingBrand, setEditOperatingBrand] = useState(currentDna.companyIdentity.operatingBrand || currentDna.companyIdentity.companyName || 'TACF Global');
+  const [editProductName, setEditProductName] = useState(currentDna.companyIdentity.productName || 'TACF Autonomous Business AI OS');
+  const [editCorePlatform, setEditCorePlatform] = useState(currentDna.companyIdentity.corePlatform || 'Business DNA');
+  const [editPrimaryUrl, setEditPrimaryUrl] = useState(currentDna.websiteAnalysis.primaryUrl || 'https://tacfos.tech');
+
+  // Core Pillars & Positioning State
   const [editMission, setEditMission] = useState(currentDna.companyIdentity.mission);
   const [editUvp, setEditUvp] = useState(currentDna.companyIdentity.uniqueValueProposition);
   const [editFinancialPain, setEditFinancialPain] = useState(currentDna.opportunityPillars.financialPain);
   const [editProcessGap, setEditProcessGap] = useState(currentDna.opportunityPillars.processGap);
   const [editTone, setEditTone] = useState(currentDna.brandVoice.primaryTone);
+  const [editMarketPosition, setEditMarketPosition] = useState(
+    currentDna.competitivePositioning.marketPosition || 'Autonomous Business AI Platform / Emerging Category Pioneer'
+  );
 
   const handleSaveEdits = (e: React.FormEvent) => {
     e.preventDefault();
     if (!session.organizationId) return;
 
     try {
+      const cleanUrl = normalizeCompanyUrl(editPrimaryUrl);
       const updated = accountManager.updateBusinessDNA(session.token, session.organizationId, {
         companyIdentity: {
           ...currentDna.companyIdentity,
+          companyName: editOperatingBrand.trim(),
+          legalCompanyName: editLegalCompany.trim(),
+          operatingBrand: editOperatingBrand.trim(),
+          productName: editProductName.trim(),
+          corePlatform: editCorePlatform.trim(),
           mission: editMission.trim(),
           uniqueValueProposition: editUvp.trim(),
         },
@@ -63,9 +83,18 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
           ...currentDna.brandVoice,
           primaryTone: editTone.trim(),
         },
+        competitivePositioning: {
+          ...currentDna.competitivePositioning,
+          marketPosition: editMarketPosition.trim(),
+        },
+        websiteAnalysis: {
+          ...currentDna.websiteAnalysis,
+          primaryUrl: cleanUrl,
+        }
       });
 
       setCurrentDna(updated);
+      setEditPrimaryUrl(cleanUrl);
       setIsEditing(false);
       if (onDnaUpdated) onDnaUpdated(updated);
     } catch (err: any) {
@@ -78,8 +107,10 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${currentDna.companyIdentity.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-business-dna.json`;
+    a.download = `${(currentDna.companyIdentity.operatingBrand || currentDna.companyIdentity.companyName).toLowerCase().replace(/[^a-z0-9]+/g, '-')}-business-dna.json`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
@@ -88,6 +119,11 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
     setCopiedNotification(true);
     setTimeout(() => setCopiedNotification(false), 2000);
   };
+
+  const legalEntityName = currentDna.companyIdentity.legalCompanyName || 'The AI CONTENT FOUNDRY, LLC';
+  const operatingBrandName = currentDna.companyIdentity.operatingBrand || currentDna.companyIdentity.companyName || 'TACF Global';
+  const productName = currentDna.companyIdentity.productName || 'TACF Autonomous Business AI OS';
+  const platformName = currentDna.companyIdentity.corePlatform || 'Business DNA';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -111,9 +147,14 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              {currentDna.companyIdentity.companyName}
-            </h1>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {operatingBrandName}
+              </h1>
+              <p className="text-xs text-slate-400 font-mono mt-0.5">
+                Legal Entity: <strong className="text-slate-300">{legalEntityName}</strong>
+              </p>
+            </div>
 
             <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
               <span className="flex items-center gap-1.5">
@@ -142,7 +183,20 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={() => setIsEditing(true)}
+              onClick={() => {
+                setEditLegalCompany(legalEntityName);
+                setEditOperatingBrand(operatingBrandName);
+                setEditProductName(productName);
+                setEditCorePlatform(platformName);
+                setEditPrimaryUrl(currentDna.websiteAnalysis.primaryUrl);
+                setEditMission(currentDna.companyIdentity.mission);
+                setEditUvp(currentDna.companyIdentity.uniqueValueProposition);
+                setEditFinancialPain(currentDna.opportunityPillars.financialPain);
+                setEditProcessGap(currentDna.opportunityPillars.processGap);
+                setEditTone(currentDna.brandVoice.primaryTone);
+                setEditMarketPosition(currentDna.competitivePositioning.marketPosition);
+                setIsEditing(true);
+              }}
               className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all shadow-md shadow-indigo-600/30 flex items-center gap-2 cursor-pointer"
             >
               <Edit3 className="w-3.5 h-3.5" />
@@ -154,8 +208,53 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
               className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-xs font-mono text-slate-300 hover:text-white transition-all flex items-center gap-2 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Export JSON</span>
+              <span>Export Canonical JSON</span>
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Multi-Tier Entity Architecture Hierarchy HUD ─────────────────────── */}
+      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border border-indigo-500/20 p-5 shadow-lg">
+        <div className="flex items-center gap-2 text-xs font-mono text-indigo-300 font-bold uppercase tracking-wider mb-3">
+          <Building className="w-4 h-4 text-indigo-400" />
+          <span>Multi-Tier Entity Architecture & Epistemic Hierarchy</span>
+          <span className="ml-auto text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+            Ground-Truth Enforced
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-mono">
+          <div className="p-3.5 rounded-xl bg-slate-950/70 border border-white/[0.08] space-y-1">
+            <div className="flex items-center justify-between text-[10px] text-slate-400">
+              <span>[FACT] LEGAL ENTITY</span>
+              <Building className="w-3 h-3 text-slate-500" />
+            </div>
+            <p className="font-bold text-white text-sm tracking-tight">{legalEntityName}</p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-950/70 border border-white/[0.08] space-y-1">
+            <div className="flex items-center justify-between text-[10px] text-slate-400">
+              <span>[OPERATING BRAND]</span>
+              <Globe className="w-3 h-3 text-indigo-400" />
+            </div>
+            <p className="font-bold text-indigo-300 text-sm tracking-tight">{operatingBrandName}</p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-950/70 border border-white/[0.08] space-y-1">
+            <div className="flex items-center justify-between text-[10px] text-slate-400">
+              <span>[PRODUCT LAYER]</span>
+              <Cpu className="w-3 h-3 text-purple-400" />
+            </div>
+            <p className="font-bold text-purple-200 text-sm tracking-tight">{productName}</p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-950/70 border border-white/[0.08] space-y-1">
+            <div className="flex items-center justify-between text-[10px] text-slate-400">
+              <span>[PLATFORM ENGINE]</span>
+              <Sparkles className="w-3 h-3 text-emerald-400" />
+            </div>
+            <p className="font-bold text-emerald-300 text-sm tracking-tight">{platformName}</p>
           </div>
         </div>
       </div>
@@ -178,14 +277,20 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
 
           <div className="space-y-4">
             <div>
-              <p className="text-[11px] font-mono text-slate-400 uppercase tracking-wider mb-1">Mission Statement</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Mission Statement</p>
+                <span className="text-[9px] font-mono text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">[POSITIONING]</span>
+              </div>
               <p className="text-sm text-slate-200 leading-relaxed font-medium bg-slate-950/60 p-3.5 rounded-xl border border-white/[0.05]">
                 "{currentDna.companyIdentity.mission}"
               </p>
             </div>
 
             <div>
-              <p className="text-[11px] font-mono text-slate-400 uppercase tracking-wider mb-1">Unique Value Proposition (UVP)</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Unique Value Proposition (UVP)</p>
+                <span className="text-[9px] font-mono text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">[POSITIONING]</span>
+              </div>
               <p className="text-sm text-indigo-300 leading-relaxed font-semibold bg-indigo-950/20 p-3.5 rounded-xl border border-indigo-500/20">
                 {currentDna.companyIdentity.uniqueValueProposition}
               </p>
@@ -215,25 +320,34 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
 
           <div className="space-y-3.5">
             <div className="p-3 rounded-xl bg-red-950/20 border border-red-500/20 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs font-mono text-red-400 font-bold">
-                <DollarSign className="w-3.5 h-3.5" />
-                <span>Financial Pain</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-mono text-red-400 font-bold">
+                  <DollarSign className="w-3.5 h-3.5" />
+                  <span>Financial Pain</span>
+                </div>
+                <span className="text-[9px] font-mono text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">[ESTIMATE / BENCHMARK]</span>
               </div>
               <p className="text-xs text-slate-200">{currentDna.opportunityPillars.financialPain}</p>
             </div>
 
             <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/20 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs font-mono text-amber-400 font-bold">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span>Process Gap</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-mono text-amber-400 font-bold">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Process Gap</span>
+                </div>
+                <span className="text-[9px] font-mono text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">[INFERENCE]</span>
               </div>
               <p className="text-xs text-slate-200">{currentDna.opportunityPillars.processGap}</p>
             </div>
 
             <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/20 space-y-1">
-              <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400 font-bold">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Executive Sponsor</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400 font-bold">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Executive Sponsor</span>
+                </div>
+                <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">[POSITIONING]</span>
               </div>
               <p className="text-xs text-slate-200">{currentDna.opportunityPillars.stakeholderAlignment}</p>
             </div>
@@ -290,7 +404,10 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
 
           <div className="space-y-4">
             <div>
-              <p className="text-[11px] font-mono text-slate-400 uppercase tracking-wider mb-1">Target Audience</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Target Audience</p>
+                <span className="text-[9px] font-mono text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">[INFERENCE]</span>
+              </div>
               <p className="text-xs text-slate-300">{currentDna.customerProfile.targetAudience}</p>
             </div>
 
@@ -315,12 +432,15 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
             <div className="p-2 rounded-lg bg-pink-600/10 text-pink-400 border border-pink-500/20">
               <Palette className="w-4 h-4" />
             </div>
-            <h2 className="text-sm font-bold text-white">5. Visual Palette & Brand Signals</h2>
+            <h2 className="text-sm font-bold text-white">5. Visual Signals & Market Positioning</h2>
           </div>
 
           <div className="space-y-4">
             <div>
-              <p className="text-[11px] font-mono text-slate-400 uppercase tracking-wider mb-2">Ingested Color Swatches</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Ingested Color Swatches</p>
+                <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">[FACT: EXTRACTED]</span>
+              </div>
               <div className="flex items-center gap-2">
                 {currentDna.websiteAnalysis.colors.map((hex, i) => (
                   <div key={i} className="flex flex-col items-center gap-1">
@@ -336,8 +456,11 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
             </div>
 
             <div>
-              <p className="text-[11px] font-mono text-slate-400 uppercase tracking-wider mb-2">Market Positioning</p>
-              <p className="text-xs text-slate-300 bg-slate-950/60 p-3 rounded-xl border border-white/[0.05]">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Market Positioning</p>
+                <span className="text-[9px] font-mono text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">[GROUNDED POSITIONING]</span>
+              </div>
+              <p className="text-xs text-slate-200 bg-slate-950/60 p-3 rounded-xl border border-white/[0.05]">
                 {currentDna.competitivePositioning.marketPosition}
               </p>
             </div>
@@ -348,20 +471,90 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
       {/* ─── Refine DNA Modal ────────────────────────────────────────────────── */}
       {isEditing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-xl rounded-2xl border border-white/[0.12] bg-[#0c1017] shadow-2xl text-slate-100 overflow-hidden">
+          <div className="relative w-full max-w-2xl rounded-2xl border border-white/[0.12] bg-[#0c1017] shadow-2xl text-slate-100 overflow-hidden">
             <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 to-purple-500" />
             
             <button
               onClick={() => setIsEditing(false)}
-              className="absolute top-5 right-5 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
+              className="absolute top-5 right-5 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
             <form onSubmit={handleSaveEdits} className="p-8 space-y-4 max-h-[85vh] overflow-y-auto">
               <div className="space-y-1">
-                <h2 className="text-xl font-bold text-white">Refine Business DNA</h2>
-                <p className="text-xs text-slate-400">Updates are immediately saved permanently to your tenant repository.</p>
+                <h2 className="text-xl font-bold text-white">Refine Business DNA & Entity Architecture</h2>
+                <p className="text-xs text-slate-400">Updates are immediately saved permanently to your authoritative tenant repository.</p>
+              </div>
+
+              {/* Multi-Tier Entity Section */}
+              <div className="p-4 rounded-xl bg-slate-900/90 border border-indigo-500/20 space-y-3">
+                <p className="text-xs font-mono text-indigo-300 font-bold uppercase tracking-wider">Multi-Tier Entity Architecture</p>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-mono text-slate-300">Legal Company Entity</label>
+                    <input
+                      type="text"
+                      required
+                      value={editLegalCompany}
+                      onChange={(e) => setEditLegalCompany(e.target.value)}
+                      placeholder="e.g. The AI CONTENT FOUNDRY, LLC"
+                      className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-mono text-slate-300">Operating Brand / Organization</label>
+                    <input
+                      type="text"
+                      required
+                      value={editOperatingBrand}
+                      onChange={(e) => setEditOperatingBrand(e.target.value)}
+                      placeholder="e.g. TACF Global"
+                      className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-mono text-slate-300">Product Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={editProductName}
+                      onChange={(e) => setEditProductName(e.target.value)}
+                      placeholder="e.g. TACF Autonomous Business AI OS"
+                      className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-mono text-slate-300">Core Platform Engine</label>
+                    <input
+                      type="text"
+                      required
+                      value={editCorePlatform}
+                      onChange={(e) => setEditCorePlatform(e.target.value)}
+                      placeholder="e.g. Business DNA"
+                      className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-mono text-slate-300">Website URL (Auto-Sanitized)</label>
+                  <input
+                    type="text"
+                    required
+                    value={editPrimaryUrl}
+                    onChange={(e) => setEditPrimaryUrl(e.target.value)}
+                    onBlur={() => setEditPrimaryUrl(normalizeCompanyUrl(editPrimaryUrl))}
+                    placeholder="https://tacfos.tech"
+                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-mono"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -388,7 +581,7 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-mono text-slate-300">Financial Pain</label>
+                  <label className="text-xs font-mono text-slate-300">Financial Pain (Benchmark or Actual)</label>
                   <input
                     type="text"
                     required
@@ -411,6 +604,17 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
               </div>
 
               <div className="space-y-1">
+                <label className="text-xs font-mono text-slate-300">Market Positioning</label>
+                <input
+                  type="text"
+                  required
+                  value={editMarketPosition}
+                  onChange={(e) => setEditMarketPosition(e.target.value)}
+                  className="w-full rounded-xl bg-slate-900 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
                 <label className="text-xs font-mono text-slate-300">Primary Tone</label>
                 <select
                   value={editTone}
@@ -428,16 +632,16 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-mono text-slate-400 hover:text-white"
+                  className="px-4 py-2 rounded-xl text-xs font-mono text-slate-400 hover:text-white cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-md shadow-indigo-600/30 flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-md shadow-indigo-600/30 flex items-center gap-1.5 cursor-pointer"
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span>Save Changes</span>
+                  <span>Save Canonical DNA</span>
                 </button>
               </div>
             </form>

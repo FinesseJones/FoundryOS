@@ -363,6 +363,15 @@ app.post("/api/auth/demo", async (_req, res) => {
   }
 });
 
+function normalizeCompanyUrl(url) {
+  if (!url) return "https://tacfos.tech";
+  let clean = String(url).trim();
+  clean = clean.replace(/^(https?:\/\/)+/i, "");
+  clean = clean.replace(/^\/+/, "");
+  if (!clean) return "https://tacfos.tech";
+  return `https://${clean}`;
+}
+
 // ─── 7. Server-Side Tenant Endpoints (Strict ISOL-01 Enforcement) ───────────
 
 // Create Organization
@@ -450,6 +459,10 @@ app.post("/api/tenant/dna", authenticateSession, async (req, res) => {
       organizationId,
       workspaceId,
       companyName,
+      legalCompanyName,
+      operatingBrand,
+      productName,
+      corePlatform,
       websiteUrl,
       industry,
       mission,
@@ -462,13 +475,18 @@ app.post("/api/tenant/dna", authenticateSession, async (req, res) => {
     const org = assertOrgOwnership(req, res, organizationId);
     if (!org) return;
 
-    const cleanName = (companyName || org.name).trim();
-    const cleanUrl = (websiteUrl || "https://").trim();
+    const cleanUrl = normalizeCompanyUrl(websiteUrl);
+    const legalName = (legalCompanyName || "The AI CONTENT FOUNDRY, LLC").trim();
+    const opBrand = (operatingBrand || org.name || "TACF Global").trim();
+    const prodName = (productName || "TACF Autonomous Business AI OS").trim();
+    const platName = (corePlatform || "Business DNA").trim();
+    const cleanName = (companyName || opBrand || org.name).trim();
+
     const cleanIndustry = industry || org.industry || "technology_saas";
-    const cleanMission = (mission || `To lead and transform the ${cleanIndustry.replace("_", " ")} space through automated intelligence.`).trim();
+    const cleanMission = (mission || `To transform and empower the ${cleanIndustry.replace("_", " ")} domain through automated intelligence.`).trim();
     const cleanUvp = (uvp || `Autonomous brand intelligence, real-time website compilation, and automated execution for ${cleanName}.`).trim();
     const cleanProcessGap = (processGap || "Manual departmental workflows, fragmented tool stacks, and operational lead time drag.").trim();
-    const cleanFinancialPain = (financialPain || "$1.2M in annual overhead lost to execution friction.").trim();
+    const cleanFinancialPain = (financialPain || "Operational lead time drag and execution friction (Estimated baseline benchmark)").trim();
     const cleanTargetAudience = (targetAudience || "Modern enterprise executives, operations directors, and growing commercial teams.").trim();
 
     const businessId = `biz_${organizationId.replace(/^org_/, "")}`;
@@ -479,6 +497,10 @@ app.post("/api/tenant/dna", authenticateSession, async (req, res) => {
       workspaceId: workspaceId || "",
       businessId,
       companyName: cleanName,
+      legalCompanyName: legalName,
+      operatingBrand: opBrand,
+      productName: prodName,
+      corePlatform: platName,
       websiteUrl: cleanUrl,
       industry: cleanIndustry,
       mission: cleanMission,
@@ -497,6 +519,10 @@ app.post("/api/tenant/dna", authenticateSession, async (req, res) => {
       confidenceScore: 0.94,
       companyIdentity: {
         companyName: cleanName,
+        legalCompanyName: legalName,
+        operatingBrand: opBrand,
+        productName: prodName,
+        corePlatform: platName,
         industry: cleanIndustry,
         stage: "growth",
         mission: cleanMission,
@@ -522,7 +548,7 @@ app.post("/api/tenant/dna", authenticateSession, async (req, res) => {
         ],
       },
       competitivePositioning: {
-        marketPosition: "Market Leader & Autonomous Pioneer",
+        marketPosition: "Autonomous Business AI Platform / Emerging Category Pioneer",
         primaryCompetitors: ["Legacy Consultancies", "Manual SaaS Point Tools"],
         keyDifferentiators: ["Closed-loop Business DNA", "Self-generating websites", "Multi-domain zero-trust governance"],
       },

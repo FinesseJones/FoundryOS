@@ -26,11 +26,25 @@ export interface WorkspaceRecord {
   createdAt: string;
 }
 
+export function normalizeCompanyUrl(url: string): string {
+  if (!url) return 'https://tacfos.tech';
+  let clean = url.trim();
+  // Strip repeated or duplicated protocols e.g. "https://https://" or "http://https://"
+  clean = clean.replace(/^(https?:\/\/)+/i, '');
+  clean = clean.replace(/^\/+/, '');
+  if (!clean) return 'https://tacfos.tech';
+  return `https://${clean}`;
+}
+
 export interface CompanyInfoRecord {
   organizationId: string;
   workspaceId: string;
   businessId: string;
   companyName: string;
+  legalCompanyName?: string;
+  operatingBrand?: string;
+  productName?: string;
+  corePlatform?: string;
   websiteUrl: string;
   industry: string;
   mission: string;
@@ -49,6 +63,10 @@ export interface StoredBusinessDNA {
   confidenceScore: number;
   companyIdentity: {
     companyName: string;
+    legalCompanyName?: string;
+    operatingBrand?: string;
+    productName?: string;
+    corePlatform?: string;
     industry: string;
     stage: string;
     mission: string;
@@ -554,6 +572,10 @@ export class AccountManager {
     organizationId: string;
     workspaceId: string;
     companyName: string;
+    legalCompanyName?: string;
+    operatingBrand?: string;
+    productName?: string;
+    corePlatform?: string;
     websiteUrl: string;
     industry?: string;
     mission?: string;
@@ -587,13 +609,18 @@ export class AccountManager {
     }
 
     const businessId = `biz_${params.organizationId.replace(/^org_/, '')}`;
-    const cleanName = params.companyName.trim();
-    const cleanUrl = params.websiteUrl.trim();
+    const cleanUrl = normalizeCompanyUrl(params.websiteUrl);
+    const legalName = (params.legalCompanyName || 'The AI CONTENT FOUNDRY, LLC').trim();
+    const opBrand = (params.operatingBrand || params.companyName || 'TACF Global').trim();
+    const prodName = (params.productName || 'TACF Autonomous Business AI OS').trim();
+    const platName = (params.corePlatform || 'Business DNA').trim();
+    const cleanName = (params.companyName || opBrand).trim();
+
     const cleanIndustry = params.industry || 'technology_saas';
-    const cleanMission = params.mission?.trim() || `To empower and transform the ${cleanIndustry.replace('_', ' ')} industry through automated intelligence.`;
+    const cleanMission = params.mission?.trim() || `To transform and empower the ${cleanIndustry.replace('_', ' ')} domain through automated intelligence.`;
     const cleanUvp = params.uvp?.trim() || `Autonomous brand intelligence, real-time website compilation, and automated execution for ${cleanName}.`;
     const cleanProcessGap = params.processGap?.trim() || 'Manual departmental workflows, fragmented tool stacks, and operational lead time drag.';
-    const cleanFinancialPain = params.financialPain?.trim() || '$1.2M in annual overhead lost to execution friction.';
+    const cleanFinancialPain = params.financialPain?.trim() || 'Operational lead time drag and execution friction (Estimated baseline benchmark)';
     const cleanTargetAudience = params.targetAudience?.trim() || 'Modern enterprise executives, operations directors, and growing commercial teams.';
 
     const companyProfile: CompanyInfoRecord = {
@@ -601,6 +628,10 @@ export class AccountManager {
       workspaceId: params.workspaceId,
       businessId,
       companyName: cleanName,
+      legalCompanyName: legalName,
+      operatingBrand: opBrand,
+      productName: prodName,
+      corePlatform: platName,
       websiteUrl: cleanUrl,
       industry: cleanIndustry,
       mission: cleanMission,
@@ -619,6 +650,10 @@ export class AccountManager {
       confidenceScore: 0.94,
       companyIdentity: {
         companyName: cleanName,
+        legalCompanyName: legalName,
+        operatingBrand: opBrand,
+        productName: prodName,
+        corePlatform: platName,
         industry: cleanIndustry,
         stage: 'growth',
         mission: cleanMission,
@@ -644,7 +679,7 @@ export class AccountManager {
         ],
       },
       competitivePositioning: {
-        marketPosition: 'Market Leader & Autonomous Pioneer',
+        marketPosition: 'Autonomous Business AI Platform / Emerging Category Pioneer',
         primaryCompetitors: ['Legacy Consultancies', 'Manual SaaS Point Tools'],
         keyDifferentiators: ['Closed-loop Business DNA', 'Self-generating websites', 'Multi-domain zero-trust governance'],
       },
@@ -707,14 +742,54 @@ export class AccountManager {
       throw new Error(`Business DNA not found for organization '${organizationId}'.`);
     }
 
+    // Sanitize primaryUrl if updated
+    if (updates.websiteAnalysis?.primaryUrl) {
+      updates.websiteAnalysis.primaryUrl = normalizeCompanyUrl(updates.websiteAnalysis.primaryUrl);
+    }
+
     const updated: StoredBusinessDNA = {
       ...existing,
       ...updates,
+      companyIdentity: {
+        ...existing.companyIdentity,
+        ...(updates.companyIdentity || {}),
+      },
+      opportunityPillars: {
+        ...existing.opportunityPillars,
+        ...(updates.opportunityPillars || {}),
+      },
+      brandVoice: {
+        ...existing.brandVoice,
+        ...(updates.brandVoice || {}),
+      },
+      customerProfile: {
+        ...existing.customerProfile,
+        ...(updates.customerProfile || {}),
+      },
+      competitivePositioning: {
+        ...existing.competitivePositioning,
+        ...(updates.competitivePositioning || {}),
+      },
+      websiteAnalysis: {
+        ...existing.websiteAnalysis,
+        ...(updates.websiteAnalysis || {}),
+      },
       updatedAt: new Date().toISOString(),
     };
 
     this.dnaModels.set(organizationId, updated);
     this.saveState();
+
+    // Async sync to server if available
+    this.safeServerFetch(`/api/tenant/dna/${organizationId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionToken}`,
+      },
+      body: JSON.stringify(updated),
+    }).catch(err => console.warn('TACF AccountManager: Server sync warning for DNA update', err));
+
     return updated;
   }
 

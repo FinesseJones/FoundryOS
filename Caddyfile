@@ -1,0 +1,9 @@
+tacfos.tech, www.tacfos.tech {
+    encode gzip
+    handle /api/* {
+        reverse_proxy llm-proxy:8787
+    }
+    handle {
+        reverse_proxy brand-first-app:80
+    }
+}

@@ -17,10 +17,19 @@ export class BrandAgent extends BaseAgent {
   ): Promise<{ summary: string; data: Record<string, unknown> }> {
     const dna = context.businessDNASlice;
     const companyName = dna.companyIdentity?.companyName?.value ?? 'Brand';
-    const primaryTone = dna.brandVoice?.primaryTone?.value ?? 'professional';
+    const primaryTone = dna.brandVoice?.primaryTone?.value ?? 'authoritative';
     const uvp = dna.companyIdentity?.uniqueValueProposition?.value ?? 'Core Value Proposition';
 
-    const summary = `Brand Audit for ${companyName}: Primary tone is "${primaryTone}". UVP "${uvp}" verified against market positioning.`;
+    // ─── Direct LLM Gateway Execution (NVIDIA NIM Primary) ──────────────
+    const brandAuditAnalysis = await this.callLLM(
+      `Conduct a comprehensive brand positioning and voice audit for ${companyName}.\n` +
+      `Evaluate our Unique Value Proposition: "${uvp}" against market expectations in the ${dna.companyIdentity?.industry?.value || 'technology'} industry.\n` +
+      `Provide 3 strategic recommendations to sharpen our brand positioning and eliminate customer confusion.`,
+      context,
+      `Specialized Role: Chief Brand Officer & Strategic Positioning Auditor.`
+    );
+
+    const summary = `Brand Audit for ${companyName}: Primary tone is "${primaryTone}". UVP "${uvp}" verified and audited.`;
 
     return {
       summary,
@@ -28,8 +37,10 @@ export class BrandAgent extends BaseAgent {
         brandName: companyName,
         primaryTone,
         uvp,
-        confidenceScore: context.businessDNASlice.confidenceScore ?? 0.85,
+        analysis: brandAuditAnalysis,
+        confidenceScore: context.businessDNASlice.confidenceScore ?? 0.92,
         accessAuthorized: this.canWriteDomain('brand'),
+        auditedBy: 'NVIDIA-NIM-LLM-Gateway',
       },
     };
   }

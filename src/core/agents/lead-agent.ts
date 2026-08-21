@@ -203,11 +203,41 @@ export class LeadAgent extends BaseAgent {
     const pool = INDUSTRY_PROSPECT_TEMPLATES[normalizedIndustry] || 
                  INDUSTRY_PROSPECT_TEMPLATES.saas;
 
-    // Handle custom target domain audit
+    // Handle custom target domain audit with dynamic LLM Gateway synthesis
     if (customTargetDomain) {
       const cleanDomain = customTargetDomain.replace(/https?:\/\//, '').replace(/\/.*$/, '');
       const companyClean = cleanDomain.split('.')[0];
       const capitalized = companyClean.charAt(0).toUpperCase() + companyClean.slice(1);
+
+      let financialPain = `Operational overhead drag and conversion leakage (Estimated baseline benchmark).`;
+      let processGap = `Legacy web presence on ${cleanDomain} lacks real-time interactive engagement and modern conversion architecture.`;
+      let stakeholder = `Executive Leadership / VP of Growth (Key Economic Buyer).`;
+
+      try {
+        const aiAnalysis = await this.llmGateway.executeWithFallback({
+          prompt: `Analyze the business domain "${cleanDomain}" in the ${industry} industry.\n` +
+                  `Synthesize 3 concise Opportunity Pillars for an enterprise AI proposal:\n` +
+                  `1. Financial Pain (estimated revenue loss or operational cost drag)\n` +
+                  `2. Process Gap (specific operational or web bottleneck)\n` +
+                  `3. Stakeholder Alignment (the economic buyer role)\n\n` +
+                  `Respond in 3 short lines labeled FinancialPain:, ProcessGap:, Stakeholder:`,
+          temperature: 0.5,
+          maxTokens: 300,
+        });
+
+        const lines = aiAnalysis.text.split('\n');
+        for (const line of lines) {
+          if (line.toLowerCase().includes('financialpain:')) {
+            financialPain = line.replace(/.*financialpain:\s*/i, '').trim();
+          } else if (line.toLowerCase().includes('processgap:')) {
+            processGap = line.replace(/.*processgap:\s*/i, '').trim();
+          } else if (line.toLowerCase().includes('stakeholder:')) {
+            stakeholder = line.replace(/.*stakeholder:\s*/i, '').trim();
+          }
+        }
+      } catch {
+        // Fallback to grounded baseline benchmark
+      }
 
       return [{
         id: Date.now(),
@@ -216,11 +246,11 @@ export class LeadAgent extends BaseAgent {
         primaryContact: `executives@${cleanDomain}`,
         currentStage: 'Discovery',
         status: 'High Priority',
-        pillarFinancialPain: `$1.2M estimated annual revenue leakage due to digital latency & siloed operations.`,
-        pillarProcessGap: `Legacy web platform on ${cleanDomain} lacks AIEO, localized GEO discovery, and mobile speed optimization.`,
-        pillarStakeholderAlignment: `Executive Leadership / VP of Growth (Key Economic Buyer).`,
+        pillarFinancialPain: financialPain,
+        pillarProcessGap: processGap,
+        pillarStakeholderAlignment: stakeholder,
         industry: industry.toUpperCase(),
-        estimatedRevenueLoss: '$1.2M/yr',
+        estimatedRevenueLoss: financialPain.split(' ')[0] || 'Estimated',
         opportunityScore: 95,
         isAiSourced: true,
         discoveredAt: new Date().toISOString()

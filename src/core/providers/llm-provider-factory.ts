@@ -50,6 +50,57 @@ export abstract class BaseLLMProvider implements ILLMProvider {
   }
 }
 
+export class NvidiaNimProvider extends BaseLLMProvider {
+  type: LLMProviderType = 'nvidia';
+
+  async generateText(request: PromptRequest): Promise<LLMResponse> {
+    const startTime = Date.now();
+    const endpoint = this.config.baseUrl || (typeof window !== 'undefined' ? '/api/chat' : 'http://localhost:8787/api/chat');
+    const model = this.config.modelName || 'meta/llama-3.1-70b-instruct';
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages: [
+            ...(request.systemPrompt ? [{ role: 'system', content: request.systemPrompt }] : []),
+            { role: 'user', content: request.prompt },
+          ],
+          temperature: request.temperature ?? 0.6,
+          max_tokens: request.maxTokens ?? 1500,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`NVIDIA NIM HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      const data = (await res.json()) as any;
+      const text = data.choices?.[0]?.message?.content || data.response || '';
+      if (!text) {
+        throw new Error('NVIDIA NIM returned empty response text.');
+      }
+
+      return {
+        text,
+        providerUsed: 'nvidia',
+        modelUsed: model,
+        usage: {
+          promptTokens: data.usage?.prompt_tokens || Math.ceil(request.prompt.length / 4),
+          completionTokens: data.usage?.completion_tokens || Math.ceil(text.length / 4),
+          totalTokens: data.usage?.total_tokens || Math.ceil((request.prompt.length + text.length) / 4),
+          estimatedCostUsd: 0.0005,
+          latencyMs: Date.now() - startTime,
+        },
+      };
+    } catch (err: any) {
+      throw new Error(`NVIDIA NIM generation failed: ${err.message}`);
+    }
+  }
+}
+
 export class OllamaProvider extends BaseLLMProvider {
   type: LLMProviderType = 'ollama';
 
@@ -217,6 +268,7 @@ export class MultiProviderLLMFactory {
   }
 
   private registerDefaultProviders() {
+    this.providers.set('nvidia', new NvidiaNimProvider({ provider: 'nvidia', modelName: 'meta/llama-3.1-70b-instruct' }));
     this.providers.set('ollama', new OllamaProvider({ provider: 'ollama', modelName: 'llama3' }));
     this.providers.set('openai', new OpenAIProvider({ provider: 'openai', modelName: 'gpt-4o' }));
     this.providers.set('claude', new ClaudeProvider({ provider: 'claude', modelName: 'claude-3-5-sonnet' }));
@@ -244,7 +296,7 @@ export class MultiProviderLLMFactory {
 
   async executeWithFallback(
     request: PromptRequest,
-    providerOrder: LLMProviderType[] = ['openai', 'claude', 'gemini', 'ollama']
+    providerOrder: LLMProviderType[] = ['nvidia', 'ollama', 'openai', 'gemini']
   ): Promise<LLMResponse> {
     // Mandated LLM Gateway Gatekeeper: Check token quota BEFORE calling any external provider!
     this.enforceQuotaGate(request);
@@ -266,12 +318,17 @@ export class MultiProviderLLMFactory {
   async generateStructured<T>(
     request: PromptRequest,
     schema: z.ZodSchema<T>,
-    providerType: LLMProviderType = 'claude'
+    providerType: LLMProviderType = 'nvidia'
   ): Promise<{ data: T; response: LLMResponse }> {
     // Mandated LLM Gateway Gatekeeper: Check token quota BEFORE calling provider!
     this.enforceQuotaGate(request);
 
-    const provider = this.providers.get(providerType) || this.providers.get('claude')!;
+    const provider = this.providers.get(providerType) || this.providers.get('nvidia') || this.providers.get('ollama')!;
     return provider.generateStructured(request, schema);
   }
 }
+
+/**
+ * Shared Centralized LLM Provider Gateway Instance for Autonomous Agents
+ */
+export const LLMProviderGateway = new MultiProviderLLMFactory();

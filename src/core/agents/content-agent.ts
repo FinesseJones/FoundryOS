@@ -20,15 +20,25 @@ export class ContentAgent extends BaseAgent {
     const tone = dna.brandVoice?.primaryTone?.value ?? 'authoritative';
     const brandName = dna.companyIdentity?.companyName?.value ?? 'Our Brand';
 
-    const draftText = `🚀 Exciting updates from ${brandName}! We are pushing the boundaries in our industry with a ${tone} approach to innovation. Connect with us to scale faster!`;
+    const userPrompt = request.prompt || `Formulate a high-converting ${channel} post communicating ${brandName}'s core value proposition and addressing our target audience's primary financial pain.`;
+
+    // ─── Direct LLM Gateway Execution (NVIDIA NIM Primary) ──────────────
+    const generatedCopy = await this.callLLM(
+      `Generate a production-ready ${channel} post for ${brandName}.\nPrompt: "${userPrompt}"\n\nRequirements:\n- Length: 150-300 words\n- Include 1 engaging hook, 3 key value bullet points, and 1 clear Call-To-Action.`,
+      context,
+      `Specialized Role: Enterprise Copywriter & Social Media Strategist for ${channel}.`
+    );
+
+    const summary = `Generated production ${channel} campaign asset in ${tone} tone for ${brandName}.`;
 
     return {
-      summary: `Generated production draft for ${channel} in ${tone} tone.`,
+      summary,
       data: {
         targetChannel: channel,
-        draftText,
-        wordsCount: draftText.split(/\s+/).length,
+        draftText: generatedCopy,
+        wordsCount: generatedCopy.split(/\s+/).length,
         accessAuthorized: this.canWriteDomain('content_plans'),
+        generatedBy: 'NVIDIA-NIM-LLM-Gateway',
       },
     };
   }

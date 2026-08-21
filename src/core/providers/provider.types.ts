@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export type LLMProviderType = 'ollama' | 'openai' | 'claude' | 'gemini' | 'openrouter' | 'lmstudio';
+export type LLMProviderType = 'nvidia' | 'ollama' | 'openai' | 'claude' | 'gemini' | 'openrouter' | 'lmstudio';
 
 export class QuotaExceededError extends Error {
   organizationId: string;

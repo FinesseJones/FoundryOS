@@ -79,9 +79,10 @@ describe('Phase 1: Client Identity & Entry Verification Suite', () => {
       financialPain: '$1.5M operational drag.',
     });
 
-    assert.strictEqual(company.companyName, 'TACF Autonomous Systems');
-    assert.strictEqual(company.websiteUrl, 'https://tacfos.tech');
-    assert.strictEqual(company.businessId, `biz_${org.id.replace(/^org_/, '')}`);
+    assert.strictEqual(company.companyProfile.companyName, 'TACF Autonomous Systems');
+    assert.strictEqual(company.companyProfile.websiteUrl, 'https://tacfos.tech');
+    assert.strictEqual(company.companyProfile.businessId, `biz_${org.id.replace(/^org_/, '')}`);
+    assert.ok(company.businessDNA);
 
     // Verify query
     const queriedProfile = manager.getCompanyProfile(session.token, org.id);

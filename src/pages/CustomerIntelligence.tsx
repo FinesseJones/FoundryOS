@@ -42,7 +42,11 @@ import { SalesIntelligenceService } from "@/core/sales/sales-intelligence-servic
 import { MarketingIntelligenceService } from "@/core/marketing/marketing-intelligence-service";
 import { IntelligenceAnalyticsService } from "@/core/intelligence/intelligence-analytics-service";
 
+import { BusinessDNADashboard } from "@/components/dna/BusinessDNADashboard";
+import { AccountManager, StoredBusinessDNA } from "@/core/saas/auth";
+
 export type CustomerIntelligenceTab = 
+  | 'dna'
   | 'today' 
   | 'marketing' 
   | 'sales' 
@@ -218,7 +222,60 @@ export default function CustomerIntelligence({
     },
   });
 
+  const currentSession = useMemo(() => AccountManager.getInstance().getCurrentSession(), []);
+  const storedDna = useMemo<StoredBusinessDNA>(() => {
+    if (currentSession && currentSession.organizationId) {
+      const found = AccountManager.getInstance().getBusinessDNA(currentSession.token, currentSession.organizationId);
+      if (found) return found;
+    }
+    return {
+      id: `dna_${organizationId}`,
+      businessId,
+      organizationId,
+      schemaVersion: '1.0',
+      confidenceScore: 0.94,
+      companyIdentity: {
+        companyName: dna.companyIdentity.companyName.value,
+        industry: typeof dna.companyIdentity.industry.value === 'string' ? dna.companyIdentity.industry.value : 'technology_saas',
+        stage: 'growth',
+        mission: dna.companyIdentity.mission.value,
+        uniqueValueProposition: dna.companyIdentity.uniqueValueProposition.value,
+        coreValues: ['Operational Speed', 'Customer Excellence', 'Deterministic Accuracy', 'Zero-Trust Integrity'],
+      },
+      opportunityPillars: {
+        financialPain: '$1.2M in annual overhead lost to execution friction.',
+        processGap: 'Manual departmental workflows and tool fragmentation.',
+        stakeholderAlignment: 'Executive Leadership (Direct Sponsor)',
+      },
+      brandVoice: {
+        primaryTone: typeof dna.brandVoice.primaryTone.value === 'string' ? dna.brandVoice.primaryTone.value : 'authoritative',
+        wordsToUse: ['autonomous', 'precision', 'streamlined', 'enterprise', 'intelligence'],
+        wordsToAvoid: ['manual', 'slow', 'legacy', 'approximate'],
+      },
+      customerProfile: {
+        targetAudience: dna.customerProfile.targetAudience.value,
+        primaryPainPoints: ['Manual departmental workflows', '$1.2M annual overhead', 'Lack of unified operational visibility'],
+        buyerPersonas: [
+          { name: 'VP of Growth & Operations', role: 'Executive Champion', challenges: ['Process bottlenecks', 'Budget efficiency'] },
+          { name: 'Head of Brand Strategy', role: 'Brand Custodian', challenges: ['Consistency across channels', 'Fast turnaround'] },
+        ],
+      },
+      competitivePositioning: {
+        marketPosition: 'Market Leader & Autonomous Pioneer',
+        primaryCompetitors: ['Legacy Consultancies', 'Manual SaaS Point Tools'],
+        keyDifferentiators: ['Closed-loop Business DNA', 'Self-generating websites', 'Multi-domain zero-trust governance'],
+      },
+      websiteAnalysis: {
+        primaryUrl: 'https://brandfirst.ai',
+        colors: ['#4f46e5', '#10b981', '#0f172a', '#6366f1', '#38bdf8'],
+        fonts: ['Inter', 'Space Grotesk', 'JetBrains Mono'],
+      },
+      updatedAt: new Date().toISOString(),
+    };
+  }, [currentSession, organizationId, businessId, dna]);
+
   const navTabs: { id: CustomerIntelligenceTab; label: string; icon: React.ElementType }[] = [
+    { id: 'dna', label: 'Business DNA Graph', icon: Sparkles },
     { id: 'today', label: 'Executive Briefing', icon: Activity },
     { id: 'marketing', label: 'Marketing Intel', icon: Megaphone },
     { id: 'sales', label: 'Sales Intel', icon: Target },
@@ -244,7 +301,7 @@ export default function CustomerIntelligence({
                 <span>TACF Multi-Domain Intelligence Core</span>
               </div>
               <h1 className="text-2xl font-black text-white tracking-tight">
-                {dna.companyIdentity.companyName.value} — Business DNA OS
+                {storedDna.companyIdentity.companyName} — Business DNA OS
               </h1>
               <p className="text-xs text-slate-400 mt-1 max-w-2xl">
                 Active tenant intelligence models evaluated continuously across Marketing, Sales, Operations, and Zero-Trust Security.
@@ -269,7 +326,7 @@ export default function CustomerIntelligence({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     isActive
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-700/60'
@@ -285,6 +342,22 @@ export default function CustomerIntelligence({
 
         {/* View Workspace Rendering */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 shadow-xl">
+          {activeTab === 'dna' && (
+            <BusinessDNADashboard 
+              dna={storedDna} 
+              session={currentSession || {
+                userId: 'usr_guest',
+                email: 'guest@tacfos.tech',
+                name: 'Guest',
+                role: 'ADMIN',
+                organizationId,
+                organizationName: storedDna.companyIdentity.companyName,
+                token: 'tok_guest',
+                createdAt: new Date().toISOString(),
+                expiresAt: new Date(Date.now() + 86400000).toISOString(),
+              }} 
+            />
+          )}
           {activeTab === 'today' && (
             <TodayView 
               dna={dna} 

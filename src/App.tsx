@@ -159,7 +159,7 @@ export default function App() {
     if (isInitializing) {
         return (
             <div className="min-h-screen bg-[#07090e] flex items-center justify-center text-slate-400 font-mono text-xs">
-                <span>Initializing TACF OS Runtime...</span>
+                <span>Initializing FoundryOS Runtime...</span>
             </div>
         );
     }
@@ -186,7 +186,7 @@ export default function App() {
         }
     };
 
-    const currentMeta = pageTitles[selectedPage] || { title: "TACF Operating System", subtitle: "Enterprise Platform" };
+    const currentMeta = pageTitles[selectedPage] || { title: "FoundryOS", subtitle: "Autonomous Business & Revenue Operating System" };
 
     return (
         <ToasterProvider>
@@ -196,12 +196,12 @@ export default function App() {
                     <div className="flex flex-col flex-1 min-h-0">
                         {/* Application Logo & Protocol Header */}
                         <div className="p-6 border-b border-slate-800 flex items-center space-x-3">
-                            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 shadow-md shadow-indigo-500/20 text-white font-black text-xl">
-                                T
+                            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-500 via-indigo-600 to-purple-600 shadow-md shadow-indigo-500/20 text-white font-black text-xl font-serif">
+                                F
                             </div>
                             <div className="overflow-hidden">
-                                <h1 className="font-extrabold text-sm tracking-tight text-white flex items-center gap-1.5">
-                                    TACF OS
+                                <h1 className="font-extrabold text-sm tracking-tight text-white flex items-center gap-1.5 font-serif">
+                                    Foundry<span className="text-indigo-400">OS</span>
                                     <span className="text-[10px] font-mono font-normal px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800/60">
                                         v1.0
                                     </span>

@@ -12,27 +12,31 @@
 
 ## 🌟 Key Architecture & Stack
 
-```
-                     CUSTOMER WORKSPACE
-                             │
-     ┌───────────────────────┼───────────────────────┐
-     ▼                       ▼                       ▼
-Business DNA Core     Intelligence Layer      Execution Engine
- (Phases 12–13)        (Phases 14–18)          (Phases 19–20)
- • Web & Doc Extraction • Marketing Intel       • Autonomous Execution
- • Brand Voice Sync     • Sales & Lead Intel    • Risk Evaluation
- • Revision History     • Ops Bottlenecks       • Human Approval Manager
- • Auto Refresh Engine  • Security Posture      • Automation Scheduler
-                             │                       │
-                             └───────────┬───────────┘
-                                         ▼
-                             Agent Governance & Memory
-                                    (Phase 21)
-                             • Agent Identity & RBAC Matrix
-                             • Data Security Classifications
-                             • Versioning & Rollbacks
-                             • Marketplace Publishing
-                             • Weighted Reputation Scoring
+```mermaid
+flowchart TD
+    CW["<b>CUSTOMER WORKSPACE</b>"]
+
+    subgraph Pillars [" "]
+        direction LR
+        DNA["<b>Business DNA Core</b><br/><i>(Phases 12–13)</i><br/>• Web & Doc Extraction<br/>• Brand Voice Sync<br/>• Revision History<br/>• Auto Refresh Engine"]
+        INTEL["<b>Intelligence Layer</b><br/><i>(Phases 14–18)</i><br/>• Marketing Intel<br/>• Sales & Lead Intel<br/>• Ops Bottlenecks<br/>• Security Posture"]
+        EXEC["<b>Execution Engine</b><br/><i>(Phases 19–20)</i><br/>• Autonomous Execution<br/>• Risk Evaluation<br/>• Human Approval Manager<br/>• Automation Scheduler"]
+    end
+
+    GOV["<b>Agent Governance & Memory</b><br/><i>(Phase 21)</i><br/>• Agent Identity & RBAC Matrix<br/>• Data Security Classifications<br/>• Versioning & Rollbacks<br/>• Marketplace Publishing<br/>• Weighted Reputation Scoring"]
+
+    CW --> DNA
+    CW --> INTEL
+    CW --> EXEC
+
+    INTEL --> GOV
+    EXEC --> GOV
+
+    classDef default fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#f8fafc;
+    classDef main fill:#1e1b4b,stroke:#6366f1,stroke-width:2px,color:#ffffff;
+    classDef gov fill:#1e1b4b,stroke:#8b5cf6,stroke-width:2px,color:#ffffff;
+    class CW main;
+    class GOV gov;
 ```
 
 ---

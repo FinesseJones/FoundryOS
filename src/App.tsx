@@ -24,7 +24,8 @@ import {
     Star,
     CreditCard,
     Flame,
-    PhoneCall
+    PhoneCall,
+    ShieldAlert
 } from 'lucide-react';
 
 // Import all pages and views
@@ -45,6 +46,7 @@ import { ReputationReviewsPage } from './pages/ReputationReviewsPage';
 import { InstantPaymentsPage } from './pages/InstantPaymentsPage';
 import { SmsCampaignsPage } from './pages/SmsCampaignsPage';
 import { VirtualPhonesPage } from './pages/VirtualPhonesPage';
+import { AdminPortalView } from './components/saas/AdminPortalView';
 import { FloatingWebChatWidget } from './components/conversational/FloatingWebChatWidget';
 import { BespokeLandingView } from './components/auth/BespokeLandingView';
 import { AccountManager, UserSession } from './core/saas/auth';
@@ -88,10 +90,15 @@ interface NavItemConfig {
     page: string;
     icon: React.ComponentType<{ className?: string }>;
     badge?: string;
-    section: 'core' | 'tools' | 'admin';
+    section: 'master' | 'core' | 'tools' | 'admin';
+    superAdminOnly?: boolean;
 }
 
 const navItems: NavItemConfig[] = [
+    // Master Admin Section (Visible only to SUPER_ADMIN)
+    { name: 'Master Tenant Roster', page: 'master_admin', icon: ShieldAlert, badge: 'ROOT', section: 'master', superAdminOnly: true },
+
+    // Core Tenant Intelligence
     { name: 'Dashboard', page: 'dashboard', icon: LayoutDashboard, section: 'core' },
     { name: 'Unified Inbox', page: 'inbox', icon: MessageSquare, badge: 'Live SMS', section: 'core' },
     { name: 'Reputation & Reviews', page: 'reviews', icon: Star, badge: 'Google 5★', section: 'core' },
@@ -112,6 +119,7 @@ const navItems: NavItemConfig[] = [
 ];
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
+    master_admin: { title: "Master Multi-Tenant Control Plane", subtitle: "Global tenant roster, cross-organization quotas, API keys, and platform billing." },
     dashboard: { title: "Executive Dashboard", subtitle: "Real-time governance, revenue forecasting, and strategic consulting services." },
     inbox: { title: "Unified Omnichannel Inbox", subtitle: "2-Way SMS, WebChat-to-Text, Google Business, and Inbound Lead Channels." },
     reviews: { title: "Reputation & Review Multiplier", subtitle: "Automate 1-Tap Google Review Requests and AI Brand Voice Responses." },
@@ -174,14 +182,15 @@ export default function App() {
     }
 
     const isDemoMode = session.role === 'DEMO_VIEWER';
+    const isSuperAdmin = (session.role as string) === 'SUPER_ADMIN';
 
     const currentUserContext = {
         role: session.role || 'ADMIN',
         permissions: {
-            userManagement: !isDemoMode && (session.role === 'ADMIN' || session.role === 'EXECUTIVE'),
-            settingsManagement: !isDemoMode && session.role === 'ADMIN',
+            userManagement: !isDemoMode && (session.role === 'ADMIN' || session.role === 'EXECUTIVE' || isSuperAdmin),
+            settingsManagement: !isDemoMode && (session.role === 'ADMIN' || isSuperAdmin),
             ollamaAccess: true,
-            deleteCriticalRecords: !isDemoMode && session.role === 'ADMIN',
+            deleteCriticalRecords: !isDemoMode && (session.role === 'ADMIN' || isSuperAdmin),
             viewAuditLogs: !isDemoMode,
         }
     };
@@ -214,6 +223,43 @@ export default function App() {
 
                         {/* Navigation Section Scroller */}
                         <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+                            {/* Section: Master Admin Control Plane (SUPER_ADMIN ONLY) */}
+                            {isSuperAdmin && (
+                                <div className="p-2.5 rounded-2xl bg-amber-950/30 border border-amber-500/30 space-y-1">
+                                    <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 mb-1 px-2 flex items-center gap-1">
+                                        <ShieldAlert className="w-3 h-3 text-amber-400" />
+                                        <span>Master Control Plane</span>
+                                    </p>
+                                    {navItems.filter(i => i.section === 'master').map((item) => {
+                                        const isActive = selectedPage === item.page;
+                                        return (
+                                            <button
+                                                key={item.page}
+                                                onClick={() => {
+                                                    setSelectedPage(item.page);
+                                                    window.scrollTo(0, 0);
+                                                }}
+                                                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-mono transition-all cursor-pointer ${
+                                                    isActive 
+                                                        ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30 font-bold' 
+                                                        : 'text-amber-200/80 hover:bg-amber-900/40 hover:text-white'
+                                                }`}
+                                            >
+                                                <div className="flex items-center space-x-2.5">
+                                                    <item.icon className="w-3.5 h-3.5 shrink-0" />
+                                                    <span>{item.name}</span>
+                                                </div>
+                                                {item.badge && (
+                                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/30 text-amber-300 border border-amber-400/40">
+                                                        {item.badge}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
                             {/* Section: Core Intelligence */}
                             <div>
                                 <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-3">
@@ -414,6 +460,21 @@ export default function App() {
                     {/* Page Canvas View */}
                     <main className="flex-1 p-8 max-w-7xl mx-auto w-full overflow-y-auto">
                         <Suspense fallback={<div className="text-center py-20 text-slate-400 font-mono text-xs">Loading module workspace...</div>}>
+                            {selectedPage === 'master_admin' && (
+                                isSuperAdmin ? (
+                                    <AdminPortalView
+                                        organizationName={session.organizationName}
+                                        setActiveTab={(tab: any) => setSelectedPage(tab)}
+                                        onSelectWorkspace={(wsId) => {
+                                            toast.success(`Switched tenant workspace context to ${wsId}`);
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="p-12 text-center text-rose-400 font-mono text-xs bg-rose-950/20 border border-rose-500/30 rounded-2xl">
+                                        ⛔ Access Denied: This area is restricted strictly to Master Platform Administrators.
+                                    </div>
+                                )
+                            )}
                             {selectedPage === 'dashboard' && <Dashboard currentUser={currentUserContext} onNavigate={setSelectedPage} />}
                             {selectedPage === 'inbox' && <UnifiedInboxPage />}
                             {selectedPage === 'reviews' && <ReputationReviewsPage />}

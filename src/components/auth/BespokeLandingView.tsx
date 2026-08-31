@@ -16,6 +16,7 @@ import {
   Eye
 } from 'lucide-react';
 import { OnboardingWizard } from './OnboardingWizard';
+import { MasterAdminAuthModal } from './MasterAdminAuthModal';
 import { AccountManager, UserSession } from '../../core/saas/auth';
 import { ConversationalLandingSection } from '../conversational/ConversationalLandingSection';
 import { FloatingWebChatWidget } from '../conversational/FloatingWebChatWidget';
@@ -26,6 +27,7 @@ interface BespokeLandingViewProps {
 
 export const BespokeLandingView: React.FC<BespokeLandingViewProps> = ({ onAuthenticated }) => {
   const [authModalMode, setAuthModalMode] = useState<'signup' | 'login' | null>(null);
+  const [masterAdminModalOpen, setMasterAdminModalOpen] = useState(false);
   const [activeTelemetryTab, setActiveTelemetryTab] = useState<'graph' | 'agents' | 'risk'>('graph');
 
   return (
@@ -73,18 +75,26 @@ export const BespokeLandingView: React.FC<BespokeLandingViewProps> = ({ onAuthen
           </nav>
 
           {/* Identity Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setMasterAdminModalOpen(true)}
+              className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-mono text-amber-300/90 hover:text-amber-200 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/30 hover:border-amber-500/50 transition-all cursor-pointer"
+              title="Master Administrator Terminal (Restricted)"
+            >
+              <Lock className="w-3 h-3 text-amber-400" />
+              <span className="hidden sm:inline">Admin Gateway</span>
+            </button>
             <button
               onClick={() => setAuthModalMode('login')}
-              className="px-4 py-2 rounded-lg text-xs font-mono text-slate-300 hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/10 transition-all cursor-pointer"
+              className="px-3.5 py-2 rounded-lg text-xs font-mono text-slate-300 hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/10 transition-all cursor-pointer"
             >
-              Sign In
+              Client Sign In
             </button>
             <button
               onClick={() => setAuthModalMode('signup')}
-              className="relative group px-5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all cursor-pointer border border-indigo-400/30 flex items-center gap-1.5"
+              className="relative group px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all cursor-pointer border border-indigo-400/30 flex items-center gap-1.5"
             >
-              <span>Initialize Identity</span>
+              <span>Client Onboard</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
@@ -338,6 +348,17 @@ export const BespokeLandingView: React.FC<BespokeLandingViewProps> = ({ onAuthen
           onClose={() => setAuthModalMode(null)}
           onComplete={(session) => {
             setAuthModalMode(null);
+            onAuthenticated(session);
+          }}
+        />
+      )}
+
+      {/* Master Platform Admin Auth Modal */}
+      {masterAdminModalOpen && (
+        <MasterAdminAuthModal
+          onClose={() => setMasterAdminModalOpen(false)}
+          onAuthenticated={(session) => {
+            setMasterAdminModalOpen(false);
             onAuthenticated(session);
           }}
         />

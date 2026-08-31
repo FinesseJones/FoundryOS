@@ -98,6 +98,84 @@ If any single vector component exceeds its ceiling (e.g., $R_{\text{regulatory}}
 
 ---
 
+## 🚀 Question 4: The Concurrency Collapse — Lock Contention & Distributed Deadlock Resolution
+
+### ❓ The Challenge:
+> *If thousands of concurrent agents (e.g., `MarketingIntelligenceService` and `SecurityIntelligenceService`) arrive at `Pre-Mutation Validate` simultaneously to modify shared, non-DNA data (e.g., conflicting lead salary estimates), how do you prevent distributed deadlocks? Is there a Distributed Lock Manager (DLM) or STM, and what is the timeout and failure recovery protocol?*
+
+### 💡 The Architectural Solution:
+FoundryOS avoids coarse-grained distributed pessimistic locking on high-frequency read/write entities by deploying a **Hybrid Optimistic Concurrency Control (OCC) + CRDT + Leased Fencing Token Architecture**:
+
+1. **Entity-Level Monotonic Versioning & OCC**:
+   * Every non-DNA record (Leads, Projects, Analytics telemetry) carries an entity version tag $v_k$ and Vector Clock.
+   * Agents calculate mutations against snapshot $v_k$. At commit time, the datastore executes a conditional CAS (Compare-And-Swap): `UPDATE entity SET data = new_data, version = v_k + 1 WHERE id = target_id AND version = v_k`.
+   * If another agent committed first, the transaction does not crash or block; it yields immediately (`OCC_RETRY_BACKOFF`).
+
+2. **Probabilistic Value Merging via CRDTs for Analytical Signals**:
+   * When Marketing and Security estimate conflicting attributes (e.g., Marketing estimates lead value at \$150k, Security estimates at \$80k based on risk posture), FoundryOS does not force a destructive lock.
+   * Instead, it writes to a **Provenance-Weighted Attribute Vector**:
+     $$\hat{V} = \sum_{i=1}^{n} w_i V_i, \quad \sum w_i = 1$$
+     where weights $w_i$ are dynamic functions of each agent's historical accuracy score stored in the **Agent Identity Registry**.
+
+3. **Distributed Lock Manager (DLM) for Mutually Exclusive Operations**:
+   * For hard zero-sum operations (e.g., spending budget allocations, schema migrations), FoundryOS uses **Bounded Distributed Leases (Redlock / Raft Leases)** with a strict **500ms Lock Timeout** and monotonic **Fencing Tokens**.
+   * **Deadlock Prevention (Wound-Wait Protocol)**: If Lock Contention occurs between Agent $A$ (Timestamp $T_A$) and Agent $B$ ($T_B$), the system applies the Wound-Wait rule: Older transactions are allowed to preempt younger ones, while younger transactions back off with **Exponential Randomized Jitter** ($25\text{ms} \times 2^{\text{retries}} \pm \delta$).
+
+---
+
+## 💳 Question 5: The Economic Gradient — Compute Credit System & Adaptive Cascade Down-Routing
+
+### ❓ The Challenge:
+> *Given 3-Tier Multi-Inference (Ollama ↔ Osaurus ↔ NVIDIA NIM 90B), continuous crawling, and heavy embedding calculations, compute costs can become a massive sink. What is your Cost-Aware Throttling Protocol? TokenUsageRateLimits or Compute Credit System? Is throttling graceful (downgrading) or punitive (pausing), and what is the billing granularity?*
+
+### 💡 The Architectural Solution:
+FoundryOS implements a **Universal Compute Unit (UCU)** metric combined with an **Adaptive Cascade Down-Routing Throttling Engine**:
+
+1. **The Universal Compute Unit (UCU) Metric**:
+   To normalize heterogeneous hardware and cloud inference, compute consumption is measured in standard UCUs:
+   $$\text{1 UCU} \equiv 1{,}000 \text{ Tier-1 (Local Ollama) Tokens} \equiv 100 \text{ Tier-2 (Apple MLX) Tokens} \equiv 10 \text{ Tier-3 (NVIDIA NIM 90B) Tokens} \equiv 1 \text{ Headless Chrome QA Render}$$
+
+2. **3-Stage Adaptive Quota Gradient (Graceful Cascade Downgrading)**:
+   Rather than punitively shutting down a tenant's operations when limits approach, the system applies **intelligent down-routing**:
+
+   ```
+   [0% ─── GREEN ZONE (0–80%) ─── 80% ─── AMBER ZONE (80–100%) ─── 100% ─── RED ZONE (>100%)]
+            Full Tier 3 (90B Cloud)        Cascade Down-Routing to Local        Soft-Throttle Queue +
+            Parallel Web Scrapers           Ollama (32B) & MLX Osaurus (27B)     Micro-Overage Addons
+   ```
+
+   * **🟢 Green Zone ($0\% - 80\%$ of monthly UCU)**: Full, unthrottled access to Tier-3 NVIDIA NIM (Llama 3.2 90B Vision, DeepSeek V4) and maximum parallel crawler concurrency.
+   * **🟡 Amber Zone ($80\% - 100\%$)**: **Graceful Model Cascading**. The system transparently routes routine, non-critical tasks (e.g., standard SMS intent classification, internal task summaries, review drafting) from Tier 3 Cloud to **Tier 1 Local Ollama (qwen2.5-coder:32b)** and **Tier 2 Apple Silicon MLX (Bonsai-27b)** at **$0.00$ marginal cloud cost**, reserving remaining cloud credits strictly for high-entropy vision audits.
+   * **🔴 Red Zone ($>100\%$)**: Interactive human-facing customer communications (inbound SMS text replies, emergency webchats) continue uninterrupted via Tier 1 Local Inference, while background asynchronous batch jobs (large-scale competitor crawls) enter a low-priority queue with instant micro-credit top-up prompts.
+
+3. **Billing Granularity & Ledger**:
+   Managed via `SaaSBillingManager`, providing sub-second token consumption ledger visibility for both the Tenant and the Master Super Admin.
+
+---
+
+## 🕵️ Question 6: The "Unforeseen Adversary" — Cumulative Emergent Drift & Circuit Breakers
+
+### ❓ The Challenge:
+> *Imagine an attacker or rogue agent induces a cascade of 100 subtle, low-severity, individually valid workflow submissions over a week (a "Swiss Cheese Attack") that cumulatively poisons business positioning or pricing. What is the Emergent Drift Detection mechanism that tracks statistical deviation from the 90-day state vector, and what is the quarantine procedure?*
+
+### 💡 The Architectural Solution:
+FoundryOS deploys a **Mahalanobis Statistical Covariance Metric** and **Cumulative Sum (CUSUM) Drift Detector** on the 90-Day Enterprise State Tensor $\vec{S}_{90}$:
+
+1. **State Vector Representation**:
+   The entire enterprise operational state is embedded as a normalized continuous vector $\vec{S}_t \in \mathbb{R}^{256}$ encompassing pricing distributions, communication sentiment, outbound discount depth, and permission grants.
+
+2. **Emergent Trajectory Anomaly Detection ($D_M$)**:
+   Even if every individual step $\Delta s_i < \epsilon$ passes local validation rules, the **Cumulative Drift Detector** calculates the Mahalanobis Distance against the historical 90-day moving baseline $(\boldsymbol{\mu}_{90}, \boldsymbol{\Sigma}_{90})$:
+   $$D_M(\vec{S}_t, \boldsymbol{\mu}_{90}) = \sqrt{(\vec{S}_t - \boldsymbol{\mu}_{90})^T \boldsymbol{\Sigma}_{90}^{-1} (\vec{S}_t - \boldsymbol{\mu}_{90})}$$
+   If the multi-day drift velocity $\left\|\frac{d\vec{S}}{dt}\right\|$ or the cumulative distance $D_M > 3.0\sigma$, the system flags a **"Slow-Burn Subversive Drift Anomaly"**.
+
+3. **Tiered Automated Circuit Breaker & Quarantine Protocol**:
+   * **Phase 1: Agent Shadow Quarantine (`SHADOW_MODE`)**: The suspected agent or rogue credential has its execution privileges instantly downgraded to Shadow Mode (actions are simulated in memory and analyzed against honeypot assertions, but not committed to disk or dispatched to external APIs).
+   * **Phase 2: Entity State Freeze (`STATE_FREEZE`)**: The specific affected tenant subgraph is locked in read-only mode, preventing further mutations while keeping customer-facing read queries live.
+   * **Phase 3: Time-Travel Forensic Diff & 1-Click Rollback**: Master Super Admin (`admin@foundryos.tech`) receives an alert containing a visual state diff comparing $\vec{S}_{t-7}$ vs $\vec{S}_t$. The operator can execute an atomic, targeted DAG rollback to the exact pre-attack state hash without wiping clean, unaffected customer records.
+
+---
+
 ## 🏛️ Codebase Implementation Mapping
 
 | Theoretical Concept | Implemented Source File in Repo | Exact Function / Type |
@@ -107,3 +185,5 @@ If any single vector component exceeds its ceiling (e.g., $R_{\text{regulatory}}
 | **Multi-Tenant Workspace Branching** | [`src/core/saas/auth.ts`](./src/core/saas/auth.ts) | `createWorkspace`, `workspaces`, `organizations` |
 | **6D Risk & Human Approval Gates** | [`src/core/saas/auth.ts`](./src/core/saas/auth.ts) | `ApprovalRecord`, `agentTasks`, `riskLevel: LOW/HIGH/CRITICAL` |
 | **Multi-Tier Inference & Execution** | [`src/core/hyperion/hyperion-bridge-service.ts`](./src/core/hyperion/hyperion-bridge-service.ts) | `HyperionBridgeService`, `dispatchJob`, `Tier 1-3 Router` |
+| **Token Ledgers & Throttling Management** | [`src/core/saas/billing.ts`](./src/core/saas/billing.ts) | `SaaSBillingManager`, `SubscriptionRecord`, `tokenUsage` |
+| **SHA-256 Key Vault & Zero-Trust Auditing** | [`src/core/saas/api-keys.ts`](./src/core/saas/api-keys.ts) | `ApiKeyRecord`, `requestApiKeyGeneration`, `AuditRepository` |

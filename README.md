@@ -25,6 +25,8 @@ flowchart TD
 
     GOV["<b>Agent Governance & Memory</b><br/><i>(Phase 21)</i><br/>• Agent Identity & RBAC Matrix<br/>• Data Security Classifications<br/>• Versioning & Rollbacks<br/>• Marketplace Publishing<br/>• Weighted Reputation Scoring"]
 
+    HYP["<b>🚀 HYPERION ENGINE (Autonomous Backend Horsepower)</b><br/>• 3-Tier Multi-Inference: Ollama (32B) ↔ MLX Osaurus (27B) ↔ NVIDIA NIM (90B)<br/>• Goose ACP & dyad FullStack Code Generation<br/>• Chrome DevTools MCP Visual Verification QA Engine<br/>• Arise 4K Virtual Studio + Hunyuan3D-2 + Kokoro-82M Voice Synthesis"]
+
     CW --> DNA
     CW --> INTEL
     CW --> EXEC
@@ -32,11 +34,15 @@ flowchart TD
     INTEL --> GOV
     EXEC --> GOV
 
+    EXEC <===>|"Autonomous Job Dispatch & Artifact Delivery"| HYP
+
     classDef default fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#f8fafc;
     classDef main fill:#1e1b4b,stroke:#6366f1,stroke-width:2px,color:#ffffff;
     classDef gov fill:#1e1b4b,stroke:#8b5cf6,stroke-width:2px,color:#ffffff;
+    classDef hyp fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#f0f9ff;
     class CW main;
     class GOV gov;
+    class HYP hyp;
 ```
 
 ---

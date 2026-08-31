@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { OnboardingWizard } from './OnboardingWizard';
 import { AccountManager, UserSession } from '../../core/saas/auth';
+import { PodiumLandingSection } from '../podium/PodiumLandingSection';
+import { FloatingWebChatWidget } from '../podium/FloatingWebChatWidget';
 
 interface BespokeLandingViewProps {
   onAuthenticated: (session: UserSession) => void;
@@ -285,6 +287,10 @@ export const BespokeLandingView: React.FC<BespokeLandingViewProps> = ({ onAuthen
         </section>
 
         {/* Feature Grid */}
+        {/* 🌟 PODIUM-POWERED CONVERSATIONAL LEAD & REVENUE ENGINE SHOWCASE */}
+        <PodiumLandingSection onStartOnboarding={() => setAuthModalMode('signup')} />
+
+        {/* Feature Grid */}
         <section id="intelligence" className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="p-8 rounded-2xl bg-gradient-to-b from-slate-900/60 to-slate-950 border border-white/[0.08] space-y-4 hover:border-indigo-500/30 transition-all">
             <div className="w-12 h-12 rounded-xl bg-indigo-600/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
@@ -317,6 +323,9 @@ export const BespokeLandingView: React.FC<BespokeLandingViewProps> = ({ onAuthen
           </div>
         </section>
       </main>
+
+      {/* Floating WebChat-to-SMS Widget (Podium Style) */}
+      <FloatingWebChatWidget />
 
       {/* Footer */}
       <footer className="border-t border-white/[0.07] bg-[#07090e]/90 py-8 text-center text-xs font-mono text-slate-500">

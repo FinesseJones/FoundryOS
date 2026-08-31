@@ -10,16 +10,21 @@ import {
     Tag, 
     SlidersHorizontal, 
     TrendingUp, 
-    Rocket,
-    Shield,
-    Activity,
-    ChevronRight,
-    Sparkles,
-    FileText,
-    Globe,
-    LogOut,
-    Building2,
-    Layers
+    Rocket, 
+    Shield, 
+    Activity, 
+    ChevronRight, 
+    Sparkles, 
+    FileText, 
+    Globe, 
+    LogOut, 
+    Building2, 
+    Layers,
+    MessageSquare,
+    Star,
+    CreditCard,
+    Flame,
+    PhoneCall
 } from 'lucide-react';
 
 // Import all pages and views
@@ -35,6 +40,12 @@ import ServicesCatalog from './pages/ServicesCatalog';
 import WebsiteStudio from './pages/WebsiteStudio';
 import Reports from './pages/Reports';
 import CustomerIntelligence from './pages/CustomerIntelligence';
+import { PodiumInboxPage } from './pages/PodiumInboxPage';
+import { PodiumReviewsPage } from './pages/PodiumReviewsPage';
+import { PodiumPaymentsPage } from './pages/PodiumPaymentsPage';
+import { PodiumCampaignsPage } from './pages/PodiumCampaignsPage';
+import { PodiumPhonesPage } from './pages/PodiumPhonesPage';
+import { FloatingWebChatWidget } from './components/podium/FloatingWebChatWidget';
 import { BespokeLandingView } from './components/auth/BespokeLandingView';
 import { AccountManager, UserSession } from './core/saas/auth';
 
@@ -82,9 +93,14 @@ interface NavItemConfig {
 
 const navItems: NavItemConfig[] = [
     { name: 'Dashboard', page: 'dashboard', icon: LayoutDashboard, section: 'core' },
+    { name: 'Unified Inbox', page: 'podium_inbox', icon: MessageSquare, badge: 'Live SMS', section: 'core' },
+    { name: 'Reputation & Reviews', page: 'podium_reviews', icon: Star, badge: 'Google 5★', section: 'core' },
+    { name: 'Text-to-Pay', page: 'podium_payments', icon: CreditCard, badge: 'Stripe', section: 'core' },
     { name: 'Business DNA OS', page: 'customer_intelligence', icon: Sparkles, badge: 'AI OS', section: 'core' },
     { name: 'Services Catalog', page: 'services', icon: Tag, badge: 'New', section: 'core' },
     { name: 'Branding Center', page: 'branding', icon: Rocket, badge: 'AI', section: 'core' },
+    { name: 'SMS Campaigns', page: 'podium_campaigns', icon: Flame, badge: '98% Open', section: 'tools' },
+    { name: 'Phones & Missed Calls', page: 'podium_phones', icon: PhoneCall, badge: 'Auto-Text', section: 'tools' },
     { name: 'Website Studio', page: 'studio', icon: Globe, badge: 'New', section: 'tools' },
     { name: 'Projects', page: 'projects', icon: ClipboardList, section: 'tools' },
     { name: 'Leads CRM', page: 'leads', icon: Zap, section: 'tools' },
@@ -97,6 +113,11 @@ const navItems: NavItemConfig[] = [
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
     dashboard: { title: "Executive Dashboard", subtitle: "Real-time governance, revenue forecasting, and strategic consulting services." },
+    podium_inbox: { title: "Unified Omnichannel Inbox", subtitle: "2-Way SMS, WebChat-to-Text, Google Business, and Inbound Lead Channels." },
+    podium_reviews: { title: "Reputation & Review Multiplier", subtitle: "Automate 1-Tap Google Review Requests and AI Brand Voice Responses." },
+    podium_payments: { title: "Text-to-Pay & Fast Invoicing", subtitle: "Collect client retainers and project invoices via 1-click SMS payment links." },
+    podium_campaigns: { title: "Targeted SMS Marketing Broadcasts", subtitle: "Launch high-converting promotional text blasts with 98% open rates." },
+    podium_phones: { title: "Virtual Phones & Missed-Call Auto-Text", subtitle: "Never lose a customer call; automatically text callers back in seconds." },
     customer_intelligence: { title: "Business DNA & Customer Intelligence OS", subtitle: "Live multi-domain intelligence across Marketing, Sales, Operations, and Zero-Trust Security." },
     services: { title: "Services Catalog & Offerings", subtitle: "Strategic transformation blueprints, digital audits, and deliverables." },
     branding: { title: "AI Branding & Positioning Center", subtitle: "Generate automated market positioning, taglines, and value proposition guides." },
@@ -394,6 +415,11 @@ export default function App() {
                     <main className="flex-1 p-8 max-w-7xl mx-auto w-full overflow-y-auto">
                         <Suspense fallback={<div className="text-center py-20 text-slate-400 font-mono text-xs">Loading module workspace...</div>}>
                             {selectedPage === 'dashboard' && <Dashboard currentUser={currentUserContext} onNavigate={setSelectedPage} />}
+                            {selectedPage === 'podium_inbox' && <PodiumInboxPage />}
+                            {selectedPage === 'podium_reviews' && <PodiumReviewsPage />}
+                            {selectedPage === 'podium_payments' && <PodiumPaymentsPage />}
+                            {selectedPage === 'podium_campaigns' && <PodiumCampaignsPage />}
+                            {selectedPage === 'podium_phones' && <PodiumPhonesPage />}
                             {selectedPage === 'customer_intelligence' && <CustomerIntelligence />}
                             {selectedPage === 'services' && <ServicesCatalog />}
                             {selectedPage === 'branding' && <BrandingCenter currentUser={currentUserContext} />}
@@ -420,6 +446,9 @@ export default function App() {
                             {selectedPage === 'settings' && <Settings currentUser={currentUserContext} />}
                         </Suspense>
                     </main>
+
+                    {/* Floating WebChat-to-SMS Widget (Global) */}
+                    <FloatingWebChatWidget />
                 </div>
             </div>
         </ToasterProvider>

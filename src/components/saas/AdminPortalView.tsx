@@ -20,6 +20,7 @@ export interface AdminClientRecord {
 import { SaaSAuthManager } from '../../core/saas/auth';
 import { CustomerStateManager } from '../../core/saas/customer-state';
 import { AuditRepository } from '../../core/persistence/repositories';
+import { HyperionEngineControl } from './HyperionEngineControl';
 
 interface AdminPortalViewProps {
   authManager?: SaaSAuthManager;
@@ -210,6 +211,9 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
           <p className="text-[11px] text-slate-500">Encrypted in DB Vault</p>
         </div>
       </div>
+
+      {/* 🚀 Hyperion Autonomous Engine Control & Live Telemetry */}
+      <HyperionEngineControl />
 
       {/* Client Organizations & Workspaces Table */}
       <div className="glass-card p-6 space-y-6">

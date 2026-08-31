@@ -28,10 +28,10 @@ interface Transaction {
 }
 
 const INITIAL_TRANSACTIONS: Transaction[] = [
-  { id: 'tx-101', clientName: 'Marcus Vance', phone: '(310) 849-2041', amount: 2500, description: 'Virtual Soundstage Stage 1 Deposit (Thursday Shoot)', status: 'PAID', date: 'Today, 10:24 AM', method: 'Apple Pay' },
-  { id: 'tx-102', clientName: 'Elena Rostova', phone: '(415) 620-8819', amount: 4800, description: 'Brand-First AI Architecture Setup Retainer', status: 'PENDING', date: 'Today, 9:50 AM' },
-  { id: 'tx-103', clientName: 'Summit Media', phone: '(212) 509-3128', amount: 12000, description: '4K Commercial Post-Production Master Package', status: 'PAID', date: 'Yesterday', method: 'Credit Card (Stripe)' },
-  { id: 'tx-104', clientName: 'Aero Dynamics', phone: '(512) 401-9923', amount: 1500, description: 'Website Redesign & Onboarding Consultation', status: 'PAID', date: '3 days ago', method: 'Google Pay' },
+  { id: 'tx-101', clientName: 'Dr. Walter Evans (Jackson Medical Mall, Jackson MS)', phone: '(601) 982-8400', amount: 4850, description: 'Emergency Chiller Rooftop Unit #2 Compressor & DDC Sensor Overhaul', status: 'PAID', date: 'Today, 10:24 AM', method: 'Apple Pay' },
+  { id: 'tx-102', clientName: 'Arthur Pendelton (Madison Station Plaza, Madison MS)', phone: '(601) 856-7116', amount: 6800, description: 'Trenchless NuFlow Epoxy Hydrojetting Commercial Sewer Lateral Retainer', status: 'PENDING', date: 'Today, 9:50 AM' },
+  { id: 'tx-103', clientName: 'Brenda Montgomery (Highland Colony Park, Ridgeland MS)', phone: '(601) 957-2200', amount: 18500, description: 'Commercial 480V 3-Phase Switchgear & Building Surge Protection Phase 1', status: 'PAID', date: 'Yesterday', method: 'Credit Card (Stripe)' },
+  { id: 'tx-104', clientName: 'Caleb Thornton (Madison, MS Homeowner)', phone: '(601) 853-1129', amount: 750, description: 'Dual Heat Pump Seasonal Tune-up & Whole-Home UV Air Purifier Installation', status: 'PAID', date: '3 days ago', method: 'Google Pay' },
 ];
 
 export const InstantPaymentsPage: React.FC = () => {

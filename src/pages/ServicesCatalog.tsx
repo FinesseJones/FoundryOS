@@ -20,38 +20,38 @@ interface ServiceOffering {
 
 const ServicesCatalog: React.FC = () => {
 
-    // Define all service offerings from our application's DNA
+    // Define all service offerings from Environment Masters, Inc. (Jackson, MS)
     const services: ServiceOffering[] = [
         {
             icon: Users,
-            title: "Digital Transformation Audit (Web/UX)",
-            subheading: "Modernizing dated digital assets for 2026+ search and conversion.",
-            painsSolved: ["Outdated UI/UX", "Poor Mobile Performance", "Low Organic Visibility"],
-            coreDeliverables: ["AI-Enhanced Experience Plan", "GEO-Targeted Strategy", "Full SEO Blueprint"],
+            title: "Commercial HVAC Chiller & VRF Systems",
+            subheading: "Engineering high-efficiency 50 to 200-ton rooftop chillers, variable-speed VRF systems, and hospital clean-room filtration across Jackson Metro.",
+            painsSolved: ["Emergency Chiller Outages in MS Humidity", "Excessive Utility Surcharges", "Poor Airflow Balance"],
+            coreDeliverables: ["BACnet DDC Controller Integration", "Seasonal Coil Optimization", "24/7 Hospital & Commercial Emergency Dispatch"],
             moduleLink: "/projects",
         },
         {
             icon: ShieldCheck,
-            title: "Governance & Audit System Implementation",
-            subheading: "Building iron-clad operational rule sets to ensure compliance and eliminate human error.",
-            painsSolved: ["Lack of Process Traceability", "Decision-making based on memory", "Regulatory non-compliance risk"],
-            coreDeliverables: ["Mandatory Workflow Gates", "Automated Audit Logging", "Cross-Module State Governance"],
-            moduleLink: "/users",
+            title: "Trenchless Plumbing & NuFlow Epoxy Hydrojetting",
+            subheading: "Zero-dig sewer restoration and high-pressure 4,000 PSI hydrojetting for historic and commercial Mississippi facilities.",
+            painsSolved: ["Destructive Concrete Trenching", "Recurring Root Blockages", "Water Pressure Fluctuations"],
+            coreDeliverables: ["Fiber-Optic HD Camera Pipe Scans", "NuFlow Structural Epoxy Lining", "Certified Commercial Backflow Prevention"],
+            moduleLink: "/projects",
         },
         {
             icon: Zap,
-            title: "Strategic Client Pipeline Management (CRM)",
-            subheading: "Systematically analyzing the economic viability of every potential contract.",
-            painsSolved: ["Vague sales qualification", "Ignoring financial feasibility", "Lack of executive sponsorship data"],
-            coreDeliverables: ["3-Pillar Opportunity Scoring", "Predictable Deal Stage Forecasting", "Built-in Financial Pain Quantifiers"],
+            title: "480V 3-Phase Commercial Electrical & Automation",
+            subheading: "Industrial switchgear upgrades, thermal imaging power audits, and building automation sensor integration.",
+            painsSolved: ["Unbalanced 3-Phase Voltage", "Dangerous Arc Flash Risks", "Lack of Surge Suppression"],
+            coreDeliverables: ["Schneider Square D Switchgear Upgrades", "Infrared Heat Audits", "Smart Thermostat Telemetry"],
             moduleLink: "/leads",
         },
         {
-            icon: Zap,
-            title: "Business Intelligence Reporting",
-            subheading: "Synthesizing all operational data into predictive, executive-level reports.",
-            painsSolved: ["Siloed Data", "Reactive management", "Inability to forecast resource bottlenecks"],
-            coreDeliverables: ["Cross-Departmental Risk Mapping", "Resource Capacity Forecasting", "Annual Recurring Revenue (ARR) Projection Gauges"],
+            icon: ClipboardList,
+            title: "Priority One™ Commercial Maintenance Agreement",
+            subheading: "The gold-standard preventative maintenance contract powering Central Mississippi enterprises since 1957.",
+            painsSolved: ["Unbudgeted Equipment Failures", "Slow Response Times", "Missed Customer Inbound Calls"],
+            coreDeliverables: ["Guaranteed Same-Day Dispatch", "Sub-15s Missed-Call Auto-Text", "1-Tap Text-to-Pay Invoicing"],
             moduleLink: "/analytics",
         }
     ];

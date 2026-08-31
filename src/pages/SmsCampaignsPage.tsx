@@ -30,23 +30,23 @@ interface CampaignItem {
 const INITIAL_CAMPAIGNS: CampaignItem[] = [
   {
     id: 'camp-1',
-    title: 'Fall Studio Booking VIP Promotion',
-    recipientsCount: 420,
-    openRate: '98.2%',
-    clickRate: '34.5%',
+    title: 'Jackson MS Summer Heatwave AC & Chiller Alert',
+    recipientsCount: 1850,
+    openRate: '98.4%',
+    clickRate: '41.2%',
     status: 'SENT',
     scheduledDate: 'Sent Yesterday at 2:00 PM',
-    messageText: '🎬 VIP Producer Alert: Lock in your Q4 virtual soundstage shoot dates before Friday and receive 20% off all anamorphic camera packages: https://tacf.ai/vip-q4',
+    messageText: '☀️ Jackson MS Heat Index >98°F Alert: Prevent AC compressor burnout before peak humid heat. Environment Masters Priority One members get priority same-day dispatch: https://environmentmasters.com/tuneup',
   },
   {
     id: 'camp-2',
-    title: 'Business DNA Onboarding Webinar',
-    recipientsCount: 850,
-    openRate: '96.8%',
-    clickRate: '28.1%',
+    title: 'Commercial Facility Preventative Hydrojetting',
+    recipientsCount: 420,
+    openRate: '97.5%',
+    clickRate: '32.8%',
     status: 'SENT',
     scheduledDate: 'Sent 3 days ago',
-    messageText: '🤖 Learn how to automate client intake & 5-star Google review capture with TACF Business DNA. Free live demo tomorrow at 11am EST: https://tacf.ai/live-demo',
+    messageText: '🔧 Commercial Property Notice: Schedule zero-dig trenchless sewer camera diagnostics and 4,000 PSI hydrojetting with Environment Masters Jackson MS: https://environmentmasters.com/commercial',
   },
 ];
 

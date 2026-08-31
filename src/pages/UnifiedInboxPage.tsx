@@ -46,46 +46,46 @@ interface Conversation {
 const INITIAL_CONVERSATIONS: Conversation[] = [
   {
     id: 'conv-1',
-    name: 'Marcus Vance',
-    phone: '(310) 849-2041',
+    name: 'Dr. Walter Evans (Jackson Medical Mall, Jackson MS)',
+    phone: '(601) 982-8400',
     channel: 'sms',
-    lastMessage: 'Sounds great! Can you send over the $2,500 retainer link so we can lock in the studio dates?',
+    lastMessage: 'Sounds great! Please send over the $4,850 commercial repair invoice link via text so I can approve it now.',
     lastTime: '2m ago',
     unread: true,
     status: 'QUOTED',
     messages: [
-      { id: 'm1', sender: 'customer', text: 'Hi, I saw your virtual production portfolio. Do you have stage availability next Thursday for a commercial shoot?', timestamp: '10:14 AM' },
-      { id: 'm2', sender: 'ai', text: 'Hello Marcus! Yes, Stage 1 (4K Anamorphic Soundstage) is open next Thursday. Our day rate is $2,500 including lighting package.', timestamp: '10:14 AM' },
-      { id: 'm3', sender: 'customer', text: 'Sounds great! Can you send over the $2,500 retainer link so we can lock in the studio dates?', timestamp: '10:18 AM' },
+      { id: 'm1', sender: 'customer', text: 'Hi Environment Masters team, our 200-ton rooftop chiller unit #2 is throwing a high-pressure alarm in the west clinic wing. Can you dispatch someone to Jackson Medical Mall today?', timestamp: '10:14 AM' },
+      { id: 'm2', sender: 'ai', text: 'Hello Dr. Evans! Environment Masters has Master Technician Marcus Holloway dispatched to 168 E Porter / Jackson Medical Mall with an ETA of 18 minutes under your Priority One Commercial agreement.', timestamp: '10:14 AM' },
+      { id: 'm3', sender: 'customer', text: 'Sounds great! Please send over the $4,850 commercial repair invoice link via text so I can approve it now.', timestamp: '10:18 AM' },
     ]
   },
   {
     id: 'conv-2',
-    name: 'Elena Rostova',
-    phone: '(415) 620-8819',
+    name: 'Arthur Pendelton (Madison Station Plaza, Madison MS)',
+    phone: '(601) 856-7116',
     channel: 'webchat',
-    lastMessage: 'Thanks! I will review the proposal with my partner today.',
+    lastMessage: 'The trenchless hydrojetting proposal looks solid. Let us schedule the crew for Tuesday morning.',
     lastTime: '15m ago',
     unread: false,
     status: 'IN_PROGRESS',
     messages: [
-      { id: 'm4', sender: 'customer', text: 'Looking for a complete brand redesign and automated CRM setup.', timestamp: '9:30 AM' },
-      { id: 'm5', sender: 'business', text: 'Hi Elena! We have our Brand-First AI suite pre-configured for that. Sending you the scope deck now.', timestamp: '9:45 AM' },
-      { id: 'm6', sender: 'customer', text: 'Thanks! I will review the proposal with my partner today.', timestamp: '9:50 AM' },
+      { id: 'm4', sender: 'customer', text: 'We have recurring water pressure drops in the Madison Station historic building. Do you offer trenchless sewer inspections?', timestamp: '9:30 AM' },
+      { id: 'm5', sender: 'business', text: 'Hi Arthur! Yes, Environment Masters provides high-definition fiber optic camera inspections and zero-dig NuFlow epoxy lining throughout Madison County.', timestamp: '9:45 AM' },
+      { id: 'm6', sender: 'customer', text: 'The trenchless hydrojetting proposal looks solid. Let us schedule the crew for Tuesday morning.', timestamp: '9:50 AM' },
     ]
   },
   {
     id: 'conv-3',
-    name: 'David Sterling',
-    phone: '(212) 509-3128',
+    name: 'Brenda Montgomery (Highland Colony Park, Ridgeland MS)',
+    phone: '(601) 957-2200',
     channel: 'google',
-    lastMessage: 'Just left a 5-star review on your Google page. Thanks for the quick turnaround!',
+    lastMessage: 'Just left Environment Masters a 5-star Google review! Your electrician arrived in 15 minutes during the storm.',
     lastTime: '1h ago',
     unread: false,
     status: 'PAID_CLIENT',
     messages: [
-      { id: 'm7', sender: 'business', text: 'Hi David, thanks for choosing TACF! If you had a great experience, could you drop us a quick review?', timestamp: '8:00 AM', isReview: true },
-      { id: 'm8', sender: 'customer', text: 'Just left a 5-star review on your Google page. Thanks for the quick turnaround!', timestamp: '8:45 AM' },
+      { id: 'm7', sender: 'business', text: 'Hi Brenda, thank you for trusting Environment Masters with the Highland Colony 480V panel upgrade! Could you share a quick Google review?', timestamp: '8:00 AM', isReview: true },
+      { id: 'm8', sender: 'customer', text: 'Just left Environment Masters a 5-star Google review! Your electrician arrived in 15 minutes during the storm.', timestamp: '8:45 AM' },
     ]
   },
 ];

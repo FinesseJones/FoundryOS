@@ -33,30 +33,30 @@ interface CallRecord {
 const INITIAL_CALLS: CallRecord[] = [
   {
     id: 'c-1',
-    callerName: 'Robert Langdon',
-    callerPhone: '(415) 390-1182',
+    callerName: 'Dr. Walter Evans (Jackson Medical Mall, Jackson MS)',
+    callerPhone: '(601) 982-8400',
     type: 'MISSED',
     time: '12m ago',
     duration: '0:00',
     hasVoicemail: true,
-    voicemailTranscript: '"Hey there, calling regarding your 3D Soundstage availability for next weekend. Please call or text me back at 415-390-1182."',
+    voicemailTranscript: '"Hey Ray and Sarah, this is Dr. Evans from Jackson Medical Mall. Calling regarding the rooftop chiller unit #2 alarm. Please text or call me back at 601-982-8400."',
     autoTextSent: true,
   },
   {
     id: 'c-2',
-    callerName: 'Elena Rostova',
-    callerPhone: '(415) 620-8819',
+    callerName: 'Arthur Pendelton (Madison Station Plaza, Madison MS)',
+    callerPhone: '(601) 856-7116',
     type: 'INCOMING',
     time: '2h ago',
-    duration: '4:32',
+    duration: '5:12',
   },
   {
     id: 'c-3',
-    callerName: 'Marcus Vance',
-    callerPhone: '(310) 849-2041',
+    callerName: 'Brenda Montgomery (Highland Colony Park, Ridgeland MS)',
+    callerPhone: '(601) 957-2200',
     type: 'OUTGOING',
     time: '4h ago',
-    duration: '2:15',
+    duration: '3:40',
   },
 ];
 
@@ -64,7 +64,7 @@ export const VirtualPhonesPage: React.FC = () => {
   const [calls, setCalls] = useState<CallRecord[]>(INITIAL_CALLS);
   const [autoTextEnabled, setAutoTextEnabled] = useState<boolean>(true);
   const [autoTextMessage, setAutoTextMessage] = useState<string>(
-    "Hi! Sorry we missed your call. We're currently assisting another client. How can we help you today?"
+    "Hi! This is Environment Masters (Jackson, MS). Sorry we missed your call — how can our HVAC, plumbing, or electrical team help you today?"
   );
 
   const handleSaveAutoText = () => {
@@ -92,14 +92,14 @@ export const VirtualPhonesPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1">
           <span className="text-[10px] font-mono text-slate-400 uppercase">Missed Call Auto-Recovery Rate</span>
-          <p className="text-2xl font-black text-indigo-400">89.2%</p>
-          <p className="text-[10px] text-emerald-400 font-mono">Leads recovered via instant SMS text</p>
+          <p className="text-2xl font-black text-indigo-400">92.4%</p>
+          <p className="text-[10px] text-emerald-400 font-mono">Leads recovered via sub-15s auto SMS</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1">
-          <span className="text-[10px] font-mono text-slate-400 uppercase">Dedicated Phone Line</span>
-          <p className="text-xl font-bold text-white font-mono">(800) 492-TACF</p>
-          <p className="text-[10px] text-emerald-400 font-mono">● Active & Routing Calls</p>
+          <span className="text-[10px] font-mono text-slate-400 uppercase">Dedicated Mississippi Line</span>
+          <p className="text-xl font-bold text-white font-mono">(601) 353-4681</p>
+          <p className="text-[10px] text-emerald-400 font-mono">● Jackson MS Active Routing</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1">

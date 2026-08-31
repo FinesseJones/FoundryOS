@@ -62,19 +62,19 @@ const WebsiteStudio: React.FC<WebsiteStudioProps> = ({ initialLead, allLeads = [
   );
 
   const [customCompanyName, setCustomCompanyName] = useState<string>(
-    initialLead?.companyName || authoritativeDna?.companyIdentity.companyName || 'TACF Autonomous Systems'
+    initialLead?.companyName || authoritativeDna?.companyIdentity.companyName || 'Environment Masters, Inc. (Jackson, MS)'
   );
 
   const [customIndustry, setCustomIndustry] = useState<string>(
-    initialLead?.industry || authoritativeDna?.companyIdentity.industry || 'saas'
+    initialLead?.industry || authoritativeDna?.companyIdentity.industry || 'hvac_plumbing_electrical'
   );
 
   const [financialPain, setFinancialPain] = useState<string>(
-    initialLead?.pillarFinancialPain || authoritativeDna?.opportunityPillars.financialPain || ''
+    initialLead?.pillarFinancialPain || authoritativeDna?.opportunityPillars.financialPain || '$180k/yr excess commercial HVAC cooling costs in MS humidity'
   );
 
   const [processGap, setProcessGap] = useState<string>(
-    initialLead?.pillarProcessGap || authoritativeDna?.opportunityPillars.processGap || ''
+    initialLead?.pillarProcessGap || authoritativeDna?.opportunityPillars.processGap || 'Lacks 24/7 DDC building telemetry and sub-15s missed-call auto-text'
   );
 
   const [selectedThemeId, setSelectedThemeId] = useState<string>('indigo');
@@ -106,10 +106,10 @@ const WebsiteStudio: React.FC<WebsiteStudioProps> = ({ initialLead, allLeads = [
       setProcessGap(authoritativeDna.opportunityPillars.processGap);
       toast.success(`✨ Synced inputs from Authoritative DNA: ${authoritativeDna.companyIdentity.companyName}`);
     } else if (sourceIdStr === 'custom') {
-      setCustomCompanyName('Apex Innovations');
-      setCustomIndustry('saas');
-      setFinancialPain('$1.2M in annual overhead lost to friction');
-      setProcessGap('Manual departmental handoffs');
+      setCustomCompanyName('Environment Masters, Inc. (Jackson, MS)');
+      setCustomIndustry('hvac_plumbing_electrical');
+      setFinancialPain('$180k/yr excess commercial chiller cooling costs');
+      setProcessGap('Lacks sub-15s missed call auto-text dispatch');
     } else if (sourceIdStr.startsWith('lead_')) {
       const leadIdNum = Number(sourceIdStr.replace('lead_', ''));
       const found = allLeads.find(l => l.id === leadIdNum);

@@ -60,7 +60,7 @@ const INITIAL_CALLS: CallRecord[] = [
   },
 ];
 
-export const PodiumPhonesPage: React.FC = () => {
+export const VirtualPhonesPage: React.FC = () => {
   const [calls, setCalls] = useState<CallRecord[]>(INITIAL_CALLS);
   const [autoTextEnabled, setAutoTextEnabled] = useState<boolean>(true);
   const [autoTextMessage, setAutoTextMessage] = useState<string>(
@@ -79,7 +79,7 @@ export const PodiumPhonesPage: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <h2 className="text-xl font-bold text-white font-serif">Virtual Phones & Missed-Call Auto-Text</h2>
             <span className="px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 font-mono text-[10px] font-bold border border-indigo-500/40">
-              PODIUM PHONES
+              VOICE & AUTO-TEXT
             </span>
           </div>
           <p className="text-xs text-slate-400">

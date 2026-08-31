@@ -90,7 +90,7 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
   },
 ];
 
-export const PodiumInboxPage: React.FC = () => {
+export const UnifiedInboxPage: React.FC = () => {
   const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
   const [selectedId, setSelectedId] = useState<string>('conv-1');
   const [replyText, setReplyText] = useState<string>('');
@@ -175,7 +175,7 @@ export const PodiumInboxPage: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <h2 className="text-xl font-bold text-white font-serif">Unified Omnichannel Inbox</h2>
             <span className="px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 font-mono text-[10px] font-bold border border-indigo-500/40">
-              PODIUM SYNC
+              LIVE OMNICHANNEL
             </span>
           </div>
           <p className="text-xs text-slate-400">

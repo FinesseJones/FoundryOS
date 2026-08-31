@@ -50,7 +50,7 @@ const INITIAL_CAMPAIGNS: CampaignItem[] = [
   },
 ];
 
-export const PodiumCampaignsPage: React.FC = () => {
+export const SmsCampaignsPage: React.FC = () => {
   const [campaigns, setCampaigns] = useState<CampaignItem[]>(INITIAL_CAMPAIGNS);
   const [title, setTitle] = useState<string>('');
   const [message, setMessage] = useState<string>('');
@@ -95,7 +95,7 @@ export const PodiumCampaignsPage: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <h2 className="text-xl font-bold text-white font-serif">Targeted SMS Marketing Broadcasts</h2>
             <span className="px-2.5 py-0.5 rounded-full bg-rose-950 text-rose-300 font-mono text-[10px] font-bold border border-rose-500/40">
-              PODIUM CAMPAIGNS
+              SMS BROADCASTS
             </span>
           </div>
           <p className="text-xs text-slate-400">

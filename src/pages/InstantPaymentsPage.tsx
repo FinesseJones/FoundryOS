@@ -34,7 +34,7 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
   { id: 'tx-104', clientName: 'Aero Dynamics', phone: '(512) 401-9923', amount: 1500, description: 'Website Redesign & Onboarding Consultation', status: 'PAID', date: '3 days ago', method: 'Google Pay' },
 ];
 
-export const PodiumPaymentsPage: React.FC = () => {
+export const InstantPaymentsPage: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
   const [clientName, setClientName] = useState<string>('');
   const [clientPhone, setClientPhone] = useState<string>('');
@@ -79,7 +79,7 @@ export const PodiumPaymentsPage: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <h2 className="text-xl font-bold text-white font-serif">Text-to-Pay & Fast Invoicing</h2>
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-500/40">
-              PODIUM PAYMENTS
+              TEXT-TO-PAY
             </span>
           </div>
           <p className="text-xs text-slate-400">

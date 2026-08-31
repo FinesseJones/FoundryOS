@@ -23,11 +23,11 @@ import {
   Search
 } from 'lucide-react';
 
-interface PodiumLandingSectionProps {
+interface ConversationalLandingSectionProps {
   onStartOnboarding: () => void;
 }
 
-export const PodiumLandingSection: React.FC<PodiumLandingSectionProps> = ({ onStartOnboarding }) => {
+export const ConversationalLandingSection: React.FC<ConversationalLandingSectionProps> = ({ onStartOnboarding }) => {
   const [activeTab, setActiveTab] = useState<'inbox' | 'leads' | 'reviews' | 'payments' | 'campaigns' | 'phones'>('inbox');
   const [selectedNiche, setSelectedNiche] = useState<number>(0);
   const [demoPhone, setDemoPhone] = useState<string>('(555) 389-2041');
@@ -74,7 +74,7 @@ export const PodiumLandingSection: React.FC<PodiumLandingSectionProps> = ({ onSt
 
   return (
     <div className="space-y-24 py-12">
-      {/* 🌟 1. PODIUM CORE HERO SHOWCASE */}
+      {/* 🌟 1. CORE HERO SHOWCASE */}
       <section className="relative rounded-3xl p-8 md:p-12 bg-gradient-to-b from-[#0f172a]/90 via-[#090d16]/90 to-[#05070c]/90 border border-indigo-500/30 shadow-[0_0_50px_rgba(99,102,241,0.15)] overflow-hidden">
         <div className="absolute -right-20 -top-20 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -left-20 -bottom-20 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -84,7 +84,7 @@ export const PodiumLandingSection: React.FC<PodiumLandingSectionProps> = ({ onSt
           <div className="lg:col-span-7 space-y-6 text-left">
             <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/40 px-3.5 py-1 text-xs font-mono text-indigo-300">
               <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
-              <span>PODIUM-POWERED LEAD TO REVENUE ENGINE</span>
+              <span>AUTONOMOUS LEAD TO REVENUE ENGINE</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight font-serif">
@@ -96,7 +96,7 @@ export const PodiumLandingSection: React.FC<PodiumLandingSectionProps> = ({ onSt
             </h2>
 
             <p className="text-sm sm:text-base text-slate-300 font-sans leading-relaxed">
-              Combine the conversational lead-conversion of <strong>Podium</strong> (WebChat-to-Text, 2-Way SMS, Review Requests, Text-to-Pay) with the depth of your <strong>TACF Business DNA</strong>.
+              Combine multi-channel conversational lead conversion (WebChat-to-Text, 2-Way SMS, Review Requests, Text-to-Pay) with the depth of your <strong>TACF Business DNA</strong>.
             </p>
 
             {/* Quick Feature Checklist */}
@@ -234,14 +234,14 @@ export const PodiumLandingSection: React.FC<PodiumLandingSectionProps> = ({ onSt
         </div>
       </section>
 
-      {/* 🧭 2. PODIUM 6-PRODUCT PILLAR SELECTOR */}
+      {/* 🧭 2. COMPLETE CONVERSATIONAL SUITE */}
       <section className="space-y-8 text-center">
         <div className="space-y-3">
           <span className="text-xs font-mono font-bold text-indigo-400 uppercase tracking-widest">
             THE ALL-IN-ONE COMMUNICATIONS SUITE
           </span>
           <h3 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight font-serif">
-            Every Podium Feature, Powered by Business DNA
+            The Complete Conversational Suite, Powered by Business DNA
           </h3>
           <p className="text-sm text-slate-400 max-w-2xl mx-auto">
             Switch between the tools your business uses every day to capture leads, text clients, collect payments, and multiply reviews.

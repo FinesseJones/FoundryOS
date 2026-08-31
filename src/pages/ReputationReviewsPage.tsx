@@ -59,7 +59,7 @@ const INITIAL_REVIEWS: ReviewItem[] = [
   },
 ];
 
-export const PodiumReviewsPage: React.FC = () => {
+export const ReputationReviewsPage: React.FC = () => {
   const [reviews, setReviews] = useState<ReviewItem[]>(INITIAL_REVIEWS);
   const [recipientName, setRecipientName] = useState<string>('');
   const [recipientPhone, setRecipientPhone] = useState<string>('');
@@ -110,7 +110,7 @@ export const PodiumReviewsPage: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <h2 className="text-xl font-bold text-white font-serif">Reputation & Review Multiplier</h2>
             <span className="px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/40">
-              PODIUM REPUTATION
+              REPUTATION ENGINE
             </span>
           </div>
           <p className="text-xs text-slate-400">

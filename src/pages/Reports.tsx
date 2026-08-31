@@ -21,10 +21,10 @@ interface KPIData {
 }
 
 const mockKPIs: KPIData[] = [
-    { title: "Total Projected Revenue", value: { usd: 1200000, local: "1,200,000", currency: "INR" }, icon: <DollarSign className="w-5 h-5" />, change: "+8.5%", colorClass: "text-green-500", localCurrency: "INR" },
-    { title: "Total Spent Budget", value: { usd: 350000, local: "35,00,000", currency: "INR" }, icon: <Clock className="w-5 h-5" />, change: "+1 since last month", colorClass: "text-indigo-500", localCurrency: "INR" },
-    { title: "Average Project Value", value: { usd: 65000, local: "650,000", currency: "INR" }, icon: <Users className="w-5 h-5" />, change: "Stable", colorClass: "text-yellow-500", localCurrency: "INR" },
-    { title: "Completion Rate", value: { usd: 0, local: "78%", currency: "" }, icon: <CheckCircle className="w-5 h-5" />, change: "2% increase", colorClass: "text-blue-500", localCurrency: "" },
+    { title: "Total Projected Revenue (MS Metro)", value: { usd: 3450000, local: "$3,450,000", currency: "USD" }, icon: <DollarSign className="w-5 h-5" />, change: "+14.2% YoY", colorClass: "text-green-500", localCurrency: "USD" },
+    { title: "Commercial Retainers & Maintenance", value: { usd: 1240000, local: "$1,240,000", currency: "USD" }, icon: <Clock className="w-5 h-5" />, change: "+8 Priority One Accounts", colorClass: "text-indigo-500", localCurrency: "USD" },
+    { title: "Average Commercial Contract", value: { usd: 84500, local: "$84,500", currency: "USD" }, icon: <Users className="w-5 h-5" />, change: "Up +6.5%", colorClass: "text-yellow-500", localCurrency: "USD" },
+    { title: "First-Time Fix / Completion Rate", value: { usd: 0, local: "94.8%", currency: "USD" }, icon: <CheckCircle className="w-5 h-5" />, change: "Top 1% in Jackson Metro", colorClass: "text-blue-500", localCurrency: "USD" },
 ];
 
 const ReportsContent: React.FC = () => {

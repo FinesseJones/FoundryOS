@@ -219,6 +219,46 @@ export class AccountManager {
       };
       this.users.set('admin@foundryos.tech', superAdminUser);
     }
+
+    // Seed Real Client: Environment Masters, Inc. (Jackson, MS)
+    if (!this.organizations.has('org_env_masters_ms')) {
+      this.organizations.set('org_env_masters_ms', {
+        id: 'org_env_masters_ms',
+        name: 'Environment Masters, Inc. (Jackson, MS)',
+        ownerUserId: 'usr_ray_buckley_ms',
+        industry: 'hvac_plumbing_electrical',
+        planTier: 'enterprise',
+        createdAt: '1957-01-01T00:00:00.000Z',
+      });
+
+      this.workspaces.set('org_env_masters_ms', [{
+        id: 'ws_env_masters_jackson',
+        organizationId: 'org_env_masters_ms',
+        name: 'Jackson MS Headquarters Workspace',
+        slug: 'environment-masters-jackson-ms',
+        createdAt: '2026-08-31T00:00:00.000Z',
+      }]);
+
+      this.companyProfiles.set('ws_env_masters_jackson', {
+        organizationId: 'org_env_masters_ms',
+        workspaceId: 'ws_env_masters_jackson',
+        companyName: 'Environment Masters, Inc.',
+        websiteUrl: 'https://environmentmasters.com',
+        businessDescription: 'Premier commercial and residential HVAC, plumbing, electrical, and smart building automation contractor serving Jackson, Madison, and Central Mississippi since 1957.',
+        industry: 'HVAC, Mechanical & Commercial Electrical Contracting',
+        targetAudience: 'Commercial facility managers, hospital operations directors, municipal infrastructure leads, and Mississippi homeowners.',
+        valuePropositions: [
+          'Jackson Mississippi Metro Leader in HVAC & Plumbing Since 1957',
+          '24/7 Rapid Emergency Response with Priority One Maintenance Guarantees',
+          'Licensed Master Electricians, Mechanical Engineers & DDC Automation Specialists',
+          '1-Tap Transparent SMS Text-to-Pay & Instant Review Dispatch'
+        ],
+        brandTone: 'authoritative_responsive_institutional',
+        keyCompetitors: ['AirSouth Cooling', 'Ewing Kessler', 'Upchurch Plumbing'],
+        targetMarket: 'Jackson, Ridgeland, Madison, Pearl, Brandon, Central Mississippi',
+        updatedAt: new Date().toISOString(),
+      });
+    }
   }
 
   private saveState(): void {

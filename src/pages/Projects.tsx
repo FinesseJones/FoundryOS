@@ -23,10 +23,10 @@ interface Project {
 }
 
 const initialMockProjects: Project[] = [
-    { id: 1, name: 'Website Redesign Q3 2024', goal: 'Optimize user journey/CTAs.', priority: 'High', status: 'In Progress', completion: 65 },
-    { id: 2, name: 'Q4 Branding Assets Library', goal: 'Expand iconography and color guidelines.', priority: 'Medium', status: 'In Progress', completion: 10 },
-    { id: 3, name: 'Internal Tool Migration', goal: 'Move legacy CRM data to new platform.', priority: 'High', status: 'At Risk', completion: 90 },
-    { id: 4, name: 'Market Research Initiative', goal: 'Identify key untapped revenue sources.', priority: 'Low', status: 'Complete', completion: 100 },
+    { id: 1, name: 'Jackson Medical Mall 200-Ton Chiller Overhaul (Jackson, MS)', goal: 'Replace aging rooftop chillers with high-efficiency variable-speed Carrier units.', priority: 'High', status: 'In Progress', completion: 65 },
+    { id: 2, name: 'Madison Station Historic Plaza Plumbing Retrofit (Madison, MS)', goal: 'Trenchless epoxy pipe lining and commercial backflow prevention certification.', priority: 'High', status: 'In Progress', completion: 85 },
+    { id: 3, name: 'Highland Colony 480V Commercial Panel & Surge Upgrade (Ridgeland, MS)', goal: 'Infrared thermal audit, 3-phase surge protection, and circuit breaker telemetry.', priority: 'Medium', status: 'In Progress', completion: 40 },
+    { id: 4, name: 'Pearl Metro Depot Smart HVAC Auto-Diagnostics (Pearl, MS)', goal: 'IoT thermostat telemetry and sub-15s emergency dispatch integration.', priority: 'Low', status: 'Complete', completion: 100 },
 ];
 
 

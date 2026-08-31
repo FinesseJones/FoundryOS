@@ -21,21 +21,21 @@ interface AutomationRule {
 const mockRules: AutomationRule[] = [
     { 
         id: 1, 
-        triggerDescription: "Project Status moves to 'Review'", 
-        actionDescription: "Create task: 'Management Review' and assign to 'Manager'.", 
+        triggerDescription: "Missed incoming call after hours (601-353-4681)", 
+        actionDescription: "Instantly dispatch 2-way SMS: 'Hi! This is Environment Masters. Sorry we missed you, how can we help with your AC/Plumbing emergency tonight?'", 
         isActive: true 
     },
     { 
         id: 2, 
-        triggerDescription: "User role changes to 'SuperAdmin'", 
-        actionDescription: "System notification sent to 'CEO' (Email trigger).", 
+        triggerDescription: "Commercial Work Order marked 'Work Completed'", 
+        actionDescription: "Dispatch 1-Tap Google 5★ Review invitation via SMS + generate Text-to-Pay invoice link.", 
         isActive: true 
     },
     { 
         id: 3, 
-        triggerDescription: "New Project created for 'Enterprise Global'", 
-        actionDescription: "Automatically assign 3 initial milestone tasks.", 
-        isActive: false 
+        triggerDescription: "Jackson MS Outdoor Heat Index reaches > 95°F", 
+        actionDescription: "Launch targeted SMS Broadcast to 'Priority One Maintenance' members offering complimentary capacitor & Freon checkup.", 
+        isActive: true 
     }
 ];
 

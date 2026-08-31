@@ -10,26 +10,25 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Calendar, DollarSign, Target, Edit, MessageSquare, CheckSquare } from 'lucide-react';
 
-// In a real app, this data would be fetched from an API.
-// I've expanded the mock data to include more details for this view.
+// Environment Masters, Inc. (Jackson, MS) — Commercial Project Operations
 const mockProjectsData = [
-    { id: 1, name: 'Website Redesign Q3 2024', goal: 'Optimize user journey/CTAs.', priority: 'High', status: 'In Progress', completion: 65, scope: 'Full redesign of the marketing website, including new landing pages, a revised user flow for sign-ups, and updated brand assets. Excludes backend API changes.', budget: 50000, startDate: '2024-07-01', endDate: '2024-09-30' },
-    { id: 2, name: 'Q4 Branding Assets Library', goal: 'Expand iconography and color guidelines.', priority: 'Medium', status: 'In Progress', completion: 10, scope: 'Creation of 50 new icons, a secondary color palette, and updated typography guidelines for use in all Q4 marketing materials.', budget: 15000, startDate: '2024-10-01', endDate: '2024-11-30' },
-    { id: 3, name: 'Internal Tool Migration', goal: 'Move legacy CRM data to new platform.', priority: 'High', status: 'At Risk', completion: 90, scope: 'Migrate all customer data from the old CRM to the new Salesforce instance. Includes data cleaning, mapping, and validation.', budget: 75000, startDate: '2024-06-15', endDate: '2024-08-15' },
-    { id: 4, name: 'Market Research Initiative', goal: 'Identify key untapped revenue sources.', priority: 'Low', status: 'Complete', completion: 100, scope: 'Conduct surveys and focus groups to identify potential new market segments for our flagship product. Deliver a final report with recommendations.', budget: 20000, startDate: '2024-05-01', endDate: '2024-06-30' },
+    { id: 1, name: 'Jackson Medical Mall 200-Ton Chiller Overhaul (Jackson, MS)', goal: 'Replace aging rooftop chillers with high-efficiency variable-speed Carrier units.', priority: 'High', status: 'In Progress', completion: 65, scope: 'Crane hoist of 200-ton chiller assembly, BACnet DDC controller integration, and emergency hospital wing cooling failover testing.', budget: 145000, startDate: '2026-06-01', endDate: '2026-10-30' },
+    { id: 2, name: 'Madison Station Historic Plaza Plumbing Retrofit (Madison, MS)', goal: 'Trenchless epoxy pipe lining and commercial backflow prevention certification.', priority: 'High', status: 'In Progress', completion: 85, scope: 'High-pressure hydrojetting of 1,200ft main sewer lateral and zero-dig NuFlow epoxy lining under historic brick walkways.', budget: 68000, startDate: '2026-07-15', endDate: '2026-09-30' },
+    { id: 3, name: 'Highland Colony 480V Commercial Panel & Surge Upgrade (Ridgeland, MS)', goal: 'Infrared thermal audit, 3-phase surge protection, and circuit breaker telemetry.', priority: 'Medium', status: 'In Progress', completion: 40, scope: 'Schneider Electric Square D 480V/277V switchgear upgrade and IoT load-balancing sensors for commercial office tenants.', budget: 52000, startDate: '2026-08-01', endDate: '2026-11-15' },
+    { id: 4, name: 'Pearl Metro Depot Smart HVAC Auto-Diagnostics (Pearl, MS)', goal: 'IoT thermostat telemetry and sub-15s emergency dispatch integration.', priority: 'Low', status: 'Complete', completion: 100, scope: 'Installation of 32 Honeywell commercial smart thermostats with FoundryOS SMS dispatch webhook integration.', budget: 20000, startDate: '2026-05-01', endDate: '2026-06-30' },
 ];
 
 const mockTasks = [
-    { id: 1, text: 'Finalize wireframes for landing page', completed: true },
-    { id: 2, text: 'Develop primary button component', completed: true },
-    { id: 3, text: 'Set up analytics tracking for user flow', completed: false },
-    { id: 4, text: 'Draft copy for the "About Us" page', completed: false },
+    { id: 1, text: 'Complete structural crane rigging permit with City of Jackson Engineering Dept', completed: true },
+    { id: 2, text: 'Install vibration isolators and 6-inch chilled water supply/return lines', completed: true },
+    { id: 3, text: 'Calibrate BACnet temperature sensor offsets across Zone 3 and Zone 4', completed: false },
+    { id: 4, text: 'Dispatch 1-Tap Google Review invite SMS to Medical Mall Facility Director', completed: false },
 ];
 
 const mockComments = [
-    { user: 'Alice', text: 'The new wireframes look great! Approved.', timestamp: '2 days ago' },
-    { user: 'Bob', text: 'Can we get an update on the analytics setup? This is a blocker for the marketing team.', timestamp: '1 day ago' },
-    { user: 'Charlie', text: '@Bob I\'m on it, should be done by EOD tomorrow.', timestamp: '1 day ago' },
+    { user: 'Ray Buckley (President)', text: 'Chiller delivery arrived at Jackson Medical Mall on schedule. Crane lift approved.', timestamp: '2 days ago' },
+    { user: 'Sarah Vance (Dispatch)', text: 'Hospital facility managers confirmed no cooling interruptions in surgical wings during zone switchover.', timestamp: '1 day ago' },
+    { user: 'Marcus Holloway (Master Electrician)', text: '480V disconnect wired and passed City of Jackson electrical inspection with zero citations.', timestamp: '4 hours ago' },
 ];
 
 const ProjectDetail = () => {

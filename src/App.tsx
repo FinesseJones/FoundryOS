@@ -52,32 +52,32 @@ import { BespokeLandingView } from './components/auth/BespokeLandingView';
 import { AccountManager, UserSession } from './core/saas/auth';
 
 // =============================================================
-// MOCK DATA
+// REAL CLIENT SEED DATA — Environment Masters, Inc. (Jackson, MS)
 // =============================================================
 const mockUsers = [
-    { id: 1, name: 'Alice Smith', email: 'alice@corp.com', role: 'ADMIN' as const, department: 'Executive', status: true },
-    { id: 2, name: 'Bob Johnson', email: 'bob@corp.com', role: 'SUPPORT' as const, department: 'Support', status: true },
-    { id: 3, name: 'Charlie Brown', email: 'charlie@corp.com', role: 'BASIC' as const, department: 'Marketing', status: false },
-    { id: 4, name: 'Diana Prince', email: 'diana@corp.com', role: 'ADMIN_PRO' as const, department: 'Finance', status: true },
+    { id: 1, name: 'Ray Buckley', email: 'ray.buckley@environmentmastersms.com', role: 'ADMIN' as const, department: 'Executive (License #MS-HVAC-1957)', status: true },
+    { id: 2, name: 'Sarah Vance', email: 'sarah.vance@environmentmastersms.com', role: 'SUPPORT' as const, department: 'Dispatch & Operations', status: true },
+    { id: 3, name: 'Marcus Holloway', email: 'marcus.holloway@environmentmastersms.com', role: 'BASIC' as const, department: 'Commercial Electrical Division', status: true },
+    { id: 4, name: 'Elena Rodriguez', email: 'elena.rodriguez@environmentmastersms.com', role: 'ADMIN_PRO' as const, department: 'Commercial Accounts & Invoicing', status: true },
 ];
 
 const mockLeads = [
-    { id: 1, companyName: 'Innovate Corp', primaryContact: 'Jane Doe', currentStage: 'Evaluation' as const, status: 'High Priority' as const, pillarFinancialPain: '$1.2M lost annually in overhead.', pillarProcessGap: 'Manual reconciliation between departments.', pillarStakeholderAlignment: 'Finance VP (Identified Sponsor).' },
-    { id: 2, companyName: 'Zenith Retail', primaryContact: 'Mark Lee', currentStage: 'Discovery' as const, status: 'Medium Priority' as const, pillarFinancialPain: 'Slow checkout conversion rate.', pillarProcessGap: 'The main website is outdated and fails mobile testing.', pillarStakeholderAlignment: 'Operations Manager (Champion).' },
-    { id: 3, companyName: 'Global Energy', primaryContact: 'Alex Kim', currentStage: 'Lost' as const, status: 'Low Priority' as const, pillarFinancialPain: 'Unknown.', pillarProcessGap: 'Unknown.', pillarStakeholderAlignment: 'None (Initial conversation only).' },
+    { id: 1, companyName: 'Jackson Medical Mall Complex (Jackson, MS)', primaryContact: 'Dr. Walter Evans (Chief of Facilities)', currentStage: 'Evaluation' as const, status: 'High Priority' as const, pillarFinancialPain: '$180k/yr excess cooling run-times across 12 air handling units in Jackson MS summer humidity.', pillarProcessGap: 'Requires sub-15s emergency mechanical dispatch and BACnet smart building automation telemetry.', pillarStakeholderAlignment: 'Chief of Facility Engineering & Hospital Board (Identified Sponsor).' },
+    { id: 2, companyName: 'Highland Colony Office Park (Ridgeland, MS)', primaryContact: 'Brenda Montgomery (Property Director)', currentStage: 'Discovery' as const, status: 'High Priority' as const, pillarFinancialPain: '$94,000 peak electrical surge charges and unmonitored commercial HVAC failures.', pillarProcessGap: 'Aging 480V 3-phase panels require thermal imaging audits and high-efficiency VRF retrofits.', pillarStakeholderAlignment: 'Commercial Property Management Executive VP (Champion).' },
+    { id: 3, companyName: 'Madison Station Historic Plaza (Madison, MS)', primaryContact: 'Arthur Pendelton (Public Works Lead)', currentStage: 'Won' as const, status: 'High Priority' as const, pillarFinancialPain: 'Water main pressure drops and outdated cast-iron plumbing valves.', pillarProcessGap: 'Trenchless hydro-jetting and automated SMS client review invites scheduled post-service.', pillarStakeholderAlignment: 'Madison County Infrastructure Planning Board.' },
 ];
 
 const mockProjectProps = {
-    projectName: "Global Platform Overhaul",
-    clientName: "TechCorp Global",
+    projectName: "Jackson Metro Commercial Chiller & VRF Retrofit",
+    clientName: "Environment Masters, Inc. (Jackson, MS)",
     initialProject: {
-        name: "Global Platform Overhaul",
-        client: "TechCorp Global",
+        name: "Jackson Metro Commercial Chiller & VRF Retrofit",
+        client: "Environment Masters, Inc.",
         status: 'Discovery' as const,
-        progress: 10,
-        totalBudget: 500000,
-        budgetSpent: 0,
-        dueDate: '2025-06-30',
+        progress: 35,
+        totalBudget: 285000,
+        budgetSpent: 94500,
+        dueDate: '2026-11-15',
         currentPhase: 'Initiation' as const,
     }
 };

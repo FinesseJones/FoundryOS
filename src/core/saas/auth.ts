@@ -205,7 +205,19 @@ export class AccountManager {
         if (data.sessions) this.sessions = new Map(Object.entries(data.sessions));
       }
     } catch (e) {
-      console.warn('TACF AccountManager: Failed to restore state from storage', e);
+      console.warn('FoundryOS AccountManager: Failed to restore state from storage', e);
+    }
+
+    // Seed Master Super Admin if not present
+    if (!this.users.has('admin@foundryos.tech')) {
+      const superAdminUser: UserAccount = {
+        id: 'usr_finessejones_master',
+        email: 'admin@foundryos.tech',
+        name: 'Finesse Jones',
+        role: 'SUPER_ADMIN',
+        createdAt: '2026-08-31T00:00:00.000Z',
+      };
+      this.users.set('admin@foundryos.tech', superAdminUser);
     }
   }
 

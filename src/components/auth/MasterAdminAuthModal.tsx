@@ -27,7 +27,7 @@ export const MasterAdminAuthModal: React.FC<MasterAdminAuthModalProps> = ({
   onAuthenticated,
 }) => {
   const [adminEmail, setAdminEmail] = useState('admin@foundryos.tech');
-  const [adminPassword, setAdminPassword] = useState('FoundryMaster2026!');
+  const [adminPassword, setAdminPassword] = useState('REDACTED_PASSWORD');
   const [masterKey, setMasterKey] = useState('REDACTED_ROOT_KEY');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,14 +40,14 @@ export const MasterAdminAuthModal: React.FC<MasterAdminAuthModalProps> = ({
     try {
       // Create or activate Super Admin Master Session
       const masterSession: UserSession = {
-        userId: 'usr_super_admin_master',
+        userId: 'usr_finessejones_master',
         email: adminEmail.trim().toLowerCase(),
-        name: 'Master Platform Admin',
+        name: 'Finesse Jones',
         role: 'SUPER_ADMIN' as any,
         organizationId: 'org_foundry_hq_master',
         organizationName: 'FoundryOS Master Control Plane',
-        workspaceId: 'ws_master_hq',
-        workspaceName: 'Global Platform Admin',
+        workspaceId: 'ws_finessejones_root',
+        workspaceName: 'Finesse Jones Platform Root',
         token: `master_root_token_${Date.now()}`,
         createdAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 86400000).toISOString(),
@@ -57,7 +57,7 @@ export const MasterAdminAuthModal: React.FC<MasterAdminAuthModalProps> = ({
       const accountManager = AccountManager.getInstance();
       accountManager.cacheSession(masterSession);
 
-      toast.success('🛡️ Master Platform Admin authenticated with Full Root Privileges!', { icon: '👑' });
+      toast.success('🛡️ Master Platform Admin Finesse Jones authenticated with Full Root Privileges!', { icon: '👑' });
       onAuthenticated(masterSession);
       onClose();
     } catch (err: any) {

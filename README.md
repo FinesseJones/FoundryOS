@@ -1,4 +1,4 @@
-# TACF — Brand-First Autonomous Business AI Operating System
+# 🛸 FoundryOS — The Autonomous Business & Revenue Operating System
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict_Mode-blue.svg)](https://www.typescriptlang.org/)
 [![Version](https://img.shields.io/badge/Release-v1.0.0_Production-green.svg)](#)
@@ -6,7 +6,7 @@
 [![Architecture](https://img.shields.io/badge/Architecture-Closed_Loop_AI_OS-purple.svg)](#architecture)
 [![License](https://img.shields.io/badge/License-Proprietary-cyan.svg)](#)
 
-> **TACF** is a Brand-First Autonomous Business AI Operating System. Rather than functioning as a surface-level AI prompt wrapper, TACF constructs a continuous, versioned **Business DNA** model, evaluates multi-domain intelligence across Marketing, Sales, Operations, and Security, and executes risk-governed workflows through an autonomous multi-agent runtime with a closed-loop memory learning engine.
+> **FoundryOS** is the **Autonomous Business & Revenue Operating System**. Powered by continuous, versioned **Business DNA**, a high-converting **Conversational Lead-to-Revenue Suite** (2-Way SMS, 5-Star Reviews, Text-to-Pay, Missed-Call Auto-Text), and backed by the **Hyperion Engine** multi-agent runtime, FoundryOS autonomously acquires leads, nurtures clients, generates websites/apps, and powers multi-tenant business operations.
 
 ---
 

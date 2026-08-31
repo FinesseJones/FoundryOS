@@ -1,6 +1,7 @@
 {
-  "name": "brand-first-app",
+  "name": "foundry-os",
   "version": "1.0.0",
+  "description": "FoundryOS — The Autonomous Business & Revenue Operating System",
   "private": true,
   "type": "module",
   "scripts": {

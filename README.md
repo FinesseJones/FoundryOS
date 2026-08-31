@@ -92,6 +92,8 @@ npx tsx --test src/**/*.test.ts tests/e2e/*.test.ts tests/hardening/*.test.ts
 
 ---
 
-## 📖 Product Documentation
+## 📖 Product Documentation & Architecture FAQ
 
-For the complete product architecture, API schemas, governance matrix, and operational launch guide, see [WIKI.md](./WIKI.md).
+- [**GRILL_ME_ARCHITECTURE_FAQ.md**](./GRILL_ME_ARCHITECTURE_FAQ.md) — Rigorous Architectural Defense & Technical FAQ (Data Integrity, Sandboxing, 6D Risk Vectors).
+- [**FOUNDRYOS_REALITY_AUDIT.md**](./FOUNDRYOS_REALITY_AUDIT.md) — Reality Audit & Live Mississippi Commercial Case Study (Environment Masters, Inc.).
+- [**WIKI.md**](./WIKI.md) — Complete Product Architecture, Governance Matrix, and API Schemas.

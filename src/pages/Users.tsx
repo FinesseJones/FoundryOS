@@ -271,153 +271,199 @@ const Users: React.FC<UsersProps> = ({ initialUsers, currentUser }) => {
 
     return (
         <AppLayout>
-            <div className="space-y-6">
-                <h1 className="text-3xl font-bold">User Directory</h1>
-                <p className="text-gray-600">View, manage, and audit all user accounts in the system.</p>
-
-                {/* Filtering and Search Card (content remains the same) */}
-                <Card className="p-6 shadow-md">
-                    <h2 className="text-xl font-semibold mb-4">Filter Criteria ({currentUser.role})</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        {/* Search Bar */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Search by Name or Email</label>
-                            <div className="relative">
-                                <Input
-                                    type="text"
-                                    placeholder="Enter name or email"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+            <div className="space-y-6 font-sans text-slate-100">
+                {/* Header with Organization Context */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-600/30">
+                                <UserPlus className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-black text-white font-serif">Enterprise User Directory & Staff Roster</h1>
+                                <p className="text-xs text-slate-400 font-mono">
+                                    Environment Masters, Inc. (Jackson, MS) • Active RBAC Seats & Dispatch Roles
+                                </p>
                             </div>
                         </div>
+                    </div>
+                    <div>
+                        <Button 
+                            onClick={() => { setEditingUser(null); setIsModalOpen(true); }}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2"
+                        >
+                            <PlusCircle className="w-4 h-4" />
+                            <span>Add Team Member</span>
+                        </Button>
+                    </div>
+                </div>
 
-                        {/* Department Filter */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                {/* Search and Filter Toolbar */}
+                <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                        {/* Search Bar (5 cols) */}
+                        <div className="md:col-span-5 relative">
+                            <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">Search Staff</label>
+                            <Input
+                                type="text"
+                                placeholder="Search by name, email, or department..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-700 text-white text-xs rounded-xl focus:border-indigo-400"
+                            />
+                        </div>
+
+                        {/* Department Dropdown (3 cols) */}
+                        <div className="md:col-span-3">
+                            <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">Department</label>
                             <select 
                                 value={filterDepartment} 
                                 onChange={(e) => setFilterDepartment(e.target.value)}
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                                <option value="">All Departments</option>
-                                <option value="Marketing">Marketing</option>
-                                <option value="Support">Support</option>
-                                <option value="Finance">Finance</option>
-                                <option value="Executive">Executive</option>
+                                className="flex h-10 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400"
+                            >
+                                <option value="">All Departments (HVAC, Plumbing, Electrical)</option>
+                                <option value="Executive">Executive & Ownership</option>
+                                <option value="Operations">Operations & Dispatch</option>
+                                <option value="Commercial Electrical">Commercial Electrical</option>
+                                <option value="Commercial Accounts">Commercial Accounts & Sales</option>
+                                <option value="Support">Field Support & Apprentices</option>
                             </select>
                         </div>
 
-                        {/* Status Filter */}
-                        <div className="space-y-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                            <div className="flex space-x-4">
+                        {/* Status Toggle (2 cols) */}
+                        <div className="md:col-span-2">
+                            <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">Status</label>
+                            <div className="flex gap-1.5">
                                 <button
+                                    type="button"
                                     onClick={() => setFilterStatus(true)}
-                                    className={`px-4 py-2 rounded-md text-sm border transition-colors ${filterStatus === true ? 'bg-green-500 border-green-600 text-white' : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'}`}
+                                    className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold transition ${filterStatus === true ? 'bg-emerald-600 text-white' : 'bg-slate-950 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}
                                 >
                                     Active
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={() => setFilterStatus(false)}
-                                    className={`px-4 py-2 rounded-md text-sm border transition-colors ${filterStatus === false ? 'bg-red-500 border-red-600 text-white' : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'}`}
+                                    className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold transition ${filterStatus === false ? 'bg-red-600 text-white' : 'bg-slate-950 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}
                                 >
                                     Inactive
                                 </button>
                             </div>
                         </div>
 
-                        {/* Roles Filter */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Role</label>
-                            <div className="flex flex-wrap gap-2">
-                                {(['ADMIN', 'ADMIN_PRO', 'SUPPORT', 'BASIC'] as UserRole[]).map(role => (
-                                    <RoleFilterToggle
-                                        key={role}
-                                        role={role}
-                                        isChecked={!!filterRole[role]}
-                                        onChange={handleRoleToggle}
-                                    />
-                                ))}
-                            </div>
+                        {/* Role Pills (2 cols) */}
+                        <div className="md:col-span-2">
+                            <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">RBAC Role</label>
+                            <span className="text-[11px] font-mono text-indigo-300 font-bold px-2.5 py-1.5 rounded-lg bg-indigo-950 border border-indigo-500/40 inline-block w-full text-center">
+                                Total: {filteredUsers.length} Staff
+                            </span>
                         </div>
                     </div>
-                </Card>
+                </div>
 
+                {/* Spacious, High-Contrast User Table */}
+                <div className="rounded-2xl bg-slate-900/80 border border-slate-800 overflow-hidden shadow-xl">
+                    <div className="p-4 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm font-bold text-white">
+                            <Bell className="w-4 h-4 text-indigo-400"/>
+                            <span>Verified Team Members ({filteredUsers.length})</span>
+                        </div>
+                        <span className="text-[11px] font-mono text-slate-400">
+                            Logged in as: <strong className="text-indigo-300">{currentUser.role}</strong>
+                        </span>
+                    </div>
 
-                {/* User Table */}
-                <Card className="shadow-md">
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-2 text-xl">
-                            <Bell className="w-5 h-5 text-indigo-600"/>
-                            <span>Found {filteredUsers.length} Users</span>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="overflow-x-auto"> 
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr className="uppercase text-xs text-gray-500 tracking-wider">
-                                        <th className="px-6 py-3 text-left">Name</th>
-                                        <th className="px-6 py-3 text-left">Email</th>
-                                        <th className="px-6 py-3 text-left">Role</th>
-                                        <th className="px-6 py-3 text-left">Department</th>
-                                        <th className="px-6 py-3 text-left">Status</th>
-                                        <th className="px-6 py-3 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {/* Display Logic Improvement: Show "No records found" message */}
-                                    {filteredUsers.length > 0 ? (
-                                        filteredUsers.map((user) => (
-                                            <tr key={user.id} className={`${user.status ? 'hover:bg-green-50' : 'hover:bg-red-50'}`}>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <Badge variant="secondary" className="bg-indigo-100 text-indigo-800">{user.role}</Badge>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.department}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <Badge variant={user.status ? "default" : "destructive"} className="text-xs uppercase">{user.status ? "Active" : "Inactive"}</Badge>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="overflow-x-auto"> 
+                        <table className="min-w-full divide-y divide-slate-800">
+                            <thead className="bg-slate-950">
+                                <tr className="uppercase text-[10px] font-mono text-slate-400 tracking-wider">
+                                    <th className="px-6 py-3.5 text-left">Staff Member</th>
+                                    <th className="px-6 py-3.5 text-left">Email Address</th>
+                                    <th className="px-6 py-3.5 text-left">Department</th>
+                                    <th className="px-6 py-3.5 text-left">RBAC Role</th>
+                                    <th className="px-6 py-3.5 text-left">Status</th>
+                                    <th className="px-6 py-3.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800/60 bg-slate-900/40 text-xs">
+                                {filteredUsers.length > 0 ? (
+                                    filteredUsers.map((user) => (
+                                        <tr key={user.id} className="hover:bg-slate-800/40 transition">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center font-bold text-white text-xs shadow-md">
+                                                        {user.name.split(' ').map(n => n[0]).join('')}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-white text-sm">{user.name}</p>
+                                                        <p className="text-[10px] font-mono text-slate-400">ID: #EM-{1000 + user.id}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap font-mono text-slate-300">
+                                                {user.email}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-200 font-mono text-[11px] border border-slate-700">
+                                                    {user.department || 'Operations'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <Badge className="bg-indigo-950 text-indigo-300 font-mono text-[10px] font-bold border border-indigo-500/40">
+                                                    {user.role}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold ${
+                                                    user.status 
+                                                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' 
+                                                        : 'bg-rose-950 text-rose-300 border border-rose-500/40'
+                                                }`}>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${user.status ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                                                    {user.status ? 'ACTIVE' : 'INACTIVE'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right font-mono text-xs">
+                                                <button 
+                                                    onClick={() => { setEditingUser(user); setIsModalOpen(true);}} 
+                                                    className="text-indigo-400 hover:text-indigo-300 font-bold mr-4 transition"
+                                                >
+                                                    Edit
+                                                </button>
+                                                {(canDelete) && (
                                                     <button 
-                                                        onClick={() => { setEditingUser(user); setIsModalOpen(true);}} 
-                                                        className="text-indigo-600 hover:underline mr-3"
-                                                    >Edit</button>
-                                                    {/* Implementing RBAC Guarding */}
-                                                    {(canDelete) && (
-                                                        <button 
-                                                            onClick={() => { handleDeleteUser(user.id);}}
-                                                            className="text-red-600 hover:underline"
-                                                        >Deactivate</button>
-                                                    )}
-                                                </td>
-                                            </tr >
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={6} className="text-center py-12 text-gray-500">
-                                                <Info className="w-8 h-8 mx-auto mb-2 text-indigo-400"/>
-                                                <p>No active users found matching the current criteria.</p>
-                                                <p className="text-sm mt-1">Try adjusting your filters or clearing the search term.</p>
+                                                        onClick={() => { handleDeleteUser(user.id);}}
+                                                        className="text-rose-400 hover:text-rose-300 font-bold transition"
+                                                    >
+                                                        Deactivate
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div >
-                    </CardContent>
-                </Card>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-12 text-slate-400 font-mono">
+                                            <Info className="w-8 h-8 mx-auto mb-2 text-indigo-400"/>
+                                            <p className="text-white font-bold">No team members match the search filters.</p>
+                                            <p className="text-xs text-slate-500 mt-1">Try resetting the department or status filter above.</p>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
                 
-                {/* Conditional Modal for User Creation/Editing (Modal component requires no changes) */}
+                {/* Conditional Modal for User Creation/Editing */}
                 {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-                        <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                        <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-lg w-full text-slate-100 p-2">
                             <UserFormModal />
-                        </div >
+                        </div>
                     </div>
                 )}
-            </div >
+            </div>
         </AppLayout>
     );
 };

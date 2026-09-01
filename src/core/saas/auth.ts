@@ -126,27 +126,9 @@ function generateSecureToken(byteLength = 32): string {
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 }
 
-export async function hashPassword(password: string): Promise<string> {
-  if (typeof globalThis.crypto?.subtle?.digest === 'function') {
-    const msgBuffer = new TextEncoder().encode(password);
-    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-  let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    const chr = password.charCodeAt(i);
-    hash = ((hash << 5) - hash) + chr;
-    hash |= 0;
-  }
-  return `sha256_${Math.abs(hash).toString(16)}`;
-}
-
-const STORAGE_KEY_AUTH = 'tacf_auth_store_v2';
-const ACTIVE_SESSION_KEY = 'tacf_active_session_token_v2';
-
 export class AccountManager {
   private static instance: AccountManager;
+  private activeSession: UserSession | null = null;
   private users: Map<string, UserAccount> = new Map();
   private organizations: Map<string, OrganizationRecord> = new Map();
   private workspaces: Map<string, WorkspaceRecord[]> = new Map();
@@ -162,7 +144,7 @@ export class AccountManager {
   private sessions: Map<string, UserSession> = new Map();
 
   constructor() {
-    this.loadState();
+    this.seedDefaultClient();
   }
 
   public static getInstance(): AccountManager {
@@ -176,62 +158,8 @@ export class AccountManager {
     return typeof window !== 'undefined' && typeof window.location !== 'undefined';
   }
 
-  private async safeServerFetch(endpoint: string, options: RequestInit): Promise<Response | null> {
-    if (!this.isBrowserRuntime()) return null;
-    try {
-      const resp = await fetch(endpoint, options);
-      const contentType = resp.headers.get('content-type') || '';
-      // If server returns HTML or non-JSON (e.g. Vite SPA fallback for /api routes), ignore server and use client state
-      if (!contentType.includes('application/json') && !contentType.includes('application/problem+json')) {
-        return null;
-      }
-      return resp;
-    } catch {
-      return null;
-    }
-  }
-
-  private isLocalStorageAvailable(): boolean {
-    return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-  }
-
-  private loadState(): void {
-    if (!this.isLocalStorageAvailable()) return;
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY_AUTH);
-      if (raw) {
-        const data = JSON.parse(raw);
-        if (data.users) this.users = new Map(Object.entries(data.users));
-        if (data.organizations) this.organizations = new Map(Object.entries(data.organizations));
-        if (data.workspaces) this.workspaces = new Map(Object.entries(data.workspaces));
-        if (data.companyProfiles) this.companyProfiles = new Map(Object.entries(data.companyProfiles));
-        if (data.dnaModels) this.dnaModels = new Map(Object.entries(data.dnaModels));
-        if (data.insights) this.insights = new Map(Object.entries(data.insights));
-        if (data.recommendations) this.recommendations = new Map(Object.entries(data.recommendations));
-        if (data.artifacts) this.artifacts = new Map(Object.entries(data.artifacts));
-        if (data.agentTasks) this.agentTasks = new Map(Object.entries(data.agentTasks));
-        if (data.approvals) this.approvals = new Map(Object.entries(data.approvals));
-        if (data.executions) this.executions = new Map(Object.entries(data.executions));
-        if (data.auditEvents) this.auditEvents = new Map(Object.entries(data.auditEvents));
-        if (data.sessions) this.sessions = new Map(Object.entries(data.sessions));
-      }
-    } catch (e) {
-      console.warn('FoundryOS AccountManager: Failed to restore state from storage', e);
-    }
-
-    // Seed Master Super Admin if not present
-    if (!this.users.has('admin@foundryos.tech')) {
-      const superAdminUser: UserAccount = {
-        id: 'usr_finessejones_master',
-        email: 'admin@foundryos.tech',
-        name: 'Finesse Jones',
-        role: 'SUPER_ADMIN',
-        createdAt: '2026-08-31T00:00:00.000Z',
-      };
-      this.users.set('admin@foundryos.tech', superAdminUser);
-    }
-
-    // Seed Real Client: Environment Masters, Inc. (Jackson, MS)
+  private seedDefaultClient(): void {
+    // Seed Real Client: Environment Masters, Inc. (Jackson, MS) for demo/local testing
     if (!this.organizations.has('org_env_masters_ms')) {
       this.organizations.set('org_env_masters_ms', {
         id: 'org_env_masters_ms',
@@ -278,30 +206,27 @@ export class AccountManager {
   }
 
   private saveState(): void {
-    if (!this.isLocalStorageAvailable()) return;
+    // Memory-scoped state: persistent operations route through server.js
+  }
+
+  private async safeServerFetch(endpoint: string, options: RequestInit): Promise<Response | null> {
+    if (!this.isBrowserRuntime()) return null;
     try {
-      const data = {
-        users: Object.fromEntries(this.users),
-        organizations: Object.fromEntries(this.organizations),
-        workspaces: Object.fromEntries(this.workspaces),
-        companyProfiles: Object.fromEntries(this.companyProfiles),
-        dnaModels: Object.fromEntries(this.dnaModels),
-        insights: Object.fromEntries(this.insights),
-        recommendations: Object.fromEntries(this.recommendations),
-        artifacts: Object.fromEntries(this.artifacts),
-        agentTasks: Object.fromEntries(this.agentTasks),
-        approvals: Object.fromEntries(this.approvals),
-        executions: Object.fromEntries(this.executions),
-        auditEvents: Object.fromEntries(this.auditEvents),
-        sessions: Object.fromEntries(this.sessions),
-      };
-      window.localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(data));
-    } catch (e) {
-      console.warn('TACF AccountManager: Failed to save state to storage', e);
+      const resp = await fetch(endpoint, {
+        ...options,
+        credentials: 'include',
+      });
+      const contentType = resp.headers.get('content-type') || '';
+      if (!contentType.includes('application/json') && !contentType.includes('application/problem+json')) {
+        return null;
+      }
+      return resp;
+    } catch {
+      return null;
     }
   }
 
-  // ─── 1. Account Registration (Server-First with Local Mirror) ─────────────
+  // ─── 1. Account Registration (Strict Server-Side Auth) ─────────────────────
 
   async registerAccount(params: {
     email: string;
@@ -314,58 +239,24 @@ export class AccountManager {
       throw new Error('Registration Error: Email and password are required.');
     }
 
-    // Try server endpoint first in browser
-    const resp = await this.safeServerFetch('/api/auth/register', {
+    const resp = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(params),
     });
 
-    if (resp) {
-      try {
-        if (resp.ok) {
-          const data = await resp.json();
-          this.cacheSession(data.session);
-          return data;
-        } else {
-          const errData = await resp.json().catch(() => ({}));
-          if (errData.error) throw new Error(errData.error);
-        }
-      } catch (err: any) {
-        if (err.message && !err.message.includes('JSON')) {
-          throw err;
-        }
-        // Fall back to client local sandbox
-      }
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.error || 'Registration failed.');
     }
 
-    // Local Sandbox Registration
-    if (this.users.has(normalizedEmail)) {
-      throw new Error(`Registration Error: Account with email '${normalizedEmail}' already exists.`);
-    }
-
-    const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const passwordHash = await hashPassword(params.password);
-    const now = new Date().toISOString();
-
-    const user: UserAccount = {
-      id: userId,
-      email: normalizedEmail,
-      passwordHash,
-      name: params.name.trim() || normalizedEmail.split('@')[0],
-      role: params.role || 'ADMIN',
-      createdAt: now,
-    };
-
-    this.users.set(normalizedEmail, user);
-    const session = this.createSessionInternal(user);
-    this.saveState();
-
-    const { passwordHash: _, ...safeUser } = user;
-    return { user: safeUser, session };
+    const data = await resp.json();
+    this.cacheSession(data.session);
+    return data;
   }
 
-  // ─── 2. Authentication / Login (Server-First with Local Mirror) ───────────
+  // ─── 2. Authentication / Login (Strict Server-Side Auth) ───────────────────
 
   async login(params: {
     email: string;
@@ -379,71 +270,51 @@ export class AccountManager {
     businessDNA?: StoredBusinessDNA;
   }> {
     const normalizedEmail = params.email.trim().toLowerCase();
+    if (!normalizedEmail || !params.password) {
+      throw new Error('Authentication Error: Email and password are required.');
+    }
 
-    // Try server endpoint first in browser
-    const resp = await this.safeServerFetch('/api/auth/login', {
+    const resp = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(params),
     });
 
-    if (resp) {
-      try {
-        if (resp.ok) {
-          const data = await resp.json();
-          this.cacheSession(data.session);
-          return data;
-        } else {
-          const errData = await resp.json().catch(() => ({}));
-          if (errData.error) throw new Error(errData.error);
-        }
-      } catch (err: any) {
-        if (err.message && !err.message.includes('JSON')) {
-          throw err;
-        }
-        // Fall back to client local sandbox
-      }
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.error || 'Authentication Error: Invalid email or password.');
     }
 
-    // Local Sandbox Verification
-    const user = this.users.get(normalizedEmail);
-    if (!user) {
-      throw new Error('Authentication Error: Invalid email or password.');
-    }
-
-    const passwordHash = await hashPassword(params.password);
-    if (user.passwordHash !== passwordHash) {
-      throw new Error('Authentication Error: Invalid email or password.');
-    }
-
-    const userOrgs = Array.from(this.organizations.values()).filter(o => o.ownerUserId === user.id);
-    const primaryOrg = userOrgs[0];
-    let primaryWs: WorkspaceRecord | undefined;
-    let companyProfile: CompanyInfoRecord | undefined;
-    let businessDNA: StoredBusinessDNA | undefined;
-
-    if (primaryOrg) {
-      const wsList = this.workspaces.get(primaryOrg.id) || [];
-      primaryWs = wsList[0];
-      companyProfile = this.companyProfiles.get(primaryOrg.id);
-      businessDNA = this.dnaModels.get(primaryOrg.id);
-    }
-
-    const session = this.createSessionInternal(user, primaryOrg, primaryWs);
-    this.saveState();
-
-    const { passwordHash: _, ...safeUser } = user;
-    return {
-      user: safeUser,
-      session,
-      organization: primaryOrg,
-      workspace: primaryWs,
-      companyProfile,
-      businessDNA,
-    };
+    const data = await resp.json();
+    this.cacheSession(data.session);
+    if (data.organization) this.organizations.set(data.organization.id, data.organization);
+    if (data.companyProfile) this.companyProfiles.set(data.organization?.id || '', data.companyProfile);
+    if (data.businessDNA) this.dnaModels.set(data.organization?.id || '', data.businessDNA);
+    return data;
   }
 
-  // ─── 3. Isolated Demo Workspace (Zero Admin Permissions) ──────────────────
+  // ─── 3. Master Admin Login (Server-Verified Root Key) ─────────────────────
+
+  async masterAdminLogin(email: string, masterSecret: string): Promise<UserSession> {
+    const resp = await fetch('/api/auth/master-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, masterSecret }),
+    });
+
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.error || 'Master Admin Authentication Failed: Invalid root secret key.');
+    }
+
+    const data = await resp.json();
+    this.cacheSession(data.session);
+    return data.session;
+  }
+
+  // ─── 4. Isolated Demo Workspace (Server-First Sandbox) ─────────────────────
 
   async launchDemoSession(): Promise<{
     session: UserSession;
@@ -451,16 +322,20 @@ export class AccountManager {
     workspace: WorkspaceRecord;
     businessDNA: StoredBusinessDNA;
   }> {
-    // Try server endpoint first in browser
-    const resp = await this.safeServerFetch('/api/auth/demo', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    try {
+      const resp = await fetch('/api/auth/demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
 
-    if (resp && resp.ok) {
-      const data = await resp.json();
-      this.cacheSession(data.session);
-      return data;
+      if (resp && resp.ok) {
+        const data = await resp.json();
+        this.cacheSession(data.session);
+        return data;
+      }
+    } catch {
+      // Local fallback for offline mode
     }
 
     // Local Isolated Demo Sandbox
@@ -903,18 +778,35 @@ export class AccountManager {
         'Authorization': `Bearer ${sessionToken}`,
       },
       body: JSON.stringify(updated),
-    }).catch(err => console.warn('TACF AccountManager: Server sync warning for DNA update', err));
+    }).catch((err: any) => console.warn('TACF AccountManager: Server sync warning for DNA update', err));
 
     return updated;
   }
 
   // ─── 8. Session Validation & Lifecycle ────────────────────────────────────
 
-  public cacheSession(session: UserSession): void {
-    this.sessions.set(session.token, session);
-    if (this.isLocalStorageAvailable()) {
-      window.localStorage.setItem(ACTIVE_SESSION_KEY, session.token);
+  async restoreSessionFromServer(): Promise<UserSession | null> {
+    try {
+      const resp = await fetch('/api/auth/session', {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        this.activeSession = data.session;
+        return data.session;
+      }
+      this.activeSession = null;
+      return null;
+    } catch {
+      this.activeSession = null;
+      return null;
     }
+  }
+
+  public cacheSession(session: UserSession): void {
+    this.activeSession = session;
+    this.sessions.set(session.token, session);
   }
 
   private createSessionInternal(
@@ -945,15 +837,19 @@ export class AccountManager {
   }
 
   validateSession(token: string): UserSession | null {
+    if (this.activeSession && this.activeSession.token === token) {
+      if (new Date(this.activeSession.expiresAt).getTime() < Date.now()) {
+        this.activeSession = null;
+        return null;
+      }
+      return this.activeSession;
+    }
+
     const session = this.sessions.get(token);
     if (!session) return null;
 
     if (new Date(session.expiresAt).getTime() < Date.now()) {
       this.sessions.delete(token);
-      if (this.isLocalStorageAvailable()) {
-        window.localStorage.removeItem(ACTIVE_SESSION_KEY);
-      }
-      this.saveState();
       return null;
     }
 
@@ -961,23 +857,22 @@ export class AccountManager {
   }
 
   getCurrentSession(): UserSession | null {
-    if (!this.isLocalStorageAvailable()) return null;
-    const token = window.localStorage.getItem(ACTIVE_SESSION_KEY);
-    if (!token) return null;
-    return this.validateSession(token);
+    return this.activeSession;
   }
 
-  logout(token: string): void {
-    this.safeServerFetch('/api/auth/logout', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+  async logout(token?: string): Promise<void> {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+    } catch {}
 
-    this.sessions.delete(token);
-    if (this.isLocalStorageAvailable()) {
-      window.localStorage.removeItem(ACTIVE_SESSION_KEY);
+    if (token) {
+      this.sessions.delete(token);
     }
-    this.saveState();
+    this.activeSession = null;
   }
 
   // ─── 9. Authoritative Organization System of Record ────────────────────────
@@ -1044,7 +939,7 @@ export class AccountManager {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
       body: JSON.stringify(item),
-    }).catch(err => console.warn('TACF AccountManager: Server sync warning for insight', err));
+    }).catch((err: any) => console.warn('TACF AccountManager: Server sync warning for insight', err));
 
     return item;
   }
@@ -1074,7 +969,7 @@ export class AccountManager {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
       body: JSON.stringify(item),
-    }).catch(err => console.warn('TACF AccountManager: Server sync warning for recommendation', err));
+    }).catch((err: any) => console.warn('TACF AccountManager: Server sync warning for recommendation', err));
 
     return item;
   }
@@ -1104,7 +999,7 @@ export class AccountManager {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
       body: JSON.stringify(item),
-    }).catch(err => console.warn('TACF AccountManager: Server sync warning for artifact', err));
+    }).catch((err: any) => console.warn('TACF AccountManager: Server sync warning for artifact', err));
 
     return item;
   }
@@ -1134,7 +1029,7 @@ export class AccountManager {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
       body: JSON.stringify(item),
-    }).catch(err => console.warn('TACF AccountManager: Server sync warning for agent-task', err));
+    }).catch((err: any) => console.warn('TACF AccountManager: Server sync warning for agent-task', err));
 
     return item;
   }
@@ -1165,7 +1060,7 @@ export class AccountManager {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
       body: JSON.stringify(item),
-    }).catch(err => console.warn('TACF AccountManager: Server sync warning for approval', err));
+    }).catch((err: any) => console.warn('TACF AccountManager: Server sync warning for approval', err));
 
     return item;
   }
@@ -1191,7 +1086,7 @@ export class AccountManager {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
       body: JSON.stringify({ status, reviewNotes: notes }),
-    }).catch(err => console.warn('TACF AccountManager: Server sync warning for approval update', err));
+    }).catch((err: any) => console.warn('TACF AccountManager: Server sync warning for approval update', err));
 
     return item;
   }
@@ -1221,7 +1116,7 @@ export class AccountManager {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}` },
       body: JSON.stringify(item),
-    }).catch(err => console.warn('TACF AccountManager: Server sync warning for audit event', err));
+    }).catch((err: any) => console.warn('TACF AccountManager: Server sync warning for audit event', err));
 
     return item;
   }
@@ -1277,16 +1172,13 @@ export class AccountManager {
   }
 
   clearAll(): void {
+    this.activeSession = null;
     this.users.clear();
     this.organizations.clear();
     this.workspaces.clear();
     this.companyProfiles.clear();
     this.dnaModels.clear();
     this.sessions.clear();
-    if (this.isLocalStorageAvailable()) {
-      window.localStorage.removeItem(STORAGE_KEY_AUTH);
-      window.localStorage.removeItem(ACTIVE_SESSION_KEY);
-    }
   }
 }
 

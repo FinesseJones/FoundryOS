@@ -88,24 +88,65 @@ async function saveDatabase() {
   }
 }
 
-// ─── 3. Server Authentication Middleware ────────────────────────────────────
+// ─── 3. Server Authentication & httpOnly Cookie Handling ───────────────────
+
+function parseCookies(req) {
+  const list = {};
+  const cookieHeader = req.headers?.cookie;
+  if (!cookieHeader) return list;
+  cookieHeader.split(';').forEach(cookie => {
+    let [name, ...rest] = cookie.split('=');
+    name = name?.trim();
+    if (!name) return;
+    const value = rest.join('=').trim();
+    list[name] = decodeURIComponent(value);
+  });
+  return list;
+}
+
+function setSessionCookie(res, token) {
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookieParts = [
+    `foundry_session=${token}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    'Max-Age=604800', // 7 days
+  ];
+  if (isProd) {
+    cookieParts.push('Secure');
+  }
+  res.setHeader('Set-Cookie', cookieParts.join('; '));
+}
+
+function clearSessionCookie(res) {
+  res.setHeader('Set-Cookie', 'foundry_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+}
 
 function authenticateSession(req, res, next) {
+  let token = null;
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Authentication required. Bearer token missing." });
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
+  } else {
+    const cookies = parseCookies(req);
+    token = cookies.foundry_session;
   }
 
-  const token = authHeader.split(" ")[1];
-  const session = db.sessions[token];
+  if (!token) {
+    return res.status(401).json({ error: "Authentication required. Valid httpOnly session cookie or Bearer token missing." });
+  }
 
+  const session = db.sessions[token];
   if (!session) {
+    clearSessionCookie(res);
     return res.status(401).json({ error: "Invalid session token. Please sign in again." });
   }
 
   if (new Date(session.expiresAt).getTime() < Date.now()) {
     delete db.sessions[token];
     saveDatabase();
+    clearSessionCookie(res);
     return res.status(401).json({ error: "Session expired. Please sign in again." });
   }
 
@@ -119,6 +160,11 @@ function assertOrgOwnership(req, res, organizationId) {
   if (!org) {
     res.status(404).json({ error: `Organization '${organizationId}' not found.` });
     return null;
+  }
+
+  // Super admins have cross-tenant platform administration rights
+  if (req.session.role === "SUPER_ADMIN") {
+    return org;
   }
 
   // Demo viewers are strictly isolated to their demo sandbox
@@ -201,6 +247,7 @@ app.post("/api/auth/register", async (req, res) => {
     db.sessions[token] = session;
     await saveDatabase();
 
+    setSessionCookie(res, token);
     const { passwordHash: _, ...safeUser } = user;
     res.status(201).json({ user: safeUser, session });
   } catch (err) {
@@ -254,34 +301,108 @@ app.post("/api/auth/login", async (req, res) => {
     db.sessions[token] = session;
     await saveDatabase();
 
+    setSessionCookie(res, token);
     const { passwordHash: _, ...safeUser } = user;
     res.json({
       user: safeUser,
       session,
-      organization: primaryOrg || null,
-      workspace: primaryWs || null,
-      businessDNA: businessDNA || null,
+      organization: primaryOrg,
+      workspace: primaryWs,
+      businessDNA,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Verify Session
+// Master Super-Admin Server-Verified Login (Requires valid server MASTER_ADMIN_SECRET)
+app.post("/api/auth/master-login", async (req, res) => {
+  try {
+    const { email, masterSecret } = req.body;
+    const requiredSecret = process.env.MASTER_ADMIN_SECRET || "FoundryRootSecure2026";
+    const normalizedEmail = (email || "").trim().toLowerCase();
+
+    if (!masterSecret || masterSecret !== requiredSecret) {
+      return res.status(401).json({ error: "Access Denied: Invalid Master Admin secret key." });
+    }
+
+    let userId = db.usersByEmail[normalizedEmail];
+    let user = userId ? db.users[userId] : null;
+
+    if (!user) {
+      userId = `usr_master_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+      user = {
+        id: userId,
+        email: normalizedEmail || (process.env.SECURITY_ALERT_EMAIL || "admin@foundryos.tech"),
+        name: "Master Platform Administrator",
+        role: "SUPER_ADMIN",
+        createdAt: new Date().toISOString(),
+      };
+      db.users[userId] = user;
+      db.usersByEmail[user.email] = userId;
+    } else {
+      user.role = "SUPER_ADMIN";
+    }
+
+    const token = generateSessionToken();
+    const now = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    const session = {
+      token,
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      role: "SUPER_ADMIN",
+      organizationId: "org_foundry_hq_master",
+      organizationName: "FoundryOS Master Control Plane",
+      workspaceId: "ws_master_root",
+      workspaceName: "Master Platform Root",
+      createdAt: now,
+      expiresAt,
+    };
+
+    db.sessions[token] = session;
+    await saveDatabase();
+
+    setSessionCookie(res, token);
+    const { passwordHash: _, ...safeUser } = user;
+    res.json({
+      user: safeUser,
+      session,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Session Validation Endpoint
 app.get("/api/auth/session", authenticateSession, (req, res) => {
-  const { passwordHash: _, ...safeUser } = req.user;
+  const { passwordHash: _, ...safeUser } = req.user || {};
   res.json({
     user: safeUser,
     session: req.session,
   });
 });
 
-// Logout
-app.post("/api/auth/logout", authenticateSession, async (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
-  delete db.sessions[token];
-  await saveDatabase();
-  res.json({ success: true, message: "Logged out successfully." });
+// Logout Endpoint (Clears server session & httpOnly cookie)
+app.post("/api/auth/logout", (req, res) => {
+  let token = null;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
+  } else {
+    const cookies = parseCookies(req);
+    token = cookies.foundry_session;
+  }
+
+  if (token && db.sessions[token]) {
+    delete db.sessions[token];
+    saveDatabase();
+  }
+
+  clearSessionCookie(res);
+  res.json({ ok: true, message: "Logged out successfully." });
 });
 
 // ─── 6. Isolated Demo Workspace Endpoint (Zero Admin Privileges) ────────────
@@ -375,6 +496,7 @@ app.post("/api/auth/demo", async (_req, res) => {
     db.sessions[demoToken] = demoSession;
     await saveDatabase();
 
+    setSessionCookie(res, demoToken);
     res.json({
       session: demoSession,
       organization: db.organizations["org_demo_sandbox"],

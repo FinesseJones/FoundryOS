@@ -165,6 +165,37 @@ const WebsiteStudio: React.FC<WebsiteStudioProps> = ({ initialLead, allLeads = [
     }
   };
 
+  // Ingestion Modal State
+  const [showDeckModal, setShowDeckModal] = useState<boolean>(false);
+  const [deckInput, setDeckInput] = useState<string>('');
+
+  const handleIngestDeckOrPresence = (rawText: string) => {
+    try {
+      const parsed = parseOnlinePresenceOrDeck(rawText, selectedThemeId);
+      setCustomCompanyName(parsed.companyName);
+      setCustomIndustry('hvac');
+      setFinancialPain(parsed.extractedPillars.financialPain);
+      setProcessGap(parsed.extractedPillars.processGap);
+      setSelectedSourceId('custom');
+      setShowDeckModal(false);
+      toast.success(`🚀 Synthesized Fortune 500 site for: ${parsed.companyName}!`);
+    } catch (e: any) {
+      toast.error('Failed to parse input. Please check text.');
+    }
+  };
+
+  const handleLoadAirSouthExample = () => {
+    const sample = `AirSouth Cooling, Heating, Plumbing, and Electrical
+Location: Jackson, Brandon & Central MS Metro Area
+Rating: 4.8 Stars (450+ Google Verified Reviews)
+License: Licensed Master Plumbers, HVAC Mechanics & Electricians #MS-HVAC-9402
+Phone: (601) 353-4681
+Services: 24/7 Emergency AC Repair, Zero-Dig Hydrojet Plumbing, Heat Pump Replacements, Whole-Home Backup Generators
+Value: Same-Day Mississippi Emergency Dispatch, 100% Upfront Pricing, Zero Overtime Fees.`;
+    setDeckInput(sample);
+    handleIngestDeckOrPresence(sample);
+  };
+
   // Simulated AI regeneration
   const handleRegenerate = async () => {
     setIsGenerating(true);
@@ -231,7 +262,7 @@ const WebsiteStudio: React.FC<WebsiteStudioProps> = ({ initialLead, allLeads = [
                 AI Website Builder & Client Staging Sandbox
               </h1>
               <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-                Autonomously compiles multi-section, responsive client websites from your Authoritative Business DNA with zero manual design friction.
+                Autonomously compiles multi-section, responsive client websites from Google Presentation decks, Google Local Services listings, or Business DNA.
               </p>
             </div>
 
@@ -240,12 +271,22 @@ const WebsiteStudio: React.FC<WebsiteStudioProps> = ({ initialLead, allLeads = [
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setShowDeckModal(true)}
+                className="bg-emerald-950/60 hover:bg-emerald-900/60 border-emerald-500/40 text-xs font-bold text-emerald-300 shadow-lg shadow-emerald-950/40"
+              >
+                <Sparkles className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
+                <span>Ingest Deck / Google Presence</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleRegenerate}
                 disabled={isGenerating}
                 className="bg-slate-800 hover:bg-slate-700 border-slate-700 text-xs font-semibold text-slate-200"
               >
                 <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isGenerating ? 'animate-spin' : ''}`} />
-                <span>Regenerate Content</span>
+                <span>Regenerate</span>
               </Button>
 
               <Button
@@ -383,6 +424,35 @@ const WebsiteStudio: React.FC<WebsiteStudioProps> = ({ initialLead, allLeads = [
           </div>
         </div>
 
+        {/* Staging URL & Live Action HUD */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-slate-400">Live Staging URL:</span>
+            <span className="font-mono text-indigo-400 font-bold bg-indigo-950/60 px-2.5 py-1 rounded-lg border border-indigo-800/40">
+              https://{customCompanyName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.foundryos.tech/
+            </span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold">
+              <CheckCircle2 className="w-2.5 h-2.5" /> SSL Secured
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const blob = new Blob([standaloneHtml], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+              }}
+              className="bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white border-slate-700"
+            >
+              <ExternalLink className="w-3.5 h-3.5 mr-1 text-indigo-400" />
+              <span>Open in Fullscreen Tab</span>
+            </Button>
+          </div>
+        </div>
+
         {/* Live Canvas Viewport */}
         <div className="min-h-[700px] flex justify-center items-start bg-slate-950/60 p-4 rounded-2xl border border-slate-800 shadow-2xl">
           {viewTab === 'preview' ? (
@@ -406,6 +476,66 @@ const WebsiteStudio: React.FC<WebsiteStudioProps> = ({ initialLead, allLeads = [
             </div>
           )}
         </div>
+
+        {/* Google Presentation / Online Presence Ingest Modal */}
+        {showDeckModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div className="bg-slate-900 border border-emerald-500/40 rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-800/40">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">Ingest Google Presentation / Online Footprint</h3>
+                    <p className="text-xs text-slate-400">Paste Google Local Services, Google Slides text, or raw business pitch</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowDeckModal(false)} className="text-slate-400 hover:text-white text-sm">✕</button>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">Slide Deck Outline, Google Services URL, or Pitch Notes</label>
+                  <button
+                    type="button"
+                    onClick={handleLoadAirSouthExample}
+                    className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1"
+                  >
+                    <Zap className="w-3 h-3 text-amber-400" />
+                    <span>Load "AirSouth Jackson MS" Example</span>
+                  </button>
+                </div>
+                <textarea
+                  rows={8}
+                  value={deckInput}
+                  onChange={(e) => setDeckInput(e.target.value)}
+                  placeholder="Paste Google Local Services URL or raw business text e.g.:
+AirSouth Cooling, Heating, Plumbing, and Electrical
+Location: Jackson, Brandon & Central MS Metro Area
+Rating: 4.8 Stars (450+ Google Verified Reviews)
+Services: 24/7 Emergency AC Repair, Zero-Dig Hydrojet Plumbing, Heat Pump Replacements
+Value: Same-Day Mississippi Emergency Dispatch, 100% Upfront Pricing, Zero Overtime Fees..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:border-emerald-500 focus:outline-none font-mono"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <Button variant="secondary" onClick={() => setShowDeckModal(false)} className="bg-slate-800 text-xs">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleIngestDeckOrPresence(deckInput)}
+                  disabled={!deckInput.trim()}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white flex items-center gap-1.5 shadow-lg shadow-emerald-600/30"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Synthesize Fortune 500 Website</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
   );

@@ -25,7 +25,8 @@ import {
     CreditCard,
     Flame,
     PhoneCall,
-    ShieldAlert
+    ShieldAlert,
+    Share2
 } from 'lucide-react';
 
 // Import all pages and views
@@ -39,6 +40,7 @@ import AuditLog from './pages/AuditLog';
 import BrandingCenter from './pages/BrandingCenter';
 import ServicesCatalog from './pages/ServicesCatalog';
 import WebsiteStudio from './pages/WebsiteStudio';
+import SocialMediaStudio from './pages/SocialMediaStudio';
 import Reports from './pages/Reports';
 import CustomerIntelligence from './pages/CustomerIntelligence';
 import { UnifiedInboxPage } from './pages/UnifiedInboxPage';
@@ -108,7 +110,8 @@ const navItems: NavItemConfig[] = [
     { name: 'Branding Center', page: 'branding', icon: Rocket, badge: 'AI', section: 'core' },
     { name: 'SMS Campaigns', page: 'campaigns', icon: Flame, badge: '98% Open', section: 'tools' },
     { name: 'Phones & Missed Calls', page: 'phones', icon: PhoneCall, badge: 'Auto-Text', section: 'tools' },
-    { name: 'Website Studio', page: 'studio', icon: Globe, badge: 'New', section: 'tools' },
+    { name: 'Website Studio', page: 'studio', icon: Globe, badge: 'Deck Ingest', section: 'tools' },
+    { name: 'Social Media Studio', page: 'social', icon: Share2, badge: 'AI Multiplier', section: 'tools' },
     { name: 'Projects', page: 'projects', icon: ClipboardList, section: 'tools' },
     { name: 'Leads CRM', page: 'leads', icon: Zap, section: 'tools' },
     { name: 'Analytics & KPIs', page: 'analytics', icon: TrendingUp, section: 'tools' },
@@ -129,7 +132,8 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
     customer_intelligence: { title: "Business DNA & Customer Intelligence OS", subtitle: "Live multi-domain intelligence across Marketing, Sales, Operations, and Zero-Trust Security." },
     services: { title: "Services Catalog & Offerings", subtitle: "Strategic transformation blueprints, digital audits, and deliverables." },
     branding: { title: "AI Branding & Positioning Center", subtitle: "Generate automated market positioning, taglines, and value proposition guides." },
-    studio: { title: "AI Website Studio & Staging Sandbox", subtitle: "Autonomously generate, preview, customize, and export client websites." },
+    studio: { title: "AI Website Studio & Staging Sandbox", subtitle: "Autonomously compile client websites from Google Presentation decks, local presence, or DNA." },
+    social: { title: "Autonomous Social Media & Brand Voice Studio", subtitle: "Weekly AI brand voice marketing, multi-channel scheduling calendar, and profile provisioning." },
     projects: { title: "Project Governance & Deep Dive", subtitle: "Track milestones, budget burn, risk ratings, and delivery phases." },
     leads: { title: "Client Pipeline & Opportunity CRM", subtitle: "Analyze economic feasibility, process gaps, and key executive sponsors." },
     analytics: { title: "Operations Analytics & Capacity", subtitle: "Departmental workload forecasting, lead time bottlenecks, and recommendations." },
@@ -485,6 +489,7 @@ export default function App() {
                             {selectedPage === 'services' && <ServicesCatalog />}
                             {selectedPage === 'branding' && <BrandingCenter currentUser={currentUserContext} />}
                             {selectedPage === 'studio' && <WebsiteStudio initialLead={activeStudioLead} allLeads={mockLeads} />}
+                            {selectedPage === 'social' && <SocialMediaStudio />}
                             {selectedPage === 'projects' && <ProjectDashboardPage 
                                 projectName={'Global Platform Overhaul'} 
                                 clientName={'TechCorp Global'} 

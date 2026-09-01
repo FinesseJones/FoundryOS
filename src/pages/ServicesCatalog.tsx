@@ -20,7 +20,7 @@ interface ServiceOffering {
 
 const ServicesCatalog: React.FC = () => {
 
-    // Define all service offerings from Environment Masters, Inc. (Jackson, MS)
+    // Define service offerings and high-margin add-on solutions
     const services: ServiceOffering[] = [
         {
             icon: Users,
@@ -40,11 +40,19 @@ const ServicesCatalog: React.FC = () => {
         },
         {
             icon: Zap,
-            title: "480V 3-Phase Commercial Electrical & Automation",
-            subheading: "Industrial switchgear upgrades, thermal imaging power audits, and building automation sensor integration.",
-            painsSolved: ["Unbalanced 3-Phase Voltage", "Dangerous Arc Flash Risks", "Lack of Surge Suppression"],
-            coreDeliverables: ["Schneider Square D Switchgear Upgrades", "Infrared Heat Audits", "Smart Thermostat Telemetry"],
-            moduleLink: "/leads",
+            title: "Autonomous Social Media & Brand Voice Engine ($997/mo Retainer)",
+            subheading: "Complete multi-channel social media management (LinkedIn, X, Instagram, Facebook, Google Business) with weekly brand voice posts, visual calendar, and auto-scheduler.",
+            painsSolved: ["Zero Social Media Footprint", "Inconsistent Marketing Voice", "Missed Commercial Inbound Leads"],
+            coreDeliverables: ["3x Weekly Branded Content Drops", "Multi-Platform Profile Setup Kit", "Automated Visual Calendar & Previews"],
+            moduleLink: "/social",
+        },
+        {
+            icon: Code2,
+            title: "Fortune 500 Dynamic Web Infrastructure ($2,500 + $250/mo)",
+            subheading: "Turnkey Google Presentation and online presence compiler generating responsive, high-converting Fortune 500 websites with 1-tap quote widgets.",
+            painsSolved: ["Missing or Outdated Website", "High Bounce Rates", "Lack of Mobile & Text-to-Pay Integration"],
+            coreDeliverables: ["Multi-Section Responsive Architecture", "Instant SMS Booking Widget", "High-Speed Global CDN & Auto SSL"],
+            moduleLink: "/studio",
         },
         {
             icon: ClipboardList,

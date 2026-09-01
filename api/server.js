@@ -142,8 +142,12 @@ app.post(
           const stripeSubscriptionId = subscription.id;
           const planTier = subscription.metadata?.planTier || "growth";
           const status = subscription.status;
-          const currentPeriodStart = new Date(subscription.current_period_start * 1000);
-          const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+          const currentPeriodStart = typeof subscription.current_period_start === 'number' && !isNaN(subscription.current_period_start)
+            ? new Date(subscription.current_period_start * 1000)
+            : new Date();
+          const currentPeriodEnd = typeof subscription.current_period_end === 'number' && !isNaN(subscription.current_period_end)
+            ? new Date(subscription.current_period_end * 1000)
+            : new Date(Date.now() + 30 * 24 * 3600 * 1000);
           const stripePriceId = subscription.items?.data?.[0]?.price?.id || "";
 
           if (!organizationId && stripeCustomerId) {

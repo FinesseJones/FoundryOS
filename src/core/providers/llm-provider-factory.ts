@@ -41,13 +41,6 @@ export abstract class BaseLLMProvider implements ILLMProvider {
       throw new Error(`Structured JSON parsing failed for ${this.type}: ${(e as Error).message}`);
     }
   }
-
-  protected generateOfflineFallbackText(prompt: string): string {
-    return `[OFFLINE FALLBACK MODEL OUTPUT - ${this.type.toUpperCase()}] Standardized response generated for prompt: "${prompt.substring(
-      0,
-      60
-    )}..."`;
-  }
 }
 
 export class NvidiaNimProvider extends BaseLLMProvider {
@@ -149,16 +142,44 @@ export class OpenAIProvider extends BaseLLMProvider {
   type: LLMProviderType = 'openai';
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
+    const apiKey = this.config.apiKey || process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('[OpenAIProvider] API key is not configured.');
+    }
+
     const startTime = Date.now();
-    const text = this.generateOfflineFallbackText(request.prompt);
+    const model = this.config.modelName || 'gpt-4o';
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          ...(request.systemPrompt ? [{ role: 'system', content: request.systemPrompt }] : []),
+          { role: 'user', content: request.prompt },
+        ],
+        temperature: request.temperature ?? 0.6,
+        max_tokens: request.maxTokens ?? 1500,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`OpenAI HTTP Error ${res.status}: ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as any;
+    const text = data.choices?.[0]?.message?.content || '';
     return {
       text,
       providerUsed: 'openai',
-      modelUsed: this.config.modelName || 'gpt-4o',
+      modelUsed: model,
       usage: {
-        promptTokens: 100,
-        completionTokens: 200,
-        totalTokens: 300,
+        promptTokens: data.usage?.prompt_tokens || Math.ceil(request.prompt.length / 4),
+        completionTokens: data.usage?.completion_tokens || Math.ceil(text.length / 4),
+        totalTokens: data.usage?.total_tokens || Math.ceil((request.prompt.length + text.length) / 4),
         estimatedCostUsd: 0.0015,
         latencyMs: Date.now() - startTime,
       },
@@ -170,16 +191,43 @@ export class ClaudeProvider extends BaseLLMProvider {
   type: LLMProviderType = 'claude';
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
+    const apiKey = this.config.apiKey || process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error('[ClaudeProvider] API key is not configured.');
+    }
+
     const startTime = Date.now();
-    const text = this.generateOfflineFallbackText(request.prompt);
+    const model = this.config.modelName || 'claude-3-5-sonnet-20241022';
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        system: request.systemPrompt,
+        messages: [{ role: 'user', content: request.prompt }],
+        max_tokens: request.maxTokens ?? 1500,
+        temperature: request.temperature ?? 0.6,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Claude HTTP Error ${res.status}: ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as any;
+    const text = data.content?.[0]?.text || '';
     return {
       text,
       providerUsed: 'claude',
-      modelUsed: this.config.modelName || 'claude-3-5-sonnet',
+      modelUsed: model,
       usage: {
-        promptTokens: 120,
-        completionTokens: 220,
-        totalTokens: 340,
+        promptTokens: data.usage?.input_tokens || Math.ceil(request.prompt.length / 4),
+        completionTokens: data.usage?.output_tokens || Math.ceil(text.length / 4),
+        totalTokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
         estimatedCostUsd: 0.0017,
         latencyMs: Date.now() - startTime,
       },
@@ -191,16 +239,35 @@ export class GeminiProvider extends BaseLLMProvider {
   type: LLMProviderType = 'gemini';
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
+    const apiKey = this.config.apiKey || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('[GeminiProvider] API key is not configured.');
+    }
+
     const startTime = Date.now();
-    const text = this.generateOfflineFallbackText(request.prompt);
+    const model = this.config.modelName || 'gemini-1.5-pro';
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: `${request.systemPrompt ? request.systemPrompt + '\n' : ''}${request.prompt}` }] }],
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Gemini HTTP Error ${res.status}: ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as any;
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     return {
       text,
       providerUsed: 'gemini',
-      modelUsed: this.config.modelName || 'gemini-1.5-pro',
+      modelUsed: model,
       usage: {
-        promptTokens: 110,
-        completionTokens: 210,
-        totalTokens: 320,
+        promptTokens: data.usageMetadata?.promptTokenCount || Math.ceil(request.prompt.length / 4),
+        completionTokens: data.usageMetadata?.candidatesTokenCount || Math.ceil(text.length / 4),
+        totalTokens: data.usageMetadata?.totalTokenCount || Math.ceil((request.prompt.length + text.length) / 4),
         estimatedCostUsd: 0.0012,
         latencyMs: Date.now() - startTime,
       },
@@ -212,16 +279,42 @@ export class OpenRouterProvider extends BaseLLMProvider {
   type: LLMProviderType = 'openrouter';
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
+    const apiKey = this.config.apiKey || process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      throw new Error('[OpenRouterProvider] API key is not configured.');
+    }
+
     const startTime = Date.now();
-    const text = this.generateOfflineFallbackText(request.prompt);
+    const model = this.config.modelName || 'meta-llama/llama-3-70b-instruct';
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          ...(request.systemPrompt ? [{ role: 'system', content: request.systemPrompt }] : []),
+          { role: 'user', content: request.prompt },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`OpenRouter HTTP Error ${res.status}: ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as any;
+    const text = data.choices?.[0]?.message?.content || '';
     return {
       text,
       providerUsed: 'openrouter',
-      modelUsed: this.config.modelName || 'meta-llama/llama-3-70b-instruct',
+      modelUsed: model,
       usage: {
-        promptTokens: 100,
-        completionTokens: 200,
-        totalTokens: 300,
+        promptTokens: data.usage?.prompt_tokens || 100,
+        completionTokens: data.usage?.completion_tokens || 200,
+        totalTokens: data.usage?.total_tokens || 300,
         estimatedCostUsd: 0.001,
         latencyMs: Date.now() - startTime,
       },
@@ -234,19 +327,41 @@ export class LMStudioProvider extends BaseLLMProvider {
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
     const startTime = Date.now();
-    const text = this.generateOfflineFallbackText(request.prompt);
-    return {
-      text,
-      providerUsed: 'lmstudio',
-      modelUsed: this.config.modelName || 'local-model',
-      usage: {
-        promptTokens: 50,
-        completionTokens: 100,
-        totalTokens: 150,
-        estimatedCostUsd: 0,
-        latencyMs: Date.now() - startTime,
-      },
-    };
+    const baseUrl = this.config.baseUrl || 'http://127.0.0.1:1234/v1';
+    try {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: this.config.modelName || 'local-model',
+          messages: [
+            ...(request.systemPrompt ? [{ role: 'system', content: request.systemPrompt }] : []),
+            { role: 'user', content: request.prompt },
+          ],
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`LM Studio HTTP Error ${res.status}: ${res.statusText}`);
+      }
+
+      const data = (await res.json()) as any;
+      const text = data.choices?.[0]?.message?.content || '';
+      return {
+        text,
+        providerUsed: 'lmstudio',
+        modelUsed: this.config.modelName || 'local-model',
+        usage: {
+          promptTokens: data.usage?.prompt_tokens || 50,
+          completionTokens: data.usage?.completion_tokens || 100,
+          totalTokens: data.usage?.total_tokens || 150,
+          estimatedCostUsd: 0,
+          latencyMs: Date.now() - startTime,
+        },
+      };
+    } catch (err: any) {
+      throw new Error(`LM Studio generation failed (${baseUrl}): ${err.message}`);
+    }
   }
 }
 

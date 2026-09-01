@@ -207,7 +207,10 @@ test('LearningAgent extracts winning patterns from business memory', async () =>
   const result = await learningAgent.executeTask(request);
 
   assert.equal(result.agentRole, 'learning');
-  assert.ok((result.outputData.winningPatterns as string[]).length > 0);
+  assert.ok(Array.isArray(result.outputData.winningPatterns) && result.outputData.winningPatterns.length > 0);
+  assert.ok(typeof result.outputData.confidenceScore === 'number' && (result.outputData.confidenceScore as number) >= 0);
+  assert.ok(typeof result.outputData.voiceEvolutionRecommendation === 'string' && (result.outputData.voiceEvolutionRecommendation as string).length > 0);
+  assert.equal(result.outputData.accessAuthorized, true);
 });
 
 test('AgentRegistry dispatches tasks dynamically to target agents', async () => {

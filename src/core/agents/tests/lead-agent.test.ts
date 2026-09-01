@@ -21,7 +21,7 @@ beforeEach(() => {
       prompt.match(/(\d+)\s+prospective enterprise leads/i) ||
       prompt.match(/Prospect\s+(\d+)/i) ||
       prompt.match(/Identify and qualify\s+(\d+)/i);
-    const count = countMatch ? parseInt(countMatch[1], 10) : 1;
+    const count = isCustom ? 1 : countMatch ? parseInt(countMatch[1], 10) : 1;
 
     const leads = Array.from({ length: count }, (_, idx) => ({
       id: 101 + idx,

@@ -84,7 +84,7 @@ export class LeadAgent extends BaseAgent {
     const uvp = dna.companyIdentity?.uniqueValueProposition?.value || '';
     const payload = (request.payload as LeadDiscoveryParams) || {};
     const industry = payload.industry || dna.companyIdentity?.industry?.value || 'saas';
-    const batchSize = payload.batchSize || 2;
+    const batchSize = payload.customTargetDomain ? (payload.batchSize || 1) : (payload.batchSize || 2);
     const userPrompt = request.prompt || `Prospect ${batchSize} enterprise leads in the ${industry} industry.`;
 
     const systemRole = `Specialized Role: Enterprise Revenue Operations & B2B Lead Intelligence Commander.`;

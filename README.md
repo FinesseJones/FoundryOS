@@ -1,49 +1,31 @@
-# 🛸 FoundryOS — The Autonomous Business & Revenue Operating System
+# 🛸 FoundryOS — Autonomous Business & Revenue Operating System
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict_Mode-blue.svg)](https://www.typescriptlang.org/)
 [![Version](https://img.shields.io/badge/Release-v1.0.0_Production-green.svg)](#)
-[![Tests](https://img.shields.io/badge/Tests-159_Passing-emerald.svg)](./tests)
-[![Architecture](https://img.shields.io/badge/Architecture-Closed_Loop_AI_OS-purple.svg)](#architecture)
+[![Tests](https://img.shields.io/badge/Tests-73_Passing-emerald.svg)](./tests)
+[![Architecture](https://img.shields.io/badge/Architecture-React_19_SPA_plus_Node_API-purple.svg)](#architecture)
 [![License](https://img.shields.io/badge/License-Proprietary-cyan.svg)](#)
 
-> **FoundryOS** is the **Autonomous Business & Revenue Operating System**. Powered by continuous, versioned **Business DNA**, a high-converting **Conversational Lead-to-Revenue Suite** (2-Way SMS, 5-Star Reviews, Text-to-Pay, Missed-Call Auto-Text), a **Google Presentation & Deck-to-Fortune 500 Website Compiler**, and an **Autonomous Social Media Growth Engine**, FoundryOS autonomously acquires leads, nurtures clients, generates websites/apps, and powers multi-tenant business operations.
+> **FoundryOS** is an 18-module **Autonomous Business & Revenue Operating System** featuring client-side **Google Presentation & Deck-to-Fortune 500 Website Generation**, an **Autonomous Social Media Growth Engine**, and interactive conversational revenue tools (2-Way SMS Inbox, 5-Star Reviews, Text-to-Pay, Missed-Call Auto-Text).
 
 ---
 
-## 🏛️ Platform Architecture & Pipeline
+## 🏛️ Platform Architecture: Shipped Reality vs. Roadmap
 
-```mermaid
-flowchart TD
-    CW["<b>CUSTOMER WORKSPACE</b>"]
+| Shipped & Verified Today (`make-it-real`) | Engineering Roadmap (In Progress) |
+| :--- | :--- |
+| • **18 Active React 19 Frontend Modules** (`src/pages/*`) | • **Central PostgreSQL / SQLite Database Cluster** |
+| • **Google Deck & Presence Website Compiler** (`src/core/website-builder/`) | • **Live Twilio / Telnyx A2P 10DLC Gateway** |
+| • **5-Channel Social Media Content Generator** (`src/pages/SocialMediaStudio.tsx`) | • **Live Stripe Connect Card Processing** |
+| • **Server Auth (scrypt + salt in `llm-proxy/server.js`)** | • **Apple MLX Osaurus Proxy Endpoint** |
+| • **Turnkey Ubuntu VPS Docker Containers** (`2.25.113.26`) | • **Vector-based 6D Risk Tensor Security Math** |
 
-    subgraph Pillars [" "]
-        direction LR
-        DNA["<b>Business DNA Core</b><br/>• Web & Doc Extraction<br/>• Brand Voice Sync<br/>• Revision History<br/>• Auto Refresh Engine"]
-        INTEL["<b>Intelligence Layer</b><br/>• Marketing Intel<br/>• Sales & Lead CRM<br/>• Social Media Studio<br/>• Website Studio"]
-        EXEC["<b>Execution Engine</b><br/>• 2-Way SMS Inbox<br/>• Google 5★ Reviews<br/>• Stripe Text-to-Pay<br/>• Missed-Call Auto-Text"]
-    end
+---
 
-    GOV["<b>Agent Governance & Security</b><br/>• Zero-Trust 6D Risk Tensor<br/>• Mahalanobis 3.0σ Anomaly Det<br/>• Immutable Audit Trail<br/>• RBAC Permissions"]
+## 🧭 Live Status & Reality Inventory
 
-    HYP["<b>🚀 HYPERION ENGINE (Autonomous Backend Horsepower)</b><br/>• 3-Tier Multi-Inference: Ollama (32B) ↔ MLX Osaurus (27B) ↔ NVIDIA NIM (90B)<br/>• Google Presentation & Online Presence-to-Website Compiler<br/>• Autonomous Social Media Growth Engine & Scheduler<br/>• Commercial Media Studio (3D Mechanical Explainers + Neural TTS)"]
-
-    CW --> DNA
-    CW --> INTEL
-    CW --> EXEC
-
-    INTEL --> GOV
-    EXEC --> GOV
-
-    EXEC <===>|"Autonomous Job Dispatch & Artifact Delivery"| HYP
-
-    classDef default fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#f8fafc;
-    classDef main fill:#1e1b4b,stroke:#6366f1,stroke-width:2px,color:#ffffff;
-    classDef gov fill:#1e1b4b,stroke:#8b5cf6,stroke-width:2px,color:#ffffff;
-    classDef hyp fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#f0f9ff;
-    class CW main;
-    class GOV gov;
-    class HYP hyp;
-```
+For full transparency, review the live codebase audit:
+👉 [**HONEST_STATUS.md**](./HONEST_STATUS.md) — Comprehensive, file-by-file breakdown of what is REAL vs. MOCK vs. ROADMAP.
 
 ---
 

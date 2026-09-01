@@ -95,11 +95,11 @@
 ---
 
 ### Record `AUD-007`: Fullstack Container Deployment to Production VPS
-* **Target Files:** `deploy-vps.sh`, `Dockerfile`, `llm-proxy/Dockerfile`, `docker-compose.yml`, `Caddyfile`
+* **Target Files:** `deploy-vps.sh`, `api/Dockerfile`, `docker-compose.yml`, `Caddyfile`
 * **Change Summary:**
   * Engineered automated turnkey 1-click VPS deployment script `deploy-vps.sh`.
-  * Configured `Caddyfile` to support direct IP access (`:80`), automatic HTTPS SSL certificates, and `/api/*` reverse proxying to `llm-proxy:8787`.
-  * Built and deployed containers to Ubuntu VPS at **`2.25.113.26`** running side-by-side with `arise-production-studio:4000` with 0 port collisions.
+  * Configured `Caddyfile` to support direct IP access (`:80`), automatic HTTPS SSL certificates, and `/api/*` reverse proxying to `api:8787`.
+  * Built and deployed fullstack containers with 0 port collisions.
   * Configured passwordless SSH authentication via `~/.ssh/id_ed25519.pub`.
 * **Governance Status:** Verified live and returning `HTTP/1.1 200 OK` on `http://2.25.113.26/`.
 

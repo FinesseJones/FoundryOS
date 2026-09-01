@@ -5,7 +5,10 @@ import dotenv from "dotenv";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, "..");
+let rootDir = path.resolve(__dirname, "..");
+if (!fs.existsSync(path.join(rootDir, "package.json")) && fs.existsSync(path.join(__dirname, "package.json"))) {
+  rootDir = __dirname;
+}
 
 // Locate and load .env synchronously from root or cwd
 const envCandidates = [
@@ -21,13 +24,16 @@ for (const cand of envCandidates) {
   }
 }
 
-// Guarantee DATABASE_URL resolves to absolute SQLite DB path
-const defaultDbPath = path.resolve(rootDir, "data/foundry.db");
-if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.trim()) {
-  process.env.DATABASE_URL = `file:${defaultDbPath}`;
-} else if (process.env.DATABASE_URL.startsWith("file:.") || (!process.env.DATABASE_URL.startsWith("file:/") && process.env.DATABASE_URL.startsWith("file:"))) {
-  const relPath = process.env.DATABASE_URL.replace(/^file:/, "");
-  process.env.DATABASE_URL = `file:${path.resolve(rootDir, relPath)}`;
+// Guarantee DATABASE_URL resolves properly for SQLite vs PostgreSQL
+const isPostgres = (process.env.DATABASE_URL || "").startsWith("postgres");
+if (!isPostgres) {
+  const defaultDbPath = path.resolve(rootDir, "data/foundry.db");
+  if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.trim()) {
+    process.env.DATABASE_URL = `file:${defaultDbPath}`;
+  } else if (process.env.DATABASE_URL.startsWith("file:.") || (!process.env.DATABASE_URL.startsWith("file:/") && process.env.DATABASE_URL.startsWith("file:"))) {
+    const relPath = process.env.DATABASE_URL.replace(/^file:/, "");
+    process.env.DATABASE_URL = `file:${path.resolve(rootDir, relPath)}`;
+  }
 }
 
 import express from "express";
@@ -378,12 +384,13 @@ async function assertOrgOwnership(req, res, organizationId) {
 app.get("/api/health", async (_req, res) => {
   try {
     const userCount = await prisma.user.count();
+    const isPostgres = (process.env.DATABASE_URL || "").startsWith("postgres");
     res.json({
       ok: true,
-      service: "tacf-api-server",
+      service: "foundryos-api",
       key: !!process.env.NVIDIA_API_KEY,
       stripe: !!process.env.STRIPE_SECRET_KEY,
-      database: "prisma_sqlite",
+      database: isPostgres ? "prisma_postgresql" : "prisma_sqlite",
       databaseUrl: process.env.DATABASE_URL,
       userCount,
       timestamp: new Date().toISOString(),
@@ -1639,13 +1646,41 @@ app.post("/api/chat", async (req, res) => {
 
 const PORT = process.env.PORT || 8787;
 
+async function ensureDatabaseSchema() {
+  const isPostgres = (process.env.DATABASE_URL || "").startsWith("postgres");
+  const schemaPath = isPostgres ? "./prisma/schema.postgresql.prisma" : "./prisma/schema.prisma";
+  try {
+    if (!isPostgres) {
+      const dbFilePath = process.env.DATABASE_URL.replace(/^file:/, "");
+      if (!fs.existsSync(dbFilePath) || fs.statSync(dbFilePath).size === 0) {
+        console.log("[Prisma] Fresh SQLite DB detected. Auto-syncing schema...");
+        const { execSync } = await import("node:child_process");
+        execSync(`npx prisma db push --skip-generate --schema=${schemaPath}`, {
+          cwd: rootDir,
+          stdio: "pipe",
+          env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
+        });
+        console.log("[Prisma] Fresh SQLite DB schema initialized successfully.");
+      }
+    }
+  } catch (err) {
+    console.warn("[Prisma] Schema auto-sync check:", err.message);
+  }
+}
+
 async function startServer() {
   try {
+    await ensureDatabaseSchema();
     await prisma.$connect();
-    console.log("[Prisma] SQLite Database connected successfully.");
+    const isPostgres = (process.env.DATABASE_URL || "").startsWith("postgres");
+    if (isPostgres) {
+      console.log(`[Prisma] PostgreSQL Database connected successfully (${process.env.DATABASE_URL.replace(/:[^:@]+@/, ":****@")}).`);
+    } else {
+      console.log(`[Prisma] SQLite Database connected successfully at ${process.env.DATABASE_URL} (PostgreSQL ready, pending DATABASE_URL).`);
+    }
 
     app.listen(PORT, () => {
-      console.log(`[TACF API Server] Listening on :${PORT} with Prisma SQLite database.`);
+      console.log(`[FoundryOS API Server] Listening on :${PORT} (${isPostgres ? "PostgreSQL" : "SQLite"}).`);
     });
   } catch (err) {
     console.error("[Prisma] Database connection error:", err);

@@ -1,42 +1,41 @@
 services:
-  brand-first-app:
+  api:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: brand-first-production
-    restart: always
-    expose:
-      - "80"
-
-  llm-proxy:
-    build:
-      context: ./llm-proxy
-      dockerfile: Dockerfile
-    container_name: llm-proxy
+      dockerfile: api/Dockerfile
+    container_name: foundryos-api
     restart: always
     expose:
       - "8787"
     environment:
+      - PORT=8787
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL:-file:/app/data/foundry.db}
+      - MASTER_ADMIN_SECRET=${MASTER_ADMIN_SECRET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - STRIPE_PRICE_STARTER=${STRIPE_PRICE_STARTER}
+      - STRIPE_PRICE_GROWTH=${STRIPE_PRICE_GROWTH}
+      - STRIPE_PRICE_ENTERPRISE=${STRIPE_PRICE_ENTERPRISE}
       - NVIDIA_API_KEY=${NVIDIA_API_KEY}
     volumes:
-      - proxy_data:/app/data
+      - ./data:/app/data
 
   caddy:
     image: caddy:2-alpine
-    container_name: caddy
+    container_name: foundryos-caddy
     restart: always
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./dist:/srv
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - brand-first-app
-      - llm-proxy
+      - api
 
 volumes:
   caddy_data:
   caddy_config:
-  proxy_data:

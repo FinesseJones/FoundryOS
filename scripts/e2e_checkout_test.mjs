@@ -37,7 +37,7 @@ async function runCheckoutTest() {
     }
   } catch (err) {
     console.error(`\n❌ Error: Could not connect to API server at ${SERVER_URL}.`);
-    console.error("   Please start the server first in another terminal with: cd llm-proxy && node server.js\n");
+    console.error("   Please start the server first in another terminal with: npm run server (or cd api && node server.js)\n");
     process.exit(1);
   }
 

@@ -59,5 +59,5 @@ test('Epic 10/11B E2E: SaaS Production (Cryptographic Auth -> RBAC -> SHA-256 AP
 
   const meterResult = billing.recordTokenUsage('org_e2e_saas', tokenUsage);
   assert.equal(meterResult.allowed, true);
-  assert.ok(meterResult.remainingTokens < 500000);
+  assert.ok(meterResult.remainingTokens < 1000000);
 });

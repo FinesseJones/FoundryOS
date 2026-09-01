@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # 🚀 FoundryOS Turnkey 1-Click VPS Deployment Script
-# Frontend (React 19 + Vite) + Backend (Node.js LLM Proxy) + Caddy (Auto HTTPS)
+# Frontend (React 19 + Vite) + Backend (FoundryOS API) + Caddy (Auto HTTPS)
 # ==============================================================================
 
 set -e

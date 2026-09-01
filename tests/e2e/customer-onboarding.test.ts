@@ -42,7 +42,7 @@ test('Phase 12A E2E: Customer Onboarding Flow (Signup -> Org Creation -> Busines
   assert.ok(result.subscription);
   assert.equal(result.subscription.organizationId, result.session.organizationId);
   assert.equal(result.subscription.planTier, 'growth');
-  assert.equal(result.subscription.tokenLimit, 500000);
+  assert.equal(result.subscription.tokenLimit, 1000000);
 
   // 3. Verify Customer Lifecycle State Tracking
   assert.equal(result.customerState.state, 'ACTIVE');

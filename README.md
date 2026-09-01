@@ -17,7 +17,7 @@
 | • **18 Active React 19 Frontend Modules** (`src/pages/*`) | • **Central PostgreSQL / SQLite Database Cluster** |
 | • **Google Deck & Presence Website Compiler** (`src/core/website-builder/`) | • **Live Twilio / Telnyx A2P 10DLC Gateway** |
 | • **5-Channel Social Media Content Generator** (`src/pages/SocialMediaStudio.tsx`) | • **Live Stripe Connect Card Processing** |
-| • **Server Auth (scrypt + salt in `llm-proxy/server.js`)** | • **Apple MLX Osaurus Proxy Endpoint** |
+| • **Server Auth (scrypt + salt in `api/server.js`)** | • **Apple MLX Osaurus Proxy Endpoint** |
 | • **Turnkey Ubuntu VPS Docker Containers** (`2.25.113.26`) | • **Vector-based 6D Risk Tensor Security Math** |
 
 ---

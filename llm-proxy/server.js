@@ -1,16 +1,17 @@
 import express from "express";
 import crypto from "node:crypto";
-import fs from "node:fs/promises";
 import path from "node:path";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+});
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
 
 const NVIDIA_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
-
-const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "data");
-const DB_FILE = path.join(DATA_DIR, "db.json");
 
 // ─── 1. Server-Side Scrypt Password Hashing ─────────────────────────────────
 
@@ -32,98 +33,42 @@ function generateSessionToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
-// ─── 2. Persistent Server Database ─────────────────────────────────────────
-
-let db = {
-  users: {},            // userId -> user
-  usersByEmail: {},     // email -> userId
-  organizations: {},    // orgId -> org
-  workspaces: {},       // orgId -> [workspaces]
-  companyProfiles: {},  // orgId -> profile
-  dnaModels: {},        // orgId -> DNA
-  insights: {},         // orgId -> [sales/marketing/ops insights]
-  recommendations: {},  // orgId -> [strategy recommendations]
-  artifacts: {},        // orgId -> [generated copy/code/briefs/websites]
-  agentTasks: {},       // orgId -> [scheduled & completed agent tasks]
-  approvals: {},        // orgId -> [human approval items]
-  executions: {},       // orgId -> [pipeline execution states]
-  auditEvents: {},      // orgId -> [audit log events]
-  sessions: {},         // token -> session
-};
-
-async function initDatabase() {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    const raw = await fs.readFile(DB_FILE, "utf-8");
-    const parsed = JSON.parse(raw);
-    db = {
-      users: parsed.users || {},
-      usersByEmail: parsed.usersByEmail || {},
-      organizations: parsed.organizations || {},
-      workspaces: parsed.workspaces || {},
-      companyProfiles: parsed.companyProfiles || {},
-      dnaModels: parsed.dnaModels || {},
-      insights: parsed.insights || {},
-      recommendations: parsed.recommendations || {},
-      artifacts: parsed.artifacts || {},
-      agentTasks: parsed.agentTasks || {},
-      approvals: parsed.approvals || {},
-      executions: parsed.executions || {},
-      auditEvents: parsed.auditEvents || {},
-      sessions: parsed.sessions || {},
-    };
-    console.log("[DB] Restored server database successfully from:", DB_FILE);
-  } catch (err) {
-    console.log("[DB] Initializing fresh server database at:", DB_FILE);
-    await saveDatabase();
-  }
-}
-
-async function saveDatabase() {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
-  } catch (err) {
-    console.error("[DB] Failed to save database to disk:", err);
-  }
-}
-
-// ─── 3. Server Authentication & httpOnly Cookie Handling ───────────────────
+// ─── 2. Server Authentication & httpOnly Cookie Handling ───────────────────
 
 function parseCookies(req) {
   const list = {};
   const cookieHeader = req.headers?.cookie;
   if (!cookieHeader) return list;
-  cookieHeader.split(';').forEach(cookie => {
-    let [name, ...rest] = cookie.split('=');
+  cookieHeader.split(";").forEach((cookie) => {
+    let [name, ...rest] = cookie.split("=");
     name = name?.trim();
     if (!name) return;
-    const value = rest.join('=').trim();
+    const value = rest.join("=").trim();
     list[name] = decodeURIComponent(value);
   });
   return list;
 }
 
 function setSessionCookie(res, token) {
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = process.env.NODE_ENV === "production";
   const cookieParts = [
     `foundry_session=${token}`,
-    'Path=/',
-    'HttpOnly',
-    'SameSite=Lax',
-    'Max-Age=604800', // 7 days
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    "Max-Age=604800", // 7 days
   ];
   if (isProd) {
-    cookieParts.push('Secure');
+    cookieParts.push("Secure");
   }
-  res.setHeader('Set-Cookie', cookieParts.join('; '));
+  res.setHeader("Set-Cookie", cookieParts.join("; "));
 }
 
 function clearSessionCookie(res) {
-  res.setHeader('Set-Cookie', 'foundry_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+  res.setHeader("Set-Cookie", "foundry_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
 }
 
-function authenticateSession(req, res, next) {
+async function authenticateSession(req, res, next) {
   let token = null;
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -137,26 +82,32 @@ function authenticateSession(req, res, next) {
     return res.status(401).json({ error: "Authentication required. Valid httpOnly session cookie or Bearer token missing." });
   }
 
-  const session = db.sessions[token];
+  const session = await prisma.session.findUnique({
+    where: { token },
+    include: { user: true },
+  });
+
   if (!session) {
     clearSessionCookie(res);
     return res.status(401).json({ error: "Invalid session token. Please sign in again." });
   }
 
   if (new Date(session.expiresAt).getTime() < Date.now()) {
-    delete db.sessions[token];
-    saveDatabase();
+    await prisma.session.delete({ where: { token } }).catch(() => {});
     clearSessionCookie(res);
     return res.status(401).json({ error: "Session expired. Please sign in again." });
   }
 
   req.session = session;
-  req.user = db.users[session.userId];
+  req.user = session.user;
   next();
 }
 
-function assertOrgOwnership(req, res, organizationId) {
-  const org = db.organizations[organizationId];
+async function assertOrgOwnership(req, res, organizationId) {
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+  });
+
   if (!org) {
     res.status(404).json({ error: `Organization '${organizationId}' not found.` });
     return null;
@@ -184,19 +135,25 @@ function assertOrgOwnership(req, res, organizationId) {
   return org;
 }
 
-// ─── 4. Health Check Endpoint ───────────────────────────────────────────────
+// ─── 3. Health Check Endpoint ───────────────────────────────────────────────
 
-app.get("/api/health", (_req, res) => {
-  res.json({
-    ok: true,
-    service: "tacf-api-server",
-    key: !!NVIDIA_KEY,
-    database: "persistent-server-file",
-    timestamp: new Date().toISOString()
-  });
+app.get("/api/health", async (_req, res) => {
+  try {
+    const userCount = await prisma.user.count();
+    res.json({
+      ok: true,
+      service: "tacf-api-server",
+      key: !!NVIDIA_KEY,
+      database: "prisma_sqlite",
+      userCount,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
-// ─── 5. Server-Side Authentication Endpoints ────────────────────────────────
+// ─── 4. Server-Side Authentication Endpoints ────────────────────────────────
 
 // Register
 app.post("/api/auth/register", async (req, res) => {
@@ -208,44 +165,41 @@ app.post("/api/auth/register", async (req, res) => {
       return res.status(400).json({ error: "Email and password are required." });
     }
 
-    if (db.usersByEmail[normalizedEmail]) {
+    const existing = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (existing) {
       return res.status(409).json({ error: `Account '${normalizedEmail}' already exists.` });
     }
 
     const userId = `usr_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
     const passwordHash = hashPassword(password);
-    const now = new Date().toISOString();
 
-    const user = {
-      id: userId,
-      email: normalizedEmail,
-      name: (name || "").trim() || normalizedEmail.split("@")[0],
-      role: "ADMIN",
-      passwordHash,
-      createdAt: now,
-    };
+    const user = await prisma.user.create({
+      data: {
+        id: userId,
+        email: normalizedEmail,
+        name: (name || "").trim() || normalizedEmail.split("@")[0],
+        role: "ADMIN",
+        passwordHash,
+      },
+    });
 
-    db.users[userId] = user;
-    db.usersByEmail[normalizedEmail] = userId;
-
-    // Create secure server session (7 days)
     const token = generateSessionToken();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    const session = {
-      token,
-      userId,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      organizationId: "",
-      organizationName: "",
-      createdAt: now,
-      expiresAt,
-    };
-
-    db.sessions[token] = session;
-    await saveDatabase();
+    const session = await prisma.session.create({
+      data: {
+        id: token,
+        token,
+        userId: user.id,
+        role: user.role,
+        organizationId: "",
+        organizationName: "",
+        expiresAt,
+      },
+    });
 
     setSessionCookie(res, token);
     const { passwordHash: _, ...safeUser } = user;
@@ -261,45 +215,50 @@ app.post("/api/auth/login", async (req, res) => {
     const { email, password } = req.body;
     const normalizedEmail = (email || "").trim().toLowerCase();
 
-    const userId = db.usersByEmail[normalizedEmail];
-    const user = userId ? db.users[userId] : null;
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
 
     if (!user || !verifyPassword(password, user.passwordHash)) {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
     // Find primary organization & workspace
-    const userOrgs = Object.values(db.organizations).filter(o => o.ownerUserId === user.id);
-    const primaryOrg = userOrgs[0];
-    let primaryWs = null;
+    const primaryOrg = await prisma.organization.findFirst({
+      where: { ownerUserId: user.id },
+      include: { workspaces: true },
+    });
+
+    let primaryWs = primaryOrg?.workspaces?.[0] || null;
     let businessDNA = null;
 
     if (primaryOrg) {
-      const wsList = db.workspaces[primaryOrg.id] || [];
-      primaryWs = wsList[0] || null;
-      businessDNA = db.dnaModels[primaryOrg.id] || null;
+      const dnaRecord = await prisma.businessDNA.findUnique({
+        where: { organizationId: primaryOrg.id },
+      });
+      if (dnaRecord) {
+        try {
+          businessDNA = JSON.parse(dnaRecord.dataJson);
+        } catch {}
+      }
     }
 
     const token = generateSessionToken();
-    const now = new Date().toISOString();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    const session = {
-      token,
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      organizationId: primaryOrg ? primaryOrg.id : "",
-      organizationName: primaryOrg ? primaryOrg.name : "",
-      workspaceId: primaryWs ? primaryWs.id : "",
-      workspaceName: primaryWs ? primaryWs.name : "",
-      createdAt: now,
-      expiresAt,
-    };
-
-    db.sessions[token] = session;
-    await saveDatabase();
+    const session = await prisma.session.create({
+      data: {
+        id: token,
+        token,
+        userId: user.id,
+        role: user.role,
+        organizationId: primaryOrg ? primaryOrg.id : "",
+        organizationName: primaryOrg ? primaryOrg.name : "",
+        workspaceId: primaryWs ? primaryWs.id : "",
+        workspaceName: primaryWs ? primaryWs.name : "",
+        expiresAt,
+      },
+    });
 
     setSessionCookie(res, token);
     const { passwordHash: _, ...safeUser } = user;
@@ -315,12 +274,12 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// Master Super-Admin Server-Verified Login (Requires valid server MASTER_ADMIN_SECRET)
+// Master Super-Admin Server-Verified Login
 app.post("/api/auth/master-login", async (req, res) => {
   try {
     const { email, masterSecret } = req.body;
     const requiredSecret = process.env.MASTER_ADMIN_SECRET;
-    
+
     if (!requiredSecret || !requiredSecret.trim()) {
       return res.status(500).json({ error: "Master admin secret not configured on server." });
     }
@@ -339,44 +298,43 @@ app.post("/api/auth/master-login", async (req, res) => {
 
     const normalizedEmail = (email || "").trim().toLowerCase();
 
-    let userId = db.usersByEmail[normalizedEmail];
-    let user = userId ? db.users[userId] : null;
+    let user = await prisma.user.findUnique({
+      where: { email: normalizedEmail || "admin@foundryos.tech" },
+    });
 
     if (!user) {
-      userId = `usr_master_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
-      user = {
-        id: userId,
-        email: normalizedEmail || (process.env.SECURITY_ALERT_EMAIL || "admin@foundryos.tech"),
-        name: "Master Platform Administrator",
-        role: "SUPER_ADMIN",
-        createdAt: new Date().toISOString(),
-      };
-      db.users[userId] = user;
-      db.usersByEmail[user.email] = userId;
-    } else {
-      user.role = "SUPER_ADMIN";
+      const userId = `usr_master_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+      user = await prisma.user.create({
+        data: {
+          id: userId,
+          email: normalizedEmail || (process.env.SECURITY_ALERT_EMAIL || "admin@foundryos.tech"),
+          name: "Master Platform Administrator",
+          role: "SUPER_ADMIN",
+        },
+      });
+    } else if (user.role !== "SUPER_ADMIN") {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { role: "SUPER_ADMIN" },
+      });
     }
 
     const token = generateSessionToken();
-    const now = new Date().toISOString();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    const session = {
-      token,
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: "SUPER_ADMIN",
-      organizationId: "org_foundry_hq_master",
-      organizationName: "FoundryOS Master Control Plane",
-      workspaceId: "ws_master_root",
-      workspaceName: "Master Platform Root",
-      createdAt: now,
-      expiresAt,
-    };
-
-    db.sessions[token] = session;
-    await saveDatabase();
+    const session = await prisma.session.create({
+      data: {
+        id: token,
+        token,
+        userId: user.id,
+        role: "SUPER_ADMIN",
+        organizationId: "org_foundry_hq_master",
+        organizationName: "FoundryOS Master Control Plane",
+        workspaceId: "ws_master_root",
+        workspaceName: "Master Platform Root",
+        expiresAt,
+      },
+    });
 
     setSessionCookie(res, token);
     const { passwordHash: _, ...safeUser } = user;
@@ -398,8 +356,8 @@ app.get("/api/auth/session", authenticateSession, (req, res) => {
   });
 });
 
-// Logout Endpoint (Clears server session & httpOnly cookie)
-app.post("/api/auth/logout", (req, res) => {
+// Logout Endpoint
+app.post("/api/auth/logout", async (req, res) => {
   let token = null;
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -409,112 +367,145 @@ app.post("/api/auth/logout", (req, res) => {
     token = cookies.foundry_session;
   }
 
-  if (token && db.sessions[token]) {
-    delete db.sessions[token];
-    saveDatabase();
+  if (token) {
+    await prisma.session.delete({ where: { token } }).catch(() => {});
   }
 
   clearSessionCookie(res);
   res.json({ ok: true, message: "Logged out successfully." });
 });
 
-// ─── 6. Isolated Demo Workspace Endpoint (Zero Admin Privileges) ────────────
-
+// Demo Sandbox Endpoint
 app.post("/api/auth/demo", async (_req, res) => {
   try {
     const demoToken = `demo_${generateSessionToken()}`;
-    const now = new Date().toISOString();
-    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(); // 2 hours
+    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
 
-    // Ensure Demo Org & Workspace exist in sandbox
-    if (!db.organizations["org_demo_sandbox"]) {
-      db.organizations["org_demo_sandbox"] = {
-        id: "org_demo_sandbox",
-        name: "Acme Corp (Demo Sandbox)",
-        ownerUserId: "usr_demo_sandbox",
-        industry: "technology_saas",
-        planTier: "starter",
-        createdAt: now,
-      };
+    // Ensure Demo User exists
+    let demoUser = await prisma.user.findUnique({
+      where: { email: "guest.demo@tacfos.tech" },
+    });
 
-      db.workspaces["org_demo_sandbox"] = [
-        {
+    if (!demoUser) {
+      demoUser = await prisma.user.create({
+        data: {
+          id: "usr_demo_sandbox",
+          email: "guest.demo@tacfos.tech",
+          name: "Demo Guest",
+          role: "DEMO_VIEWER",
+        },
+      });
+    }
+
+    // Ensure Demo Org & Workspace exist in database
+    let demoOrg = await prisma.organization.findUnique({
+      where: { id: "org_demo_sandbox" },
+    });
+
+    if (!demoOrg) {
+      demoOrg = await prisma.organization.create({
+        data: {
+          id: "org_demo_sandbox",
+          name: "Acme Corp (Demo Sandbox)",
+          ownerUserId: demoUser.id,
+          industry: "technology_saas",
+          planTier: "starter",
+        },
+      });
+    }
+
+    let demoWs = await prisma.workspace.findFirst({
+      where: { organizationId: "org_demo_sandbox" },
+    });
+
+    if (!demoWs) {
+      demoWs = await prisma.workspace.create({
+        data: {
           id: "ws_demo_sandbox",
           organizationId: "org_demo_sandbox",
           name: "Evaluation Sandbox",
           slug: "evaluation-sandbox",
-          createdAt: now,
-        }
-      ];
-
-      db.dnaModels["org_demo_sandbox"] = {
-        id: "dna_demo_sandbox",
-        businessId: "biz_demo_sandbox",
-        organizationId: "org_demo_sandbox",
-        schemaVersion: "1.0",
-        confidenceScore: 0.92,
-        companyIdentity: {
-          companyName: "Acme Corp (Demo Sandbox)",
-          industry: "technology_saas",
-          stage: "growth",
-          mission: "Demonstrating autonomous business operating system capabilities.",
-          uniqueValueProposition: "Sandboxed AI intelligence and automated website generation.",
-          coreValues: ["Safe Evaluation", "Zero Mutation", "Simulated Telemetry"],
         },
-        opportunityPillars: {
-          financialPain: "$850k annual evaluation benchmark.",
-          processGap: "Sample manual workflow friction for testing.",
-          stakeholderAlignment: "Demo Evaluation Sponsor",
-        },
-        brandVoice: {
-          primaryTone: "authoritative",
-          wordsToUse: ["autonomous", "intelligent", "verified", "sample"],
-          wordsToAvoid: ["production-leak", "admin-mutation"],
-        },
-        customerProfile: {
-          targetAudience: "Evaluating guests and prospective enterprise clients.",
-          primaryPainPoints: ["Testing functionality before signup"],
-          buyerPersonas: [
-            { name: "Prospective Buyer", role: "Evaluator", challenges: ["Feature validation"] }
-          ],
-        },
-        competitivePositioning: {
-          marketPosition: "Demo Evaluation Sandbox",
-          primaryCompetitors: ["Generic SaaS"],
-          keyDifferentiators: ["Strict sandbox isolation"],
-        },
-        websiteAnalysis: {
-          primaryUrl: "https://acme-demo.example.com",
-          colors: ["#6366f1", "#10b981", "#0f172a"],
-          fonts: ["Inter", "Space Grotesk"],
-        },
-        updatedAt: now,
-      };
+      });
     }
 
-    const demoSession = {
-      token: demoToken,
-      userId: "usr_demo_sandbox",
-      email: "guest.demo@tacfos.tech",
-      name: "Demo Guest",
-      role: "DEMO_VIEWER", // Restricted Read-Only Role
+    const demoDNAObj = {
+      id: "dna_demo_sandbox",
+      businessId: "biz_demo_sandbox",
       organizationId: "org_demo_sandbox",
-      organizationName: "Acme Corp (Demo Sandbox)",
-      workspaceId: "ws_demo_sandbox",
-      workspaceName: "Evaluation Sandbox",
-      createdAt: now,
-      expiresAt,
+      schemaVersion: "1.0",
+      confidenceScore: 0.92,
+      companyIdentity: {
+        companyName: "Acme Corp (Demo Sandbox)",
+        industry: "technology_saas",
+        stage: "growth",
+        mission: "Demonstrating autonomous business operating system capabilities.",
+        uniqueValueProposition: "Sandboxed AI intelligence and automated website generation.",
+        coreValues: ["Safe Evaluation", "Zero Mutation", "Simulated Telemetry"],
+      },
+      opportunityPillars: {
+        financialPain: "$850k annual evaluation benchmark.",
+        processGap: "Sample manual workflow friction for testing.",
+        stakeholderAlignment: "Demo Evaluation Sponsor",
+      },
+      brandVoice: {
+        primaryTone: "authoritative",
+        wordsToUse: ["autonomous", "intelligent", "verified", "sample"],
+        wordsToAvoid: ["production-leak", "admin-mutation"],
+      },
+      customerProfile: {
+        targetAudience: "Evaluating guests and prospective enterprise clients.",
+        primaryPainPoints: ["Testing functionality before signup"],
+        buyerPersonas: [
+          { name: "Prospective Buyer", role: "Evaluator", challenges: ["Feature validation"] },
+        ],
+      },
+      competitivePositioning: {
+        marketPosition: "Demo Evaluation Sandbox",
+        primaryCompetitors: ["Generic SaaS"],
+        keyDifferentiators: ["Strict sandbox isolation"],
+      },
+      websiteAnalysis: {
+        primaryUrl: "https://acme-demo.example.com",
+        colors: ["#6366f1", "#10b981", "#0f172a"],
+        fonts: ["Inter", "Space Grotesk"],
+      },
+      updatedAt: new Date().toISOString(),
     };
 
-    db.sessions[demoToken] = demoSession;
-    await saveDatabase();
+    await prisma.businessDNA.upsert({
+      where: { businessId: "biz_demo_sandbox" },
+      create: {
+        id: "dna_demo_sandbox",
+        organizationId: "org_demo_sandbox",
+        businessId: "biz_demo_sandbox",
+        dataJson: JSON.stringify(demoDNAObj),
+      },
+      update: {
+        dataJson: JSON.stringify(demoDNAObj),
+      },
+    });
+
+    const demoSession = await prisma.session.create({
+      data: {
+        id: demoToken,
+        token: demoToken,
+        userId: demoUser.id,
+        role: "DEMO_VIEWER",
+        organizationId: "org_demo_sandbox",
+        organizationName: "Acme Corp (Demo Sandbox)",
+        workspaceId: demoWs.id,
+        workspaceName: demoWs.name,
+        expiresAt,
+      },
+    });
 
     setSessionCookie(res, demoToken);
     res.json({
       session: demoSession,
-      organization: db.organizations["org_demo_sandbox"],
-      workspace: db.workspaces["org_demo_sandbox"][0],
-      businessDNA: db.dnaModels["org_demo_sandbox"],
+      organization: demoOrg,
+      workspace: demoWs,
+      businessDNA: demoDNAObj,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -530,7 +521,7 @@ function normalizeCompanyUrl(url) {
   return `https://${clean}`;
 }
 
-// ─── 7. Server-Side Tenant Endpoints (Strict ISOL-01 Enforcement) ───────────
+// ─── 5. Server-Side Tenant Endpoints (Strict ISOL-01 Enforcement) ───────────
 
 // Create Organization
 app.post("/api/tenant/organization", authenticateSession, async (req, res) => {
@@ -545,23 +536,24 @@ app.post("/api/tenant/organization", authenticateSession, async (req, res) => {
     }
 
     const orgId = `org_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
-    const now = new Date().toISOString();
+    const org = await prisma.organization.create({
+      data: {
+        id: orgId,
+        name: name.trim(),
+        ownerUserId: req.session.userId,
+        industry: industry || "technology_saas",
+        planTier: planTier || "growth",
+      },
+    });
 
-    const org = {
-      id: orgId,
-      name: name.trim(),
-      ownerUserId: req.session.userId,
-      industry: industry || "technology_saas",
-      planTier: planTier || "growth",
-      createdAt: now,
-    };
+    await prisma.session.update({
+      where: { token: req.session.token },
+      data: {
+        organizationId: org.id,
+        organizationName: org.name,
+      },
+    });
 
-    db.organizations[orgId] = org;
-    req.session.organizationId = org.id;
-    req.session.organizationName = org.name;
-    db.sessions[req.session.token] = req.session;
-
-    await saveDatabase();
     res.status(201).json(org);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -576,30 +568,27 @@ app.post("/api/tenant/workspace", authenticateSession, async (req, res) => {
     }
 
     const { organizationId, name, slug } = req.body;
-    const org = assertOrgOwnership(req, res, organizationId);
+    const org = await assertOrgOwnership(req, res, organizationId);
     if (!org) return;
 
     const wsId = `ws_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
-    const now = new Date().toISOString();
+    const ws = await prisma.workspace.create({
+      data: {
+        id: wsId,
+        organizationId,
+        name: (name || "").trim() || "Primary Workspace",
+        slug: (slug || name || "primary").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      },
+    });
 
-    const ws = {
-      id: wsId,
-      organizationId,
-      name: (name || "").trim() || "Primary Workspace",
-      slug: (slug || name || "primary").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      createdAt: now,
-    };
+    await prisma.session.update({
+      where: { token: req.session.token },
+      data: {
+        workspaceId: ws.id,
+        workspaceName: ws.name,
+      },
+    });
 
-    if (!db.workspaces[organizationId]) {
-      db.workspaces[organizationId] = [];
-    }
-    db.workspaces[organizationId].push(ws);
-
-    req.session.workspaceId = ws.id;
-    req.session.workspaceName = ws.name;
-    db.sessions[req.session.token] = req.session;
-
-    await saveDatabase();
     res.status(201).json(ws);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -627,10 +616,10 @@ app.post("/api/tenant/dna", authenticateSession, async (req, res) => {
       uvp,
       processGap,
       financialPain,
-      targetAudience
+      targetAudience,
     } = req.body;
 
-    const org = assertOrgOwnership(req, res, organizationId);
+    const org = await assertOrgOwnership(req, res, organizationId);
     if (!org) return;
 
     const cleanUrl = normalizeCompanyUrl(websiteUrl);
@@ -648,28 +637,45 @@ app.post("/api/tenant/dna", authenticateSession, async (req, res) => {
     const cleanTargetAudience = (targetAudience || "Modern enterprise executives, operations directors, and growing commercial teams.").trim();
 
     const businessId = `biz_${organizationId.replace(/^org_/, "")}`;
-    const now = new Date().toISOString();
+    const now = new Date();
 
-    const companyProfile = {
-      organizationId,
-      workspaceId: workspaceId || "",
-      businessId,
-      companyName: cleanName,
-      legalCompanyName: legalName,
-      operatingBrand: opBrand,
-      productName: prodName,
-      corePlatform: platName,
-      websiteUrl: cleanUrl,
-      industry: cleanIndustry,
-      mission: cleanMission,
-      uvp: cleanUvp,
-      processGap: cleanProcessGap,
-      financialPain: cleanFinancialPain,
-      targetAudience: cleanTargetAudience,
-      updatedAt: now,
-    };
+    const companyProfile = await prisma.companyProfile.upsert({
+      where: { organizationId },
+      create: {
+        organizationId,
+        workspaceId: workspaceId || "",
+        businessId,
+        companyName: cleanName,
+        legalCompanyName: legalName,
+        operatingBrand: opBrand,
+        productName: prodName,
+        corePlatform: platName,
+        websiteUrl: cleanUrl,
+        industry: cleanIndustry,
+        mission: cleanMission,
+        uvp: cleanUvp,
+        processGap: cleanProcessGap,
+        financialPain: cleanFinancialPain,
+        targetAudience: cleanTargetAudience,
+      },
+      update: {
+        workspaceId: workspaceId || "",
+        companyName: cleanName,
+        legalCompanyName: legalName,
+        operatingBrand: opBrand,
+        productName: prodName,
+        corePlatform: platName,
+        websiteUrl: cleanUrl,
+        industry: cleanIndustry,
+        mission: cleanMission,
+        uvp: cleanUvp,
+        processGap: cleanProcessGap,
+        financialPain: cleanFinancialPain,
+        targetAudience: cleanTargetAudience,
+      },
+    });
 
-    const businessDNA = {
+    const businessDNAObj = {
       id: `dna_${organizationId.replace(/^org_/, "")}`,
       businessId,
       organizationId,
@@ -715,31 +721,47 @@ app.post("/api/tenant/dna", authenticateSession, async (req, res) => {
         colors: ["#4f46e5", "#10b981", "#0f172a", "#6366f1", "#38bdf8"],
         fonts: ["Inter", "Space Grotesk", "JetBrains Mono"],
       },
-      updatedAt: now,
+      updatedAt: now.toISOString(),
     };
 
-    db.companyProfiles[organizationId] = companyProfile;
-    db.dnaModels[organizationId] = businessDNA;
+    const businessDNA = await prisma.businessDNA.upsert({
+      where: { organizationId },
+      create: {
+        id: `dna_${organizationId.replace(/^org_/, "")}`,
+        organizationId,
+        businessId,
+        dataJson: JSON.stringify(businessDNAObj),
+      },
+      update: {
+        dataJson: JSON.stringify(businessDNAObj),
+      },
+    });
 
-    await saveDatabase();
-    res.status(201).json({ companyProfile, businessDNA });
+    res.status(201).json({ companyProfile, businessDNA: businessDNAObj });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get Business DNA (Strictly verified on server)
-app.get("/api/tenant/dna/:organizationId", authenticateSession, (req, res) => {
+// Get Business DNA
+app.get("/api/tenant/dna/:organizationId", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
-  const org = assertOrgOwnership(req, res, organizationId);
+  const org = await assertOrgOwnership(req, res, organizationId);
   if (!org) return;
 
-  const dna = db.dnaModels[organizationId];
+  const dna = await prisma.businessDNA.findUnique({
+    where: { organizationId },
+  });
+
   if (!dna) {
     return res.status(404).json({ error: `Business DNA not found for organization '${organizationId}'.` });
   }
 
-  res.json(dna);
+  try {
+    res.json(JSON.parse(dna.dataJson));
+  } catch {
+    res.json(dna);
+  }
 });
 
 // Update Business DNA
@@ -750,197 +772,340 @@ app.put("/api/tenant/dna/:organizationId", authenticateSession, async (req, res)
     }
 
     const { organizationId } = req.params;
-    const org = assertOrgOwnership(req, res, organizationId);
+    const org = await assertOrgOwnership(req, res, organizationId);
     if (!org) return;
 
-    const existing = db.dnaModels[organizationId];
+    const existing = await prisma.businessDNA.findUnique({
+      where: { organizationId },
+    });
+
     if (!existing) {
       return res.status(404).json({ error: `Business DNA not found for organization '${organizationId}'.` });
     }
 
-    const updated = {
-      ...existing,
+    let existingObj = {};
+    try {
+      existingObj = JSON.parse(existing.dataJson);
+    } catch {}
+
+    const updatedObj = {
+      ...existingObj,
       ...req.body,
       updatedAt: new Date().toISOString(),
     };
 
-    db.dnaModels[organizationId] = updated;
-    await saveDatabase();
-    res.json(updated);
+    const updated = await prisma.businessDNA.update({
+      where: { organizationId },
+      data: {
+        dataJson: JSON.stringify(updatedObj),
+      },
+    });
+
+    res.json(updatedObj);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ─── 8. Authoritative Organization System of Record Endpoints ───────────────
+// ─── 6. Authoritative Organization System of Record Endpoints ───────────────
 
-// 8.1 Full Organization State Bundle (Single round-trip bootstrap)
-app.get("/api/tenant/organization/:organizationId/state", authenticateSession, (req, res) => {
+// 6.1 Full Organization State Bundle
+app.get("/api/tenant/organization/:organizationId/state", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
-  const org = assertOrgOwnership(req, res, organizationId);
+  const org = await assertOrgOwnership(req, res, organizationId);
   if (!org) return;
+
+  const [
+    workspaces,
+    profile,
+    dnaRecord,
+    insights,
+    recommendations,
+    artifacts,
+    agentTasks,
+    approvals,
+    auditEvents,
+  ] = await Promise.all([
+    prisma.workspace.findMany({ where: { organizationId } }),
+    prisma.companyProfile.findUnique({ where: { organizationId } }),
+    prisma.businessDNA.findUnique({ where: { organizationId } }),
+    prisma.insightRecord.findMany({ where: { organizationId }, orderBy: { createdAt: "desc" }, take: 100 }),
+    prisma.recommendationRecord.findMany({ where: { organizationId }, orderBy: { createdAt: "desc" }, take: 100 }),
+    prisma.artifactRecord.findMany({ where: { organizationId }, orderBy: { createdAt: "desc" }, take: 100 }),
+    prisma.agentTaskRecord.findMany({ where: { organizationId }, orderBy: { createdAt: "desc" }, take: 100 }),
+    prisma.approvalRequest.findMany({ where: { organizationId }, orderBy: { createdAt: "desc" } }),
+    prisma.auditEvent.findMany({ where: { organizationId }, orderBy: { timestamp: "desc" }, take: 500 }),
+  ]);
+
+  let businessDNA = null;
+  if (dnaRecord) {
+    try {
+      businessDNA = JSON.parse(dnaRecord.dataJson);
+    } catch {}
+  }
 
   res.json({
     organization: org,
-    companyProfile: db.companyProfiles[organizationId] || null,
-    businessDNA: db.dnaModels[organizationId] || null,
-    workspaces: db.workspaces[organizationId] || [],
-    insights: db.insights[organizationId] || [],
-    recommendations: db.recommendations[organizationId] || [],
-    artifacts: db.artifacts[organizationId] || [],
-    agentTasks: db.agentTasks[organizationId] || [],
-    approvals: db.approvals[organizationId] || [],
-    executions: db.executions[organizationId] || [],
-    auditEvents: db.auditEvents[organizationId] || [],
+    companyProfile: profile || null,
+    businessDNA,
+    workspaces,
+    insights: insights.map((i) => {
+      try {
+        return { id: i.id, organizationId: i.organizationId, title: i.title, summary: i.summary, category: i.category, impact: i.impact, createdAt: i.createdAt.toISOString(), ...JSON.parse(i.dataJson || "{}") };
+      } catch {
+        return i;
+      }
+    }),
+    recommendations: recommendations.map((r) => {
+      try {
+        return { id: r.id, organizationId: r.organizationId, title: r.title, description: r.description, priority: r.priority, status: r.status, createdAt: r.createdAt.toISOString(), ...JSON.parse(r.dataJson || "{}") };
+      } catch {
+        return r;
+      }
+    }),
+    artifacts: artifacts.map((a) => {
+      try {
+        return { id: a.id, organizationId: a.organizationId, title: a.title, type: a.type, content: a.content, createdAt: a.createdAt.toISOString(), ...JSON.parse(a.dataJson || "{}") };
+      } catch {
+        return a;
+      }
+    }),
+    agentTasks: agentTasks.map((t) => {
+      try {
+        return { id: t.id, organizationId: t.organizationId, agentName: t.agentName, taskTitle: t.taskTitle, status: t.status, createdAt: t.createdAt.toISOString(), ...JSON.parse(t.dataJson || "{}") };
+      } catch {
+        return t;
+      }
+    }),
+    approvals,
+    executions: [],
+    auditEvents: auditEvents.map((e) => {
+      try {
+        return { id: e.id, organizationId: e.organizationId, businessId: e.businessId, action: e.action, changedBy: e.changedBy, timestamp: e.timestamp.toISOString(), details: JSON.parse(e.detailsJson) };
+      } catch {
+        return e;
+      }
+    }),
   });
 });
 
-// 8.2 Insights (Sales, Marketing, Operations, Security)
-app.get("/api/tenant/organization/:organizationId/insights", authenticateSession, (req, res) => {
+// 6.2 Insights
+app.get("/api/tenant/organization/:organizationId/insights", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
-  const org = assertOrgOwnership(req, res, organizationId);
+  const org = await assertOrgOwnership(req, res, organizationId);
   if (!org) return;
-  res.json(db.insights[organizationId] || []);
+
+  const records = await prisma.insightRecord.findMany({
+    where: { organizationId },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+
+  res.json(records.map((i) => {
+    try {
+      return { id: i.id, organizationId: i.organizationId, title: i.title, summary: i.summary, category: i.category, impact: i.impact, createdAt: i.createdAt.toISOString(), ...JSON.parse(i.dataJson || "{}") };
+    } catch {
+      return i;
+    }
+  }));
 });
 
 app.post("/api/tenant/organization/:organizationId/insights", authenticateSession, async (req, res) => {
   try {
     const { organizationId } = req.params;
-    const org = assertOrgOwnership(req, res, organizationId);
+    const org = await assertOrgOwnership(req, res, organizationId);
     if (!org) return;
 
-    const list = db.insights[organizationId] || [];
-    const item = {
-      id: req.body.id || `ins_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      ...req.body,
-      organizationId,
-      createdAt: req.body.createdAt || new Date().toISOString(),
-    };
-    list.unshift(item);
-    db.insights[organizationId] = list.slice(0, 100);
-    await saveDatabase();
-    res.status(201).json(item);
+    const id = req.body.id || `ins_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+    const created = await prisma.insightRecord.create({
+      data: {
+        id,
+        organizationId,
+        title: req.body.title || "Operational Insight",
+        summary: req.body.summary || "",
+        category: req.body.category || "operations",
+        impact: req.body.impact || "medium",
+        dataJson: JSON.stringify(req.body),
+      },
+    });
+
+    res.status(201).json({ id: created.id, ...req.body, organizationId, createdAt: created.createdAt.toISOString() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// 8.3 Recommendations (Strategies, CRO, Positioning)
-app.get("/api/tenant/organization/:organizationId/recommendations", authenticateSession, (req, res) => {
+// 6.3 Recommendations
+app.get("/api/tenant/organization/:organizationId/recommendations", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
-  const org = assertOrgOwnership(req, res, organizationId);
+  const org = await assertOrgOwnership(req, res, organizationId);
   if (!org) return;
-  res.json(db.recommendations[organizationId] || []);
+
+  const records = await prisma.recommendationRecord.findMany({
+    where: { organizationId },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+
+  res.json(records.map((r) => {
+    try {
+      return { id: r.id, organizationId: r.organizationId, title: r.title, description: r.description, priority: r.priority, status: r.status, createdAt: r.createdAt.toISOString(), ...JSON.parse(r.dataJson || "{}") };
+    } catch {
+      return r;
+    }
+  }));
 });
 
 app.post("/api/tenant/organization/:organizationId/recommendations", authenticateSession, async (req, res) => {
   try {
     const { organizationId } = req.params;
-    const org = assertOrgOwnership(req, res, organizationId);
+    const org = await assertOrgOwnership(req, res, organizationId);
     if (!org) return;
 
-    const list = db.recommendations[organizationId] || [];
-    const item = {
-      id: req.body.id || `rec_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      ...req.body,
-      organizationId,
-      createdAt: req.body.createdAt || new Date().toISOString(),
-    };
-    list.unshift(item);
-    db.recommendations[organizationId] = list.slice(0, 100);
-    await saveDatabase();
-    res.status(201).json(item);
+    const id = req.body.id || `rec_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+    const created = await prisma.recommendationRecord.create({
+      data: {
+        id,
+        organizationId,
+        title: req.body.title || "Strategic Recommendation",
+        description: req.body.description || "",
+        priority: req.body.priority || "high",
+        status: req.body.status || "OPEN",
+        dataJson: JSON.stringify(req.body),
+      },
+    });
+
+    res.status(201).json({ id: created.id, ...req.body, organizationId, createdAt: created.createdAt.toISOString() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// 8.4 Generated Artifacts (Copy, HTML Websites, Proposals, Briefs)
-app.get("/api/tenant/organization/:organizationId/artifacts", authenticateSession, (req, res) => {
+// 6.4 Artifacts
+app.get("/api/tenant/organization/:organizationId/artifacts", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
-  const org = assertOrgOwnership(req, res, organizationId);
+  const org = await assertOrgOwnership(req, res, organizationId);
   if (!org) return;
-  res.json(db.artifacts[organizationId] || []);
+
+  const records = await prisma.artifactRecord.findMany({
+    where: { organizationId },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+
+  res.json(records.map((a) => {
+    try {
+      return { id: a.id, organizationId: a.organizationId, title: a.title, type: a.type, content: a.content, createdAt: a.createdAt.toISOString(), ...JSON.parse(a.dataJson || "{}") };
+    } catch {
+      return a;
+    }
+  }));
 });
 
 app.post("/api/tenant/organization/:organizationId/artifacts", authenticateSession, async (req, res) => {
   try {
     const { organizationId } = req.params;
-    const org = assertOrgOwnership(req, res, organizationId);
+    const org = await assertOrgOwnership(req, res, organizationId);
     if (!org) return;
 
-    const list = db.artifacts[organizationId] || [];
-    const item = {
-      id: req.body.id || `art_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      ...req.body,
-      organizationId,
-      createdAt: req.body.createdAt || new Date().toISOString(),
-    };
-    list.unshift(item);
-    db.artifacts[organizationId] = list.slice(0, 100);
-    await saveDatabase();
-    res.status(201).json(item);
+    const id = req.body.id || `art_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+    const created = await prisma.artifactRecord.create({
+      data: {
+        id,
+        organizationId,
+        title: req.body.title || "Generated Artifact",
+        type: req.body.type || "document",
+        content: req.body.content || "",
+        dataJson: JSON.stringify(req.body),
+      },
+    });
+
+    res.status(201).json({ id: created.id, ...req.body, organizationId, createdAt: created.createdAt.toISOString() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// 8.5 Agent Tasks
-app.get("/api/tenant/organization/:organizationId/agent-tasks", authenticateSession, (req, res) => {
+// 6.5 Agent Tasks
+app.get("/api/tenant/organization/:organizationId/agent-tasks", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
-  const org = assertOrgOwnership(req, res, organizationId);
+  const org = await assertOrgOwnership(req, res, organizationId);
   if (!org) return;
-  res.json(db.agentTasks[organizationId] || []);
+
+  const records = await prisma.agentTaskRecord.findMany({
+    where: { organizationId },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+
+  res.json(records.map((t) => {
+    try {
+      return { id: t.id, organizationId: t.organizationId, agentName: t.agentName, taskTitle: t.taskTitle, status: t.status, createdAt: t.createdAt.toISOString(), ...JSON.parse(t.dataJson || "{}") };
+    } catch {
+      return t;
+    }
+  }));
 });
 
 app.post("/api/tenant/organization/:organizationId/agent-tasks", authenticateSession, async (req, res) => {
   try {
     const { organizationId } = req.params;
-    const org = assertOrgOwnership(req, res, organizationId);
+    const org = await assertOrgOwnership(req, res, organizationId);
     if (!org) return;
 
-    const list = db.agentTasks[organizationId] || [];
-    const item = {
-      id: req.body.id || `task_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      ...req.body,
-      organizationId,
-      createdAt: req.body.createdAt || new Date().toISOString(),
-    };
-    list.unshift(item);
-    db.agentTasks[organizationId] = list.slice(0, 100);
-    await saveDatabase();
-    res.status(201).json(item);
+    const id = req.body.id || `task_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+    const created = await prisma.agentTaskRecord.create({
+      data: {
+        id,
+        organizationId,
+        agentName: req.body.agentName || "GeneralAgent",
+        taskTitle: req.body.taskTitle || "Automated Task",
+        status: req.body.status || "PENDING",
+        dataJson: JSON.stringify(req.body),
+      },
+    });
+
+    res.status(201).json({ id: created.id, ...req.body, organizationId, createdAt: created.createdAt.toISOString() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// 8.6 Human Approvals
-app.get("/api/tenant/organization/:organizationId/approvals", authenticateSession, (req, res) => {
+// 6.6 Human Approvals
+app.get("/api/tenant/organization/:organizationId/approvals", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
-  const org = assertOrgOwnership(req, res, organizationId);
+  const org = await assertOrgOwnership(req, res, organizationId);
   if (!org) return;
-  res.json(db.approvals[organizationId] || []);
+
+  const records = await prisma.approvalRequest.findMany({
+    where: { organizationId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  res.json(records);
 });
 
 app.post("/api/tenant/organization/:organizationId/approvals", authenticateSession, async (req, res) => {
   try {
     const { organizationId } = req.params;
-    const org = assertOrgOwnership(req, res, organizationId);
+    const org = await assertOrgOwnership(req, res, organizationId);
     if (!org) return;
 
-    const list = db.approvals[organizationId] || [];
-    const item = {
-      id: req.body.id || `appr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      ...req.body,
-      organizationId,
-      status: req.body.status || 'PENDING',
-      createdAt: req.body.createdAt || new Date().toISOString(),
-    };
-    list.unshift(item);
-    db.approvals[organizationId] = list;
-    await saveDatabase();
-    res.status(201).json(item);
+    const id = req.body.id || `appr_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+    const created = await prisma.approvalRequest.create({
+      data: {
+        id,
+        organizationId,
+        businessId: req.body.businessId || "",
+        workflowRunId: req.body.workflowRunId || "",
+        actionTitle: req.body.actionTitle || "Action Approval Request",
+        description: req.body.description || "",
+        status: req.body.status || "PENDING",
+        proposedByAgent: req.body.proposedByAgent || "Agent",
+      },
+    });
+
+    res.status(201).json(created);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -949,58 +1114,96 @@ app.post("/api/tenant/organization/:organizationId/approvals", authenticateSessi
 app.patch("/api/tenant/organization/:organizationId/approvals/:approvalId", authenticateSession, async (req, res) => {
   try {
     const { organizationId, approvalId } = req.params;
-    const org = assertOrgOwnership(req, res, organizationId);
+    const org = await assertOrgOwnership(req, res, organizationId);
     if (!org) return;
 
-    const list = db.approvals[organizationId] || [];
-    const item = list.find((a) => a.id === approvalId);
-    if (!item) {
+    const existing = await prisma.approvalRequest.findUnique({
+      where: { id: approvalId },
+    });
+
+    if (!existing || existing.organizationId !== organizationId) {
       return res.status(404).json({ error: `Approval item '${approvalId}' not found.` });
     }
 
-    item.status = req.body.status || item.status;
-    item.reviewedBy = req.user.email;
-    item.reviewedAt = new Date().toISOString();
-    item.reviewNotes = req.body.reviewNotes || item.reviewNotes;
+    const updated = await prisma.approvalRequest.update({
+      where: { id: approvalId },
+      data: {
+        status: req.body.status || existing.status,
+        reviewedBy: req.user.email,
+        reviewNote: req.body.reviewNotes || req.body.reviewNote || existing.reviewNote,
+        resolvedAt: new Date(),
+      },
+    });
 
-    await saveDatabase();
-    res.json(item);
+    res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// 8.7 Audit Events
-app.get("/api/tenant/organization/:organizationId/audit-events", authenticateSession, (req, res) => {
+// 6.7 Audit Events
+app.get("/api/tenant/organization/:organizationId/audit-events", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
-  const org = assertOrgOwnership(req, res, organizationId);
+  const org = await assertOrgOwnership(req, res, organizationId);
   if (!org) return;
-  res.json(db.auditEvents[organizationId] || []);
+
+  const records = await prisma.auditEvent.findMany({
+    where: { organizationId },
+    orderBy: { timestamp: "desc" },
+    take: 500,
+  });
+
+  res.json(records.map((e) => {
+    try {
+      return {
+        id: e.id,
+        organizationId: e.organizationId,
+        businessId: e.businessId,
+        action: e.action,
+        changedBy: e.changedBy,
+        timestamp: e.timestamp.toISOString(),
+        details: JSON.parse(e.detailsJson),
+      };
+    } catch {
+      return e;
+    }
+  }));
 });
 
 app.post("/api/tenant/organization/:organizationId/audit-events", authenticateSession, async (req, res) => {
   try {
     const { organizationId } = req.params;
-    const org = assertOrgOwnership(req, res, organizationId);
+    const org = await assertOrgOwnership(req, res, organizationId);
     if (!org) return;
 
-    const list = db.auditEvents[organizationId] || [];
-    const item = {
-      id: req.body.id || `evt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      ...req.body,
-      organizationId,
-      timestamp: req.body.timestamp || new Date().toISOString(),
-    };
-    list.unshift(item);
-    db.auditEvents[organizationId] = list.slice(0, 500);
-    await saveDatabase();
-    res.status(201).json(item);
+    const id = req.body.id || `evt_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+    const created = await prisma.auditEvent.create({
+      data: {
+        id,
+        organizationId,
+        businessId: req.body.businessId || "",
+        action: req.body.action || "SYSTEM_AUDIT",
+        changedBy: req.body.changedBy || req.user.email,
+        detailsJson: JSON.stringify(req.body.details || req.body),
+        timestamp: new Date(req.body.timestamp || Date.now()),
+      },
+    });
+
+    res.status(201).json({
+      id: created.id,
+      organizationId: created.organizationId,
+      businessId: created.businessId,
+      action: created.action,
+      changedBy: created.changedBy,
+      timestamp: created.timestamp.toISOString(),
+      details: req.body.details || req.body,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ─── 9. LLM Proxy Route (NVIDIA NIM Primary, Ollama Fallback) ──────────────
+// ─── 7. LLM Proxy Route (NVIDIA NIM Primary, Ollama Fallback) ──────────────
 
 const OLLAMA_URL = process.env.OLLAMA_HOST ? `${process.env.OLLAMA_HOST}/api/chat` : "http://localhost:11434/api/chat";
 
@@ -1017,7 +1220,7 @@ app.post("/api/chat", async (req, res) => {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${NVIDIA_KEY}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           model,
@@ -1060,8 +1263,8 @@ app.post("/api/chat", async (req, res) => {
             message: {
               role: "assistant",
               content: data.message?.content || data.response || "",
-            }
-          }
+            },
+          },
         ],
         provider: "ollama-local",
       });
@@ -1078,11 +1281,23 @@ app.post("/api/chat", async (req, res) => {
   });
 });
 
-// ─── 9. Startup & Initialization ───────────────────────────────────────────
+// ─── 8. Startup & Server Initialization ─────────────────────────────────────
 
 const PORT = process.env.PORT || 8787;
-initDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`[TACF API Server] Listening on :${PORT} with persistent server database.`);
-  });
-});
+
+async function startServer() {
+  try {
+    // Connect and verify database connection
+    await prisma.$connect();
+    console.log("[Prisma] SQLite Database connected successfully.");
+
+    app.listen(PORT, () => {
+      console.log(`[TACF API Server] Listening on :${PORT} with Prisma SQLite database.`);
+    });
+  } catch (err) {
+    console.error("[Prisma] Database connection error:", err);
+    process.exit(1);
+  }
+}
+
+startServer();

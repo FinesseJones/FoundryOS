@@ -27,8 +27,7 @@
 | **LLM Provider Gateway (`llm-provider-factory.ts`)** | `REAL / CONDITIONAL` | Dispatches to NVIDIA NIM or Ollama HTTP endpoints with structured JSON parsing; fallback strings on offline. | Requires `$NVIDIA_API_KEY` or local Ollama. |
 | **SaaS API Keys & State (`api-keys.ts`, `customer-*.ts`)** | `MOCK (IN-MEMORY)` | In-memory `Map` stores for API keys (`bf_live_...`), customer state, and notifications. | Migrate to database tables. |
 | **Docker & Deployment (`docker-compose.yml`, `Caddyfile`, etc.)** | `REAL` | Production Docker Compose, Caddy reverse proxy, Nginx SPA config, multi-stage Dockerfile. | Shipped & running on VPS (`2.25.113.26`). |
-| **Telecom & Payment APIs (Twilio, Stripe Live)** | `MOCK / ROADMAP` | In-memory state machines in `/inbox` and `/payments`. No live keys or webhook handlers. | **TODO: needs Twilio credentials & Stripe secret key**. |
-| **Prisma ORM Schema (`prisma/schema.prisma`)** | `ROADMAP` | Defined SQLite/PostgreSQL schema but never imported by `server.js`. | **TODO: needs Prisma connected to server.js**. |
+| **Prisma ORM & SQLite Database (`prisma/schema.prisma`)** | `REAL` | PrismaClient wired into `llm-proxy/server.js` and `prisma-repositories.ts` as the authoritative single system of record with server-side `organizationId` scoping. | Shipped & verified. |
 
 ---
 

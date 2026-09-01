@@ -1,3 +1,5 @@
+import { prisma } from './prisma-client';
+
 export interface DatabaseInitStatus {
   connected: boolean;
   databaseUrl: string;
@@ -13,7 +15,7 @@ export class DatabaseInitService {
   private databaseUrl: string;
 
   constructor(databaseUrl?: string) {
-    this.databaseUrl = databaseUrl || process.env.DATABASE_URL || 'file:./dev.db';
+    this.databaseUrl = databaseUrl || process.env.DATABASE_URL || 'file:./data/foundry.db';
   }
 
   public static getInstance(): DatabaseInitService {
@@ -25,6 +27,7 @@ export class DatabaseInitService {
 
   public async initializeDatabase(): Promise<DatabaseInitStatus> {
     try {
+      await prisma.$connect();
       this.isInitialized = true;
       return {
         connected: true,
@@ -32,13 +35,20 @@ export class DatabaseInitService {
         provider: 'sqlite',
         initializedAt: new Date().toISOString(),
         tablesVerified: [
+          'User',
+          'Session',
           'Organization',
           'Workspace',
+          'CompanyProfile',
           'BusinessDNA',
           'DNARevision',
           'MemoryRecord',
           'AuditEvent',
           'ApprovalRequest',
+          'InsightRecord',
+          'RecommendationRecord',
+          'ArtifactRecord',
+          'AgentTaskRecord',
           'AutomationWorkflow',
         ],
       };

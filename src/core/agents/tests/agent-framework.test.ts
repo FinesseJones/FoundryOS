@@ -206,6 +206,7 @@ test('PublishingAgent stages content and enforces human approval gating', async 
 
   assert.equal(result.agentRole, 'publishing');
   assert.equal(result.outputData.publishingStatus, 'staged');
+  assert.equal(result.outputData.requiresHumanApproval, true);
   assert.ok(result.outputData.scheduledTime);
   assert.ok(typeof result.outputData.channelOptimizedContent === 'string' && (result.outputData.channelOptimizedContent as string).length > 0);
   assert.ok(['COMPLIANT', 'NEEDS_REVISION', 'NON_COMPLIANT'].includes(result.outputData.complianceStatus as string));

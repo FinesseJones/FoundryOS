@@ -16,28 +16,35 @@ beforeEach(() => {
     const company = isCustom ? 'GlobalLogistics Enterprise' : 'Apex Cloud Solutions';
     const domain = isCustom ? 'https://globallogistics.com' : 'https://apexcloud.io';
 
+    const countMatch =
+      prompt.match(/Prospect Count:\s*(\d+)/i) ||
+      prompt.match(/(\d+)\s+prospective enterprise leads/i) ||
+      prompt.match(/Prospect\s+(\d+)/i) ||
+      prompt.match(/Identify and qualify\s+(\d+)/i);
+    const count = countMatch ? parseInt(countMatch[1], 10) : 1;
+
+    const leads = Array.from({ length: count }, (_, idx) => ({
+      id: 101 + idx,
+      companyName: count > 1 ? `${company} ${idx + 1}` : company,
+      website: domain,
+      primaryContact: 'Sarah Jenkins (VP Growth)',
+      currentStage: 'Discovery' as const,
+      status: 'High Priority' as const,
+      pillarFinancialPain: '$1.2M in annual operational drag and pipeline leaks',
+      pillarProcessGap: 'Legacy monolithic architecture with slow onboarding',
+      pillarStakeholderAlignment: 'CMO & VP Product (Identified Sponsor)',
+      industry: 'SAAS',
+      estimatedRevenueLoss: '$1.2M/yr',
+      opportunityScore: 94,
+      isAiSourced: true,
+      discoveredAt: new Date().toISOString(),
+    }));
+
     const text = JSON.stringify({
       industry: 'SAAS',
       targetRegion: 'National',
-      discoveredLeads: [
-        {
-          id: 101,
-          companyName: company,
-          website: domain,
-          primaryContact: 'Sarah Jenkins (VP Growth)',
-          currentStage: 'Discovery',
-          status: 'High Priority',
-          pillarFinancialPain: '$1.2M in annual operational drag and pipeline leaks',
-          pillarProcessGap: 'Legacy monolithic architecture with slow onboarding',
-          pillarStakeholderAlignment: 'CMO & VP Product (Identified Sponsor)',
-          industry: 'SAAS',
-          estimatedRevenueLoss: '$1.2M/yr',
-          opportunityScore: 94,
-          isAiSourced: true,
-          discoveredAt: new Date().toISOString(),
-        }
-      ],
-      executiveProspectingSummary: 'Discovered high-priority enterprise opportunity.',
+      discoveredLeads: leads,
+      executiveProspectingSummary: `Discovered ${count} high-priority enterprise opportunities.`,
     });
 
     return {
@@ -69,7 +76,7 @@ test('LeadAgent discovers leads across industries with 3 Opportunity Pillars', a
   const leadAgent = new LeadAgent(contextBuilder);
 
   const saasLeads = await leadAgent.discoverLeads({ industry: 'saas', batchSize: 2 });
-  assert.ok(saasLeads.length > 0);
+  assert.equal(saasLeads.length, 2);
   assert.ok(saasLeads[0].companyName.length > 0);
   assert.ok(saasLeads[0].pillarFinancialPain.includes('$') || saasLeads[0].pillarFinancialPain.length > 10);
   assert.ok(saasLeads[0].pillarProcessGap.length > 5);
@@ -77,7 +84,7 @@ test('LeadAgent discovers leads across industries with 3 Opportunity Pillars', a
   assert.equal(saasLeads[0].isAiSourced, true);
 
   const legalLeads = await leadAgent.discoverLeads({ industry: 'legal', batchSize: 1 });
-  assert.ok(legalLeads.length > 0);
+  assert.equal(legalLeads.length, 1);
   assert.ok(legalLeads[0].companyName.length > 0);
   assert.ok(legalLeads[0].pillarFinancialPain.length > 0);
 });

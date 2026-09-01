@@ -7,29 +7,104 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  passwordHash String?
+  name         String
+  role         String       @default("TENANT_MEMBER")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  sessions     Session[]
+}
+
+model Session {
+  id               String   @id // Session token
+  token            String   @unique
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId   String
+  organizationName String
+  workspaceId      String?
+  workspaceName    String?
+  role             String
+  createdAt        DateTime @default(now())
+  expiresAt        DateTime
+}
+
 model Organization {
-  id         String      @id @default(uuid())
-  name       String
-  planTier   String      @default("growth")
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  workspaces Workspace[]
+  id                   String         @id @default(uuid())
+  name                 String
+  ownerUserId          String?
+  industry             String         @default("technology_saas")
+  planTier             String         @default("growth")
+  stripeCustomerId     String?        @unique
+  stripeSubscriptionId String?        @unique
+  subscriptionStatus   String         @default("inactive")
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  workspaces           Workspace[]
+  subscriptions        Subscription[]
+}
+
+model Subscription {
+  id                   String       @id @default(uuid())
+  organizationId       String
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String
+  stripeSubscriptionId String       @unique
+  stripePriceId        String
+  planTier             String
+  status               String
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean      @default(false)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([stripeCustomerId])
 }
 
 model Workspace {
   id             String       @id @default(uuid())
   organizationId String
   name           String
+  slug           String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
+model CompanyProfile {
+  id                  String   @id @default(uuid())
+  organizationId      String   @unique
+  workspaceId         String?
+  businessId          String   @unique
+  companyName         String
+  legalCompanyName   String?
+  operatingBrand      String?
+  productName         String?
+  corePlatform        String?
+  websiteUrl          String?
+  industry            String?
+  mission             String?
+  uvp                 String?
+  processGap          String?
+  financialPain       String?
+  targetAudience      String?
+  brandTone           String?
+  targetMarket        String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
 model BusinessDNA {
   id             String   @id @default(uuid())
-  organizationId String
+  organizationId String   @unique
   businessId     String   @unique
-  dataJson       String // Serialized BusinessDNA JSON object
+  dataJson       String   // Serialized BusinessDNA JSON object
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -40,7 +115,7 @@ model DNARevision {
   businessId     String
   versionNumber  Int
   diffSummary    String
-  snapshotJson   String // Serialized BusinessDNA snapshot JSON
+  snapshotJson   String   // Serialized BusinessDNA snapshot JSON
   createdBy      String
   createdAt      DateTime @default(now())
 }
@@ -49,7 +124,7 @@ model MemoryRecord {
   id             String   @id @default(uuid())
   organizationId String
   businessId     String
-  category       String // brand, campaign, customer, decision, security, etc.
+  category       String   // brand, campaign, customer, decision, security, etc.
   content        String
   importance     Float
   relevance      Float
@@ -59,26 +134,68 @@ model MemoryRecord {
 model AuditEvent {
   id             String   @id @default(uuid())
   organizationId String
-  businessId     String
+  businessId     String?
   action         String
   changedBy      String
-  detailsJson    String // Serialized audit details JSON
+  detailsJson    String   // Serialized audit details JSON
   timestamp      DateTime @default(now())
 }
 
 model ApprovalRequest {
   id              String    @id @default(uuid())
   organizationId  String
-  businessId      String
-  workflowRunId   String
+  businessId      String?
+  workflowRunId   String?
   actionTitle     String
   description     String
-  status          String    @default("pending") // pending, approved, rejected
-  proposedByAgent String
+  status          String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  proposedByAgent String?
   reviewedBy      String?
   reviewNote      String?
   createdAt       DateTime  @default(now())
   resolvedAt      DateTime?
+}
+
+model InsightRecord {
+  id             String   @id @default(uuid())
+  organizationId String
+  title          String
+  summary        String?
+  category       String?
+  impact         String?
+  dataJson       String   // Serialized insight JSON
+  createdAt      DateTime @default(now())
+}
+
+model RecommendationRecord {
+  id             String   @id @default(uuid())
+  organizationId String
+  title          String
+  description    String?
+  priority       String?
+  status         String   @default("OPEN")
+  dataJson       String   // Serialized recommendation JSON
+  createdAt      DateTime @default(now())
+}
+
+model ArtifactRecord {
+  id             String   @id @default(uuid())
+  organizationId String
+  title          String
+  type           String?
+  content        String?
+  dataJson       String   // Serialized artifact JSON
+  createdAt      DateTime @default(now())
+}
+
+model AgentTaskRecord {
+  id             String   @id @default(uuid())
+  organizationId String
+  agentName      String?
+  taskTitle      String?
+  status         String   @default("PENDING")
+  dataJson       String   // Serialized task JSON
+  createdAt      DateTime @default(now())
 }
 
 model AutomationWorkflow {
@@ -101,7 +218,7 @@ model LearningRecord {
   learnedFrom         String
   knowledgeAcquired   String
   confidenceScore     Float
-  actionsExecutedJson String // Serialized array of actions executed
+  actionsExecutedJson String   // Serialized array of actions executed
   createdAt           DateTime @default(now())
 }
 
@@ -110,7 +227,7 @@ model ConversationContext {
   organizationId String
   businessId     String
   sessionTitle   String
-  messagesJson   String // Serialized array of conversation messages
+  messagesJson   String   // Serialized array of conversation messages
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -120,9 +237,9 @@ model CampaignHistory {
   organizationId String
   businessId     String
   campaignName   String
-  channel        String // facebook, google, instagram, email
+  channel        String   // facebook, google, instagram, email
   status         String   @default("active")
   roi            Float    @default(0.0)
-  metricsJson    String // Serialized campaign performance metrics
+  metricsJson    String   // Serialized campaign performance metrics
   createdAt      DateTime @default(now())
 }

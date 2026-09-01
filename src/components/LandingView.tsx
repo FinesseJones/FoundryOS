@@ -111,13 +111,13 @@ export const LandingView: React.FC<LandingViewProps> = ({ setActiveTab }) => {
             <div className="space-y-4">
               <span className="text-xs font-bold text-slate-400 tracking-wider uppercase">Starter</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-white">$49</span>
+                <span className="text-4xl font-extrabold text-white">$497</span>
                 <span className="text-slate-400 text-xs">/month</span>
               </div>
               <p className="text-xs text-slate-400">Perfect for single brand founders scaling content.</p>
               <ul className="space-y-2.5 text-xs text-slate-300 pt-4 border-t border-white/10">
                 <li className="flex items-center gap-2">✓ 1 Business DNA Profile</li>
-                <li className="flex items-center gap-2">✓ 50,000 Monthly Context Tokens</li>
+                <li className="flex items-center gap-2">✓ 100,000 Monthly Context Tokens</li>
                 <li className="flex items-center gap-2">✓ Brand & Content Agents</li>
                 <li className="flex items-center gap-2">✓ Human Approval Workflow</li>
               </ul>
@@ -138,13 +138,13 @@ export const LandingView: React.FC<LandingViewProps> = ({ setActiveTab }) => {
             <div className="space-y-4">
               <span className="text-xs font-bold text-indigo-400 tracking-wider uppercase">Growth</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-white">$199</span>
+                <span className="text-4xl font-extrabold text-white">$997</span>
                 <span className="text-slate-400 text-xs">/month</span>
               </div>
               <p className="text-xs text-slate-400">Ideal for growing teams and active marketing campaigns.</p>
               <ul className="space-y-2.5 text-xs text-slate-300 pt-4 border-t border-white/10">
                 <li className="flex items-center gap-2">✓ 5 Business DNA Profiles</li>
-                <li className="flex items-center gap-2">✓ 500,000 Monthly Context Tokens</li>
+                <li className="flex items-center gap-2">✓ 1,000,000 Monthly Context Tokens</li>
                 <li className="flex items-center gap-2">✓ All 7 Autonomous Agents</li>
                 <li className="flex items-center gap-2">✓ Cognitive Reflection & Reasoning</li>
                 <li className="flex items-center gap-2">✓ EventBus & Automated Workflows</li>
@@ -163,7 +163,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ setActiveTab }) => {
             <div className="space-y-4">
               <span className="text-xs font-bold text-purple-400 tracking-wider uppercase">Enterprise</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-white">$499</span>
+                <span className="text-4xl font-extrabold text-white">$2,497</span>
                 <span className="text-slate-400 text-xs">/month</span>
               </div>
               <p className="text-xs text-slate-400">Custom multi-tenant organizations & dedicated SLAs.</p>

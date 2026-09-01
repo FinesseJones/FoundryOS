@@ -23,7 +23,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ tokenUsage }) => {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
           <div>
             <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Current Active Plan</span>
-            <h3 className="text-2xl font-extrabold text-white">Growth Tier ($199/mo)</h3>
+            <h3 className="text-2xl font-extrabold text-white">Growth Tier ($997/mo)</h3>
           </div>
           <span className="badge-approved text-xs px-3 py-1 rounded-full font-bold">Active Subscription</span>
         </div>
@@ -64,7 +64,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ tokenUsage }) => {
               <p className="text-slate-500 text-[11px]">July 27, 2026</p>
             </div>
             <div className="flex items-center gap-4">
-              <span className="font-mono text-slate-300 font-bold">$199.00</span>
+              <span className="font-mono text-slate-300 font-bold">$997.00</span>
               <span className="badge-approved text-[10px] px-2 py-0.5 rounded-full font-bold">PAID</span>
             </div>
           </div>
@@ -75,7 +75,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ tokenUsage }) => {
               <p className="text-slate-500 text-[11px]">June 27, 2026</p>
             </div>
             <div className="flex items-center gap-4">
-              <span className="font-mono text-slate-300 font-bold">$199.00</span>
+              <span className="font-mono text-slate-300 font-bold">$997.00</span>
               <span className="badge-approved text-[10px] px-2 py-0.5 rounded-full font-bold">PAID</span>
             </div>
           </div>

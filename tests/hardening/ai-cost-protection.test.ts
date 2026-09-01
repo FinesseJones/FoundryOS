@@ -11,11 +11,11 @@ test('Epic 11C: LLM Gateway serves as gatekeeper, throwing QuotaExceededError an
 
   const factory = new MultiProviderLLMFactory(billing);
 
-  // Consume 48,000 tokens out of 50,000 limit
-  const firstCheck = billing.recordTokenUsage('org_cost_protection_1', 48000);
+  // Consume 98,000 tokens out of 100,000 limit
+  const firstCheck = billing.recordTokenUsage('org_cost_protection_1', 98000);
   assert.equal(firstCheck.allowed, true);
 
-  // Request requiring 3,000 tokens will breach the 50,000 Starter limit
+  // Request requiring 3,000 tokens will breach the 100,000 Starter limit
   await assert.rejects(
     async () => {
       await factory.executeWithFallback({
@@ -41,7 +41,7 @@ test('Epic 11C: Stripe Plan upgrade clears QuotaExceededError and resumes LLM Pr
   const factory = new MultiProviderLLMFactory(billing);
 
   // Exhaust Starter quota
-  billing.recordTokenUsage('org_cost_upgrade_1', 50000);
+  billing.recordTokenUsage('org_cost_upgrade_1', 100000);
 
   // Quota is exceeded on Starter
   await assert.rejects(

@@ -41,13 +41,6 @@ export abstract class BaseLLMProvider implements ILLMProvider {
       throw new Error(`Structured JSON parsing failed for ${this.type}: ${(e as Error).message}`);
     }
   }
-
-  protected generateOfflineFallbackText(prompt: string): string {
-    return `[OFFLINE FALLBACK MODEL OUTPUT - ${this.type.toUpperCase()}] Standardized response generated for prompt: "${prompt.substring(
-      0,
-      60
-    )}..."`;
-  }
 }
 
 export class NvidiaNimProvider extends BaseLLMProvider {
@@ -55,13 +48,21 @@ export class NvidiaNimProvider extends BaseLLMProvider {
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
     const startTime = Date.now();
-    const endpoint = this.config.baseUrl || (typeof window !== 'undefined' ? '/api/chat' : 'http://localhost:8787/api/chat');
-    const model = this.config.modelName || 'meta/llama-3.1-70b-instruct';
+    const apiKey = this.config.apiKey || process.env.NVIDIA_API_KEY;
+    const directUrl = "https://integrate.api.nvidia.com/v1/chat/completions";
+    const proxyUrl = typeof window !== 'undefined' ? '/api/chat' : 'http://localhost:8787/api/chat';
+    const endpoint = this.config.baseUrl || (apiKey ? directUrl : proxyUrl);
+    const model = this.config.modelName || process.env.NVIDIA_MODEL || 'meta/llama-3.2-90b-vision-instruct';
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (apiKey && endpoint.includes('nvidia.com')) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           model,
           messages: [
@@ -106,23 +107,31 @@ export class OllamaProvider extends BaseLLMProvider {
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
     const startTime = Date.now();
+    const model = this.config.modelName || process.env.OLLAMA_MODEL || 'llama3.1:latest';
+    const baseUrl = this.config.baseUrl || process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
+
     try {
-      const res = await fetch(`${this.config.baseUrl || 'http://localhost:11434'}/api/generate`, {
+      const res = await fetch(`${baseUrl}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: this.config.modelName || 'llama3',
+          model,
           prompt: `${request.systemPrompt ? request.systemPrompt + '\n' : ''}${request.prompt}`,
           stream: false,
         }),
       });
 
-      if (!res.ok) throw new Error(`Ollama HTTP Error: ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`Ollama HTTP Error: ${res.status} ${res.statusText}`);
+      }
       const data = (await res.json()) as { response: string };
+      if (!data.response) {
+        throw new Error('Ollama returned empty response.');
+      }
       return {
         text: data.response,
         providerUsed: 'ollama',
-        modelUsed: this.config.modelName || 'llama3',
+        modelUsed: model,
         usage: {
           promptTokens: Math.ceil(request.prompt.length / 4),
           completionTokens: Math.ceil(data.response.length / 4),
@@ -131,20 +140,8 @@ export class OllamaProvider extends BaseLLMProvider {
           latencyMs: Date.now() - startTime,
         },
       };
-    } catch {
-      const text = this.generateOfflineFallbackText(request.prompt);
-      return {
-        text,
-        providerUsed: 'ollama',
-        modelUsed: 'offline-llama3',
-        usage: {
-          promptTokens: 50,
-          completionTokens: 100,
-          totalTokens: 150,
-          estimatedCostUsd: 0,
-          latencyMs: Date.now() - startTime,
-        },
-      };
+    } catch (err: any) {
+      throw new Error(`Ollama generation failed (${model} on ${baseUrl}): ${err.message}`);
     }
   }
 }
@@ -153,16 +150,44 @@ export class OpenAIProvider extends BaseLLMProvider {
   type: LLMProviderType = 'openai';
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
+    const apiKey = this.config.apiKey || process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('[OpenAIProvider] API key is not configured.');
+    }
+
     const startTime = Date.now();
-    const text = this.generateOfflineFallbackText(request.prompt);
+    const model = this.config.modelName || 'gpt-4o';
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          ...(request.systemPrompt ? [{ role: 'system', content: request.systemPrompt }] : []),
+          { role: 'user', content: request.prompt },
+        ],
+        temperature: request.temperature ?? 0.6,
+        max_tokens: request.maxTokens ?? 1500,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`OpenAI HTTP Error ${res.status}: ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as any;
+    const text = data.choices?.[0]?.message?.content || '';
     return {
       text,
       providerUsed: 'openai',
-      modelUsed: this.config.modelName || 'gpt-4o',
+      modelUsed: model,
       usage: {
-        promptTokens: 100,
-        completionTokens: 200,
-        totalTokens: 300,
+        promptTokens: data.usage?.prompt_tokens || Math.ceil(request.prompt.length / 4),
+        completionTokens: data.usage?.completion_tokens || Math.ceil(text.length / 4),
+        totalTokens: data.usage?.total_tokens || Math.ceil((request.prompt.length + text.length) / 4),
         estimatedCostUsd: 0.0015,
         latencyMs: Date.now() - startTime,
       },
@@ -174,16 +199,43 @@ export class ClaudeProvider extends BaseLLMProvider {
   type: LLMProviderType = 'claude';
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
+    const apiKey = this.config.apiKey || process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error('[ClaudeProvider] API key is not configured.');
+    }
+
     const startTime = Date.now();
-    const text = this.generateOfflineFallbackText(request.prompt);
+    const model = this.config.modelName || 'claude-3-5-sonnet-20241022';
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        system: request.systemPrompt,
+        messages: [{ role: 'user', content: request.prompt }],
+        max_tokens: request.maxTokens ?? 1500,
+        temperature: request.temperature ?? 0.6,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Claude HTTP Error ${res.status}: ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as any;
+    const text = data.content?.[0]?.text || '';
     return {
       text,
       providerUsed: 'claude',
-      modelUsed: this.config.modelName || 'claude-3-5-sonnet',
+      modelUsed: model,
       usage: {
-        promptTokens: 120,
-        completionTokens: 220,
-        totalTokens: 340,
+        promptTokens: data.usage?.input_tokens || Math.ceil(request.prompt.length / 4),
+        completionTokens: data.usage?.output_tokens || Math.ceil(text.length / 4),
+        totalTokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
         estimatedCostUsd: 0.0017,
         latencyMs: Date.now() - startTime,
       },
@@ -195,16 +247,35 @@ export class GeminiProvider extends BaseLLMProvider {
   type: LLMProviderType = 'gemini';
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
+    const apiKey = this.config.apiKey || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('[GeminiProvider] API key is not configured.');
+    }
+
     const startTime = Date.now();
-    const text = this.generateOfflineFallbackText(request.prompt);
+    const model = this.config.modelName || 'gemini-1.5-pro';
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: `${request.systemPrompt ? request.systemPrompt + '\n' : ''}${request.prompt}` }] }],
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Gemini HTTP Error ${res.status}: ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as any;
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     return {
       text,
       providerUsed: 'gemini',
-      modelUsed: this.config.modelName || 'gemini-1.5-pro',
+      modelUsed: model,
       usage: {
-        promptTokens: 110,
-        completionTokens: 210,
-        totalTokens: 320,
+        promptTokens: data.usageMetadata?.promptTokenCount || Math.ceil(request.prompt.length / 4),
+        completionTokens: data.usageMetadata?.candidatesTokenCount || Math.ceil(text.length / 4),
+        totalTokens: data.usageMetadata?.totalTokenCount || Math.ceil((request.prompt.length + text.length) / 4),
         estimatedCostUsd: 0.0012,
         latencyMs: Date.now() - startTime,
       },
@@ -216,16 +287,42 @@ export class OpenRouterProvider extends BaseLLMProvider {
   type: LLMProviderType = 'openrouter';
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
+    const apiKey = this.config.apiKey || process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      throw new Error('[OpenRouterProvider] API key is not configured.');
+    }
+
     const startTime = Date.now();
-    const text = this.generateOfflineFallbackText(request.prompt);
+    const model = this.config.modelName || 'meta-llama/llama-3-70b-instruct';
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          ...(request.systemPrompt ? [{ role: 'system', content: request.systemPrompt }] : []),
+          { role: 'user', content: request.prompt },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`OpenRouter HTTP Error ${res.status}: ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as any;
+    const text = data.choices?.[0]?.message?.content || '';
     return {
       text,
       providerUsed: 'openrouter',
-      modelUsed: this.config.modelName || 'meta-llama/llama-3-70b-instruct',
+      modelUsed: model,
       usage: {
-        promptTokens: 100,
-        completionTokens: 200,
-        totalTokens: 300,
+        promptTokens: data.usage?.prompt_tokens || 100,
+        completionTokens: data.usage?.completion_tokens || 200,
+        totalTokens: data.usage?.total_tokens || 300,
         estimatedCostUsd: 0.001,
         latencyMs: Date.now() - startTime,
       },
@@ -238,19 +335,41 @@ export class LMStudioProvider extends BaseLLMProvider {
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
     const startTime = Date.now();
-    const text = this.generateOfflineFallbackText(request.prompt);
-    return {
-      text,
-      providerUsed: 'lmstudio',
-      modelUsed: this.config.modelName || 'local-model',
-      usage: {
-        promptTokens: 50,
-        completionTokens: 100,
-        totalTokens: 150,
-        estimatedCostUsd: 0,
-        latencyMs: Date.now() - startTime,
-      },
-    };
+    const baseUrl = this.config.baseUrl || 'http://127.0.0.1:1234/v1';
+    try {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: this.config.modelName || 'local-model',
+          messages: [
+            ...(request.systemPrompt ? [{ role: 'system', content: request.systemPrompt }] : []),
+            { role: 'user', content: request.prompt },
+          ],
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`LM Studio HTTP Error ${res.status}: ${res.statusText}`);
+      }
+
+      const data = (await res.json()) as any;
+      const text = data.choices?.[0]?.message?.content || '';
+      return {
+        text,
+        providerUsed: 'lmstudio',
+        modelUsed: this.config.modelName || 'local-model',
+        usage: {
+          promptTokens: data.usage?.prompt_tokens || 50,
+          completionTokens: data.usage?.completion_tokens || 100,
+          totalTokens: data.usage?.total_tokens || 150,
+          estimatedCostUsd: 0,
+          latencyMs: Date.now() - startTime,
+        },
+      };
+    } catch (err: any) {
+      throw new Error(`LM Studio generation failed (${baseUrl}): ${err.message}`);
+    }
   }
 }
 
@@ -268,13 +387,33 @@ export class MultiProviderLLMFactory {
   }
 
   private registerDefaultProviders() {
-    this.providers.set('nvidia', new NvidiaNimProvider({ provider: 'nvidia', modelName: 'meta/llama-3.1-70b-instruct' }));
-    this.providers.set('ollama', new OllamaProvider({ provider: 'ollama', modelName: 'llama3' }));
-    this.providers.set('openai', new OpenAIProvider({ provider: 'openai', modelName: 'gpt-4o' }));
-    this.providers.set('claude', new ClaudeProvider({ provider: 'claude', modelName: 'claude-3-5-sonnet' }));
-    this.providers.set('gemini', new GeminiProvider({ provider: 'gemini', modelName: 'gemini-1.5-pro' }));
-    this.providers.set('openrouter', new OpenRouterProvider({ provider: 'openrouter', modelName: 'openrouter/auto' }));
-    this.providers.set('lmstudio', new LMStudioProvider({ provider: 'lmstudio', modelName: 'local-model' }));
+    // Production Sole Active Provider: NVIDIA NIM
+    this.providers.set('nvidia', new NvidiaNimProvider({
+      provider: 'nvidia',
+      modelName: process.env.NVIDIA_MODEL || 'meta/llama-3.2-90b-vision-instruct',
+    }));
+
+    // Auxiliary / Fallback providers only register if ENABLE_FALLBACK_PROVIDERS=true AND their key/endpoint is present
+    if (process.env.ENABLE_FALLBACK_PROVIDERS === 'true') {
+      if (process.env.OLLAMA_MODEL || process.env.OLLAMA_BASE_URL) {
+        this.providers.set('ollama', new OllamaProvider({ provider: 'ollama', modelName: process.env.OLLAMA_MODEL || 'llama3.1:latest' }));
+      }
+      if (process.env.OPENAI_API_KEY) {
+        this.providers.set('openai', new OpenAIProvider({ provider: 'openai', modelName: 'gpt-4o' }));
+      }
+      if (process.env.ANTHROPIC_API_KEY) {
+        this.providers.set('claude', new ClaudeProvider({ provider: 'claude', modelName: 'claude-3-5-sonnet-20241022' }));
+      }
+      if (process.env.GEMINI_API_KEY) {
+        this.providers.set('gemini', new GeminiProvider({ provider: 'gemini', modelName: 'gemini-1.5-pro' }));
+      }
+      if (process.env.OPENROUTER_API_KEY) {
+        this.providers.set('openrouter', new OpenRouterProvider({ provider: 'openrouter', modelName: 'openrouter/auto' }));
+      }
+      if (process.env.LMSTUDIO_BASE_URL) {
+        this.providers.set('lmstudio', new LMStudioProvider({ provider: 'lmstudio', modelName: 'local-model' }));
+      }
+    }
   }
 
   private enforceQuotaGate(request: PromptRequest) {
@@ -296,23 +435,38 @@ export class MultiProviderLLMFactory {
 
   async executeWithFallback(
     request: PromptRequest,
-    providerOrder: LLMProviderType[] = ['nvidia', 'ollama', 'openai', 'gemini']
+    providerOrder?: LLMProviderType[]
   ): Promise<LLMResponse> {
     // Mandated LLM Gateway Gatekeeper: Check token quota BEFORE calling any external provider!
     this.enforceQuotaGate(request);
 
+    // Production Default: NVIDIA is the sole authoritative provider.
+    // Secondary fallbacks are only allowed if explicitly enabled via ENABLE_FALLBACK_PROVIDERS=true.
+    const allowFallbacks = process.env.ENABLE_FALLBACK_PROVIDERS === 'true';
+    const chain: LLMProviderType[] = providerOrder && allowFallbacks
+      ? providerOrder
+      : allowFallbacks
+        ? ['nvidia', 'ollama', 'openai', 'gemini']
+        : ['nvidia'];
+
     let lastError: Error | null = null;
-    for (const type of providerOrder) {
+    for (const type of chain) {
       const provider = this.providers.get(type);
       if (provider) {
         try {
           return await provider.generateText(request);
         } catch (err) {
           lastError = err as Error;
+          // In production default mode (no fallbacks), fail closed immediately
+          if (!allowFallbacks) {
+            throw new Error(`[LLM Gateway] Production provider (${type}) failed: ${(err as Error).message}`);
+          }
         }
+      } else if (!allowFallbacks) {
+        throw new Error(`[LLM Gateway] Production provider (${type}) is not registered or unavailable.`);
       }
     }
-    throw new Error(`All LLM providers failed in fallback chain: ${lastError?.message}`);
+    throw new Error(`[LLM Gateway] All configured LLM providers failed: ${lastError?.message}`);
   }
 
   async generateStructured<T>(
@@ -323,7 +477,10 @@ export class MultiProviderLLMFactory {
     // Mandated LLM Gateway Gatekeeper: Check token quota BEFORE calling provider!
     this.enforceQuotaGate(request);
 
-    const provider = this.providers.get(providerType) || this.providers.get('nvidia') || this.providers.get('ollama')!;
+    const provider = this.providers.get(providerType) || this.providers.get('nvidia');
+    if (!provider) {
+      throw new Error(`[LLM Gateway] Requested provider "${providerType}" is not configured or unavailable.`);
+    }
     return provider.generateStructured(request, schema);
   }
 }

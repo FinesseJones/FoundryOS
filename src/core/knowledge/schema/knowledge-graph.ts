@@ -110,7 +110,7 @@ export function createDefaultCustomerKnowledgeGraph(
     },
     productDNA: {
       productCatalog: createKnowledgeField([
-        { name: `${dna.companyIdentity.companyName.value} Standard`, description: dna.companyIdentity.uniqueValueProposition.value, price: '$499/mo' },
+        { name: `${dna.companyIdentity.companyName.value} Standard`, description: dna.companyIdentity.uniqueValueProposition.value, price: '$997/mo' },
       ], { originType: 'INFERRED', confidence: 0.85, source: 'extraction_pipeline' }),
       coreFeatures: createKnowledgeField(dna.brandVoice.wordsToUse.value, { originType: 'EXTRACTED', confidence: 0.9, source: 'website_scraper' }),
     },

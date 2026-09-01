@@ -6,6 +6,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server": "node api/server.js",
+    "test:checkout": "node scripts/e2e_checkout_test.mjs",
+    "db:generate:postgres": "node scripts/generate_postgres_schema.mjs",
+    "db:push:postgres": "node scripts/generate_postgres_schema.mjs && npx prisma db push --schema=prisma/schema.postgresql.prisma",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -24,10 +28,12 @@
     "@vitejs/plugin-react": "^4.7.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
     "lucide-react": "^1.33.0",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.17.0",
     "sonner": "^2.0.7",
+    "stripe": "^22.6.0",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
     "zod": "^3.24.5"

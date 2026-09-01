@@ -1,0 +1,14 @@
+{
+  "name": "foundryos-api",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "stripe": "^22.6.0"
+  }
+}

@@ -97,6 +97,7 @@ export class WebCrawler {
     try {
       const res = await fetch(url, {
         headers: { 'User-Agent': 'BrandFirstCrawler/1.0 (+https://brand-first.ai)' },
+        signal: AbortSignal.timeout(2000),
       });
       const html = await res.text();
       return this.parseHtmlContent(url, res.status, html);
@@ -145,7 +146,10 @@ export class WebCrawler {
 
   private async checkUrlExists(url: string): Promise<boolean> {
     try {
-      const res = await fetch(url, { method: 'HEAD' });
+      const res = await fetch(url, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(1500),
+      });
       return res.ok;
     } catch {
       return true; // Default fallback for sitemap/robots presence

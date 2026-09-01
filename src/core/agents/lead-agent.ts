@@ -1,30 +1,34 @@
-/**
- * Autonomous Lead Generation & Client Prospecting Agent
- *
- * Scans industry domains, evaluates digital transformation gaps,
- * quantifies annual financial pain points, and synthesizes 3-pillar qualified client leads.
- */
-
+import { z } from 'zod';
 import { BaseAgent } from './base-agent';
 import { AgentRole, AgentAccessRights, AgentTaskRequest } from './agent.types';
 import { EngineContext } from '../context';
 
-export interface DiscoveredLead {
-  id: number;
-  companyName: string;
-  primaryContact: string;
-  currentStage: 'Discovery' | 'Proposal' | 'Evaluation' | 'Lost';
-  status: 'High Priority' | 'Medium Priority' | 'Low Priority';
-  pillarFinancialPain: string;
-  pillarProcessGap: string;
-  pillarStakeholderAlignment: string;
-  website?: string;
-  industry?: string;
-  estimatedRevenueLoss?: string;
-  opportunityScore?: number;
-  isAiSourced?: boolean;
-  discoveredAt?: string;
-}
+export const DiscoveredLeadSchema = z.object({
+  id: z.number().or(z.string()),
+  companyName: z.string().min(1),
+  website: z.string().min(1),
+  primaryContact: z.string().min(1),
+  currentStage: z.enum(['Discovery', 'Proposal', 'Evaluation', 'Lost']).default('Discovery'),
+  status: z.enum(['High Priority', 'Medium Priority', 'Low Priority']).default('High Priority'),
+  pillarFinancialPain: z.string().min(1),
+  pillarProcessGap: z.string().min(1),
+  pillarStakeholderAlignment: z.string().min(1),
+  industry: z.string().min(1),
+  estimatedRevenueLoss: z.string().default('$500k/yr'),
+  opportunityScore: z.number().min(0).max(100),
+  isAiSourced: z.boolean().default(true),
+  discoveredAt: z.string().default(() => new Date().toISOString()),
+});
+
+export const LeadProspectingResultSchema = z.object({
+  industry: z.string().min(1),
+  targetRegion: z.string().default('National'),
+  discoveredLeads: z.array(DiscoveredLeadSchema).min(1),
+  executiveProspectingSummary: z.string().min(1),
+});
+
+export type DiscoveredLead = z.infer<typeof DiscoveredLeadSchema>;
+export type LeadProspectingResult = z.infer<typeof LeadProspectingResultSchema>;
 
 export interface LeadDiscoveryParams {
   industry?: string;
@@ -33,151 +37,6 @@ export interface LeadDiscoveryParams {
   batchSize?: number;
   customTargetDomain?: string;
 }
-
-// Curated industry knowledge base for autonomous lead synthesis
-const INDUSTRY_PROSPECT_TEMPLATES: Record<string, Array<{
-  name: string;
-  domain: string;
-  contact: string;
-  financialPain: string;
-  processGap: string;
-  stakeholder: string;
-  priority: 'High Priority' | 'Medium Priority' | 'Low Priority';
-  score: number;
-}>> = {
-  saas: [
-    {
-      name: 'Apex Cloud Solutions',
-      domain: 'apexcloud.io',
-      contact: 'sarah.jenkins@apexcloud.io (VP Growth)',
-      financialPain: '$680k lost annually due to high funnel drop-off and manual demo onboarding.',
-      processGap: 'Lacks AIEO behavioral adaptivity and instant self-serve product tours; 62% bounce on signup.',
-      stakeholder: 'Chief Marketing Officer & VP of Product (High Alignment)',
-      priority: 'High Priority',
-      score: 94
-    },
-    {
-      name: 'Nexus Data Systems',
-      domain: 'nexusdata.tech',
-      contact: 'marcus.vance@nexusdata.tech (CTO)',
-      financialPain: '$1.4M in operational overhead maintaining legacy monolithic portals.',
-      processGap: 'Monolithic tech stack with 4.2s LCP; zero local GEO routing for enterprise queries.',
-      stakeholder: 'VP of Engineering & Head of Operations (Active Sponsor)',
-      priority: 'High Priority',
-      score: 91
-    },
-    {
-      name: 'PulseFlow Automation',
-      domain: 'pulseflow.app',
-      contact: 'elena.rostova@pulseflow.app (Head of Sales)',
-      financialPain: '$420k lost per quarter from unqualified inbound pipeline leaks.',
-      processGap: 'Manual CSV lead routing between HubSpot and Salesforce without real-time enrichment.',
-      stakeholder: 'Chief Revenue Officer (Identified Buyer)',
-      priority: 'Medium Priority',
-      score: 87
-    }
-  ],
-  legal: [
-    {
-      name: 'Sterling & Vance Partners Law',
-      domain: 'sterlingvancelaw.com',
-      contact: 'r.sterling@sterlingvancelaw.com (Senior Partner)',
-      financialPain: '$950k in missed retainer opportunities due to non-mobile client intake.',
-      processGap: 'Outdated PDF intake forms with zero digital signatures or automated conflict checks.',
-      stakeholder: 'Managing Partner & Practice Chair (Key Decision Maker)',
-      priority: 'High Priority',
-      score: 96
-    },
-    {
-      name: 'Beacon Compliance Group',
-      domain: 'beaconcompliance.org',
-      contact: 'd.morrison@beaconcompliance.org (Compliance Director)',
-      financialPain: '$540k annual cost of manual regulatory filing and client document auditing.',
-      processGap: 'Static website lacking search engine authority and AI search indexation for FTC/SEC rules.',
-      stakeholder: 'General Counsel & Chief Compliance Officer',
-      priority: 'Medium Priority',
-      score: 88
-    }
-  ],
-  healthcare: [
-    {
-      name: 'Aegis Precision Health',
-      domain: 'aegisprecisionhealth.com',
-      contact: 'dr.kaufman@aegishealth.med (Medical Director)',
-      financialPain: '$1.8M lost annually in patient churn and phone-only appointment scheduling.',
-      processGap: 'No integrated patient portal or tele-health routing; 14-day delay in onboarding.',
-      stakeholder: 'Chief Executive Officer & Head of Clinical Ops',
-      priority: 'High Priority',
-      score: 97
-    },
-    {
-      name: 'Horizon Diagnostic Labs',
-      domain: 'horizondiagnostics.com',
-      contact: 't.alvarez@horizondiagnostics.com (VP Operations)',
-      financialPain: '$720k in delayed test result delivery and manual physician notifications.',
-      processGap: 'Non-responsive legacy lab portal failing HIPAA web accessibility compliance standards.',
-      stakeholder: 'Chief Operating Officer & VP Information Security',
-      priority: 'Medium Priority',
-      score: 89
-    }
-  ],
-  finance: [
-    {
-      name: 'Vanguard Capital Advisory',
-      domain: 'vanguardcapitaladvisory.com',
-      contact: 'g.holloway@vanguardcap.com (Managing Director)',
-      financialPain: '$2.3M in lost wealth management mandates to modern fintech competitors.',
-      processGap: 'Dated visual branding and zero digital portfolio simulations for HNW prospective clients.',
-      stakeholder: 'Executive Committee & Head of Wealth Services',
-      priority: 'High Priority',
-      score: 95
-    },
-    {
-      name: 'Aura Fintech Solutions',
-      domain: 'aurafintech.co',
-      contact: 'l.chen@aurafintech.co (Co-Founder & COO)',
-      financialPain: '$890k lost in merchant processing chargeback resolution inefficiencies.',
-      processGap: 'Fragmented merchant onboarding workflow requiring 5 business days for KYB validation.',
-      stakeholder: 'Chief Operating Officer & VP Risk',
-      priority: 'High Priority',
-      score: 92
-    }
-  ],
-  hvac: [
-    {
-      name: 'Carrier Crest Commercial HVAC',
-      domain: 'carriercrestservices.com',
-      contact: 'b.mitchell@carriercrest.com (Operations VP)',
-      financialPain: '$1.1M in uncaptured emergency commercial service requests after-hours.',
-      processGap: 'Lacks hyper-local GEO dispatching and 24/7 automated AI dispatch triage.',
-      stakeholder: 'VP of Commercial Services (Identified Sponsor)',
-      priority: 'High Priority',
-      score: 93
-    },
-    {
-      name: 'Trane Pro Mechanical',
-      domain: 'tranepromechanical.com',
-      contact: 'frank.b@tranepro.com (General Manager)',
-      financialPain: '$480k lost in manual quoting delays and un-indexed local search rankings.',
-      processGap: 'Zero local SEO capture across 14 municipal zones; quotes take 48+ hours.',
-      stakeholder: 'Owner & General Manager',
-      priority: 'Medium Priority',
-      score: 86
-    }
-  ],
-  ecommerce: [
-    {
-      name: 'Kura Luxe Direct',
-      domain: 'kuraluxe.com',
-      contact: 'j.hart@kuraluxe.com (Chief Brand Officer)',
-      financialPain: '$1.6M lost in cart abandonment and mobile checkout friction.',
-      processGap: 'Lacks predictive personalized upsells and fast modern headless checkout architecture.',
-      stakeholder: 'Chief Marketing Officer & VP E-Commerce',
-      priority: 'High Priority',
-      score: 95
-    }
-  ]
-};
 
 export class LeadAgent extends BaseAgent {
   readonly role: AgentRole = 'lead' as AgentRole;
@@ -189,110 +48,122 @@ export class LeadAgent extends BaseAgent {
   };
 
   /**
-   * Autonomous lead discovery method
+   * Autonomous lead discovery method executing through the authoritative LLM Gateway.
    */
   async discoverLeads(params: LeadDiscoveryParams = {}): Promise<DiscoveredLead[]> {
-    const {
-      industry = 'saas',
-      strategy = 'transformation',
-      batchSize = 3,
-      customTargetDomain
-    } = params;
+    const businessId = 'biz_lead_discovery';
+    const context = await this.contextBuilder.buildContext({
+      businessId,
+      taskType: 'brand_analysis',
+      userPrompt: params.customTargetDomain
+        ? `Audit custom target domain: ${params.customTargetDomain}`
+        : `Discover high-value leads in ${params.industry || 'B2B'}`,
+    });
 
-    const normalizedIndustry = industry.toLowerCase().replace(/[^a-z]/g, '');
-    const pool = INDUSTRY_PROSPECT_TEMPLATES[normalizedIndustry] || 
-                 INDUSTRY_PROSPECT_TEMPLATES.saas;
+    const result = await this.processAgentTask({
+      taskId: `task_lead_disc_${Date.now()}`,
+      businessId,
+      role: this.role,
+      taskType: 'brand_analysis',
+      prompt: params.customTargetDomain
+        ? `Audit custom target domain "${params.customTargetDomain}" in the ${params.industry || 'commercial'} industry. Quantify annual financial pain, identify specific technical/process gaps, and map the economic decision maker.`
+        : `Identify and qualify ${params.batchSize || 2} prospective enterprise leads in the ${params.industry || 'saas'} industry seeking digital transformation and agency-replacement solutions.`,
+      payload: params,
+    }, context);
 
-    // Handle custom target domain audit with dynamic LLM Gateway synthesis
-    if (customTargetDomain) {
-      const cleanDomain = customTargetDomain.replace(/https?:\/\//, '').replace(/\/.*$/, '');
-      const companyClean = cleanDomain.split('.')[0];
-      const capitalized = companyClean.charAt(0).toUpperCase() + companyClean.slice(1);
-
-      let financialPain = `Operational overhead drag and conversion leakage (Estimated baseline benchmark).`;
-      let processGap = `Legacy web presence on ${cleanDomain} lacks real-time interactive engagement and modern conversion architecture.`;
-      let stakeholder = `Executive Leadership / VP of Growth (Key Economic Buyer).`;
-
-      try {
-        const aiAnalysis = await this.llmGateway.executeWithFallback({
-          prompt: `Analyze the business domain "${cleanDomain}" in the ${industry} industry.\n` +
-                  `Synthesize 3 concise Opportunity Pillars for an enterprise AI proposal:\n` +
-                  `1. Financial Pain (estimated revenue loss or operational cost drag)\n` +
-                  `2. Process Gap (specific operational or web bottleneck)\n` +
-                  `3. Stakeholder Alignment (the economic buyer role)\n\n` +
-                  `Respond in 3 short lines labeled FinancialPain:, ProcessGap:, Stakeholder:`,
-          temperature: 0.5,
-          maxTokens: 300,
-        });
-
-        const lines = aiAnalysis.text.split('\n');
-        for (const line of lines) {
-          if (line.toLowerCase().includes('financialpain:')) {
-            financialPain = line.replace(/.*financialpain:\s*/i, '').trim();
-          } else if (line.toLowerCase().includes('processgap:')) {
-            processGap = line.replace(/.*processgap:\s*/i, '').trim();
-          } else if (line.toLowerCase().includes('stakeholder:')) {
-            stakeholder = line.replace(/.*stakeholder:\s*/i, '').trim();
-          }
-        }
-      } catch {
-        // Fallback to grounded baseline benchmark
-      }
-
-      return [{
-        id: Date.now(),
-        companyName: `${capitalized} Enterprise`,
-        website: `https://${cleanDomain}`,
-        primaryContact: `executives@${cleanDomain}`,
-        currentStage: 'Discovery',
-        status: 'High Priority',
-        pillarFinancialPain: financialPain,
-        pillarProcessGap: processGap,
-        pillarStakeholderAlignment: stakeholder,
-        industry: industry.toUpperCase(),
-        estimatedRevenueLoss: financialPain.split(' ')[0] || 'Estimated',
-        opportunityScore: 95,
-        isAiSourced: true,
-        discoveredAt: new Date().toISOString()
-      }];
-    }
-
-    // Generate enriched prospect leads from industry intelligence
-    const selected = pool.slice(0, batchSize);
-    return selected.map((item, idx) => ({
-      id: Date.now() + idx,
-      companyName: item.name,
-      website: `https://${item.domain}`,
-      primaryContact: item.contact,
-      currentStage: 'Discovery',
-      status: item.priority,
-      pillarFinancialPain: item.financialPain,
-      pillarProcessGap: item.processGap,
-      pillarStakeholderAlignment: item.stakeholder,
-      industry: industry.toUpperCase(),
-      estimatedRevenueLoss: item.financialPain.split(' ')[0],
-      opportunityScore: item.score,
-      isAiSourced: true,
-      discoveredAt: new Date().toISOString()
-    }));
+    return result.data.discoveredLeads as DiscoveredLead[];
   }
 
   protected async processAgentTask(
     request: AgentTaskRequest,
     context: EngineContext
   ): Promise<{ summary: string; data: Record<string, unknown> }> {
-    const payload = request.payload as LeadDiscoveryParams || {};
-    const discovered = await this.discoverLeads(payload);
+    const dna = context.businessDNASlice;
+    const companyName = dna.companyIdentity?.companyName?.value || 'Enterprise Brand';
+    const mission = dna.companyIdentity?.mission?.value || '';
+    const uvp = dna.companyIdentity?.uniqueValueProposition?.value || '';
+    const payload = (request.payload as LeadDiscoveryParams) || {};
+    const industry = payload.industry || dna.companyIdentity?.industry?.value || 'saas';
+    const batchSize = payload.batchSize || 2;
+    const userPrompt = request.prompt || `Prospect ${batchSize} enterprise leads in the ${industry} industry.`;
 
-    const summary = `Lead Prospecting Agent identified ${discovered.length} high-value enterprise opportunities in ${payload.industry || 'B2B SaaS'}.`;
+    const systemRole = `Specialized Role: Enterprise Revenue Operations & B2B Lead Intelligence Commander.`;
+    const prompt =
+      `Conduct an autonomous high-value client discovery and 3-pillar opportunity audit for ${companyName}.\n` +
+      `Our Value Proposition: "${uvp}"\n` +
+      `Our Mission: "${mission}"\n` +
+      `Target Prospect Industry: ${industry}\n` +
+      `Prospect Count: ${batchSize}\n` +
+      `Task Directive: "${userPrompt}"\n\n` +
+      `You MUST respond with valid, raw JSON (no markdown fences, no explanatory preambles) strictly following this JSON schema:\n` +
+      `{\n` +
+      `  "industry": "${industry}",\n` +
+      `  "targetRegion": "${payload.targetRegion || 'National'}",\n` +
+      `  "discoveredLeads": [\n` +
+      `    {\n` +
+      `      "id": ${Date.now()},\n` +
+      `      "companyName": "<Target Prospect Company Name>",\n` +
+      `      "website": "<https://prospectdomain.com>",\n` +
+      `      "primaryContact": "<Executive Name & Role, e.g. Sarah Jenkins (VP Growth)>",\n` +
+      `      "currentStage": "Discovery",\n` +
+      `      "status": "High Priority",\n` +
+      `      "pillarFinancialPain": "<quantified annual revenue loss or cost drag with exact dollar figure, e.g. $1.2M annual revenue lost to manual dispatch delays>",\n` +
+      `      "pillarProcessGap": "<concrete operational or technological bottleneck>",\n` +
+      `      "pillarStakeholderAlignment": "<key economic buyer and department sponsor>",\n` +
+      `      "industry": "${industry.toUpperCase()}",\n` +
+      `      "estimatedRevenueLoss": "<e.g. $1.2M/yr>",\n` +
+      `      "opportunityScore": <integer score between 80 and 99>,\n` +
+      `      "isAiSourced": true,\n` +
+      `      "discoveredAt": "${new Date().toISOString()}"\n` +
+      `    }\n` +
+      `  ],\n` +
+      `  "executiveProspectingSummary": "<concise briefing on prospect pipeline opportunities>"\n` +
+      `}`;
+
+    // Execute via centralized LLM Gateway (routes through NVIDIA NIM with Quota gating)
+    const rawOutput = await this.callLLM(prompt, context, systemRole);
+
+    // Strict JSON parsing with zero mock fallback
+    let parsed: unknown;
+    try {
+      const jsonMatch = rawOutput.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No valid JSON object structure found in response');
+      }
+      const rawJson = jsonMatch[0];
+      try {
+        parsed = JSON.parse(rawJson);
+      } catch {
+        const sanitized = rawJson
+          .replace(/:\s*`([\s\S]*?)`\s*(,|})/g, (_, content, suffix) => `: ${JSON.stringify(content)}${suffix}`)
+          .replace(/:\s*"([\s\S]*?)"\s*(,|})/g, (_, content, suffix) => {
+            const escaped = content.replace(/\r?\n/g, '\\n').replace(/\t/g, '\\t');
+            return `: "${escaped}"${suffix}`;
+          });
+        parsed = JSON.parse(sanitized);
+      }
+    } catch (parseErr: any) {
+      throw new Error(`[LeadAgent] Failed to parse LLM response as JSON: ${parseErr.message}\nRaw LLM Output:\n${rawOutput}`);
+    }
+
+    const validation = LeadProspectingResultSchema.safeParse(parsed);
+    if (!validation.success) {
+      throw new Error(`[LeadAgent] LLM output failed schema validation: ${validation.error.message}\nParsed object:\n${JSON.stringify(parsed, null, 2)}`);
+    }
+
+    const leadData = validation.data;
+    const summary = `Lead Prospecting Agent identified ${leadData.discoveredLeads.length} high-value enterprise opportunities in ${leadData.industry}.`;
 
     return {
       summary,
       data: {
-        discoveredLeads: discovered,
-        leadCount: discovered.length,
+        discoveredLeads: leadData.discoveredLeads,
+        leadCount: leadData.discoveredLeads.length,
+        industry: leadData.industry,
+        executiveProspectingSummary: leadData.executiveProspectingSummary,
         strategy: payload.strategy || 'transformation',
         accessAuthorized: this.canWriteDomain('leads'),
+        auditedBy: 'NVIDIA-NIM-Gateway',
       },
     };
   }

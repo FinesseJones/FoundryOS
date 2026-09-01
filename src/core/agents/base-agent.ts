@@ -118,6 +118,7 @@ CRITICAL RULES:
     const response = await this.llmGateway.executeWithFallback({
       prompt,
       systemPrompt,
+      organizationId: (context as any).organizationId || context.request?.businessId,
       temperature: 0.6,
       maxTokens: 1200,
     });
@@ -138,6 +139,7 @@ CRITICAL RULES:
       {
         prompt,
         systemPrompt,
+        organizationId: (context as any).organizationId || context.request?.businessId,
         temperature: 0.4,
         maxTokens: 1200,
       },

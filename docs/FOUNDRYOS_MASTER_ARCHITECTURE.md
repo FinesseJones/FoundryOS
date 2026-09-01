@@ -102,11 +102,10 @@ Welcome to the definitive architectural specification for **FoundryOS**, the Aut
 
 ---
 
-## 🚢 Production VPS Deployment Architecture
+## 🚢 Production Deployment Architecture
 
-FoundryOS runs in production on **Ubuntu 24.04 VPS (`2.25.113.26`)** inside containerized microservices:
+FoundryOS runs on a clean, unified 3-tier architecture:
 
-1. **`brand-first-production`:** Nginx serving the compiled React 19 SPA on port 80.
-2. **`llm-proxy`:** Node.js Express backend managing `/api/tenant/dna` and the LLM gateway on port 8787.
-3. **`caddy`:** Reverse proxy managing automated HTTPS SSL certificates and routing.
-4. **`arise-production-studio`:** 4K Virtual Production Studio running isolated on port 4000.
+1. **`api` (`foundryos-api`):** Node.js Express backend with Prisma ORM (SQLite / PostgreSQL), server-side authentication, Stripe subscriptions, and AI inference gateway on port 8787.
+2. **`caddy` (`foundryos-caddy`):** Reverse proxy managing automated HTTPS SSL certificates, proxying `/api/*` to the API backend, and directly serving the compiled React 19 SPA frontend with client-side SPA routing.
+3. **`frontend` (React 19 SPA):** Single Page Application static bundle served directly through Caddy.

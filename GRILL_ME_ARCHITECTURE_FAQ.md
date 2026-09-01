@@ -27,11 +27,11 @@
 ## 🎯 Architectural Defense & Reality Questions
 
 ### 1. Data Persistence & Architecture
-* **Current Shipped Reality:** Single Node.js process (`llm-proxy/server.js`) persisting state to `db.json` with client-side session caching.
-* **Roadmap Plan:** Migrate from synchronous file overwrite to a dedicated PostgreSQL database using Prisma ORM (`prisma/schema.prisma`).
+* **Current Shipped Reality:** Single Node.js process (`api/server.js`) persisting state to Prisma SQLite database (`data/foundry.db`) with httpOnly cookie sessions and tenant isolation.
+* **Roadmap Plan:** Migrate to dedicated managed PostgreSQL database cluster using Prisma ORM.
 
 ### 2. Multi-Inference Routing
-* **Current Shipped Reality:** `llm-proxy/server.js` routes requests to NVIDIA NIM (`meta/llama-3.2-90b`) if `$NVIDIA_API_KEY` is present, or falls back to local Ollama on `127.0.0.1:11434`, with deterministic Brand Positioning synthesis fallback.
+* **Current Shipped Reality:** `api/server.js` routes requests to NVIDIA NIM (`meta/llama-3.2-90b`) if `$NVIDIA_API_KEY` is present, or falls back to local Ollama on `127.0.0.1:11434`, with deterministic Brand Positioning synthesis fallback.
 * **Roadmap Plan:** Add native Apple MLX Osaurus proxy endpoint bridge on `127.0.0.1:1337`.
 
 ### 3. Telecom & Payments (2-Way SMS, Stripe Text-to-Pay, Google 5★ Reviews)

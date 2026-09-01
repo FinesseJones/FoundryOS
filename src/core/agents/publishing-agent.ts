@@ -63,15 +63,23 @@ export class PublishingAgent extends BaseAgent {
     // Strict JSON parsing with zero mock fallback
     let parsed: unknown;
     try {
-      // Normalize any JS template backticks to valid escaped JSON strings
-      const normalized = rawOutput.replace(/:\s*`([\s\S]*?)`\s*(,|})/g, (_, content, suffix) => {
-        return `: ${JSON.stringify(content)}${suffix}`;
-      });
-      const jsonMatch = normalized.match(/\{[\s\S]*\}/);
+      const jsonMatch = rawOutput.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('No valid JSON object structure found in response');
       }
-      parsed = JSON.parse(jsonMatch[0]);
+      const rawJson = jsonMatch[0];
+      try {
+        parsed = JSON.parse(rawJson);
+      } catch {
+        // Clean unescaped newlines and template backticks within JSON string literals
+        const sanitized = rawJson
+          .replace(/:\s*`([\s\S]*?)`\s*(,|})/g, (_, content, suffix) => `: ${JSON.stringify(content)}${suffix}`)
+          .replace(/:\s*"([\s\S]*?)"\s*(,|})/g, (_, content, suffix) => {
+            const escaped = content.replace(/\r?\n/g, '\\n').replace(/\t/g, '\\t');
+            return `: "${escaped}"${suffix}`;
+          });
+        parsed = JSON.parse(sanitized);
+      }
     } catch (parseErr: any) {
       throw new Error(`[PublishingAgent] Failed to parse LLM response as JSON: ${parseErr.message}\nRaw LLM Output:\n${rawOutput}`);
     }

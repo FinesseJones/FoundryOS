@@ -48,13 +48,21 @@ export class NvidiaNimProvider extends BaseLLMProvider {
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
     const startTime = Date.now();
-    const endpoint = this.config.baseUrl || (typeof window !== 'undefined' ? '/api/chat' : 'http://localhost:8787/api/chat');
-    const model = this.config.modelName || 'meta/llama-3.1-70b-instruct';
+    const apiKey = this.config.apiKey || process.env.NVIDIA_API_KEY;
+    const directUrl = "https://integrate.api.nvidia.com/v1/chat/completions";
+    const proxyUrl = typeof window !== 'undefined' ? '/api/chat' : 'http://localhost:8787/api/chat';
+    const endpoint = this.config.baseUrl || (apiKey ? directUrl : proxyUrl);
+    const model = this.config.modelName || process.env.NVIDIA_MODEL || 'meta/llama-3.2-90b-vision-instruct';
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (apiKey && endpoint.includes('nvidia.com')) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           model,
           messages: [
@@ -379,13 +387,33 @@ export class MultiProviderLLMFactory {
   }
 
   private registerDefaultProviders() {
-    this.providers.set('nvidia', new NvidiaNimProvider({ provider: 'nvidia', modelName: 'meta/llama-3.1-70b-instruct' }));
-    this.providers.set('ollama', new OllamaProvider({ provider: 'ollama', modelName: 'llama3.1:latest' }));
-    this.providers.set('openai', new OpenAIProvider({ provider: 'openai', modelName: 'gpt-4o' }));
-    this.providers.set('claude', new ClaudeProvider({ provider: 'claude', modelName: 'claude-3-5-sonnet' }));
-    this.providers.set('gemini', new GeminiProvider({ provider: 'gemini', modelName: 'gemini-1.5-pro' }));
-    this.providers.set('openrouter', new OpenRouterProvider({ provider: 'openrouter', modelName: 'openrouter/auto' }));
-    this.providers.set('lmstudio', new LMStudioProvider({ provider: 'lmstudio', modelName: 'local-model' }));
+    // Production Sole Active Provider: NVIDIA NIM
+    this.providers.set('nvidia', new NvidiaNimProvider({
+      provider: 'nvidia',
+      modelName: process.env.NVIDIA_MODEL || 'meta/llama-3.2-90b-vision-instruct',
+    }));
+
+    // Auxiliary / Fallback providers only register if ENABLE_FALLBACK_PROVIDERS=true AND their key/endpoint is present
+    if (process.env.ENABLE_FALLBACK_PROVIDERS === 'true') {
+      if (process.env.OLLAMA_MODEL || process.env.OLLAMA_BASE_URL) {
+        this.providers.set('ollama', new OllamaProvider({ provider: 'ollama', modelName: process.env.OLLAMA_MODEL || 'llama3.1:latest' }));
+      }
+      if (process.env.OPENAI_API_KEY) {
+        this.providers.set('openai', new OpenAIProvider({ provider: 'openai', modelName: 'gpt-4o' }));
+      }
+      if (process.env.ANTHROPIC_API_KEY) {
+        this.providers.set('claude', new ClaudeProvider({ provider: 'claude', modelName: 'claude-3-5-sonnet-20241022' }));
+      }
+      if (process.env.GEMINI_API_KEY) {
+        this.providers.set('gemini', new GeminiProvider({ provider: 'gemini', modelName: 'gemini-1.5-pro' }));
+      }
+      if (process.env.OPENROUTER_API_KEY) {
+        this.providers.set('openrouter', new OpenRouterProvider({ provider: 'openrouter', modelName: 'openrouter/auto' }));
+      }
+      if (process.env.LMSTUDIO_BASE_URL) {
+        this.providers.set('lmstudio', new LMStudioProvider({ provider: 'lmstudio', modelName: 'local-model' }));
+      }
+    }
   }
 
   private enforceQuotaGate(request: PromptRequest) {
@@ -407,23 +435,38 @@ export class MultiProviderLLMFactory {
 
   async executeWithFallback(
     request: PromptRequest,
-    providerOrder: LLMProviderType[] = ['nvidia', 'ollama', 'openai', 'gemini']
+    providerOrder?: LLMProviderType[]
   ): Promise<LLMResponse> {
     // Mandated LLM Gateway Gatekeeper: Check token quota BEFORE calling any external provider!
     this.enforceQuotaGate(request);
 
+    // Production Default: NVIDIA is the sole authoritative provider.
+    // Secondary fallbacks are only allowed if explicitly enabled via ENABLE_FALLBACK_PROVIDERS=true.
+    const allowFallbacks = process.env.ENABLE_FALLBACK_PROVIDERS === 'true';
+    const chain: LLMProviderType[] = providerOrder && allowFallbacks
+      ? providerOrder
+      : allowFallbacks
+        ? ['nvidia', 'ollama', 'openai', 'gemini']
+        : ['nvidia'];
+
     let lastError: Error | null = null;
-    for (const type of providerOrder) {
+    for (const type of chain) {
       const provider = this.providers.get(type);
       if (provider) {
         try {
           return await provider.generateText(request);
         } catch (err) {
           lastError = err as Error;
+          // In production default mode (no fallbacks), fail closed immediately
+          if (!allowFallbacks) {
+            throw new Error(`[LLM Gateway] Production provider (${type}) failed: ${(err as Error).message}`);
+          }
         }
+      } else if (!allowFallbacks) {
+        throw new Error(`[LLM Gateway] Production provider (${type}) is not registered or unavailable.`);
       }
     }
-    throw new Error(`All LLM providers failed in fallback chain: ${lastError?.message}`);
+    throw new Error(`[LLM Gateway] All configured LLM providers failed: ${lastError?.message}`);
   }
 
   async generateStructured<T>(
@@ -434,7 +477,10 @@ export class MultiProviderLLMFactory {
     // Mandated LLM Gateway Gatekeeper: Check token quota BEFORE calling provider!
     this.enforceQuotaGate(request);
 
-    const provider = this.providers.get(providerType) || this.providers.get('nvidia') || this.providers.get('ollama')!;
+    const provider = this.providers.get(providerType) || this.providers.get('nvidia');
+    if (!provider) {
+      throw new Error(`[LLM Gateway] Requested provider "${providerType}" is not configured or unavailable.`);
+    }
     return provider.generateStructured(request, schema);
   }
 }

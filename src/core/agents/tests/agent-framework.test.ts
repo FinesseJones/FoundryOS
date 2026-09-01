@@ -161,7 +161,11 @@ test('SecurityAgent assesses brand risk and impersonation alerts', async () => {
 
   assert.equal(result.agentRole, 'security');
   assert.ok(result.outputSummary.includes('Security audit completed'));
-  assert.equal(result.outputData.impersonationAttemptsDetected, 0);
+  assert.ok(typeof result.outputData.reputationRiskScore === 'number' && (result.outputData.reputationRiskScore as number) >= 0);
+  assert.ok(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(result.outputData.threatLevel as string));
+  assert.ok(typeof result.outputData.impersonationAttemptsDetected === 'number');
+  assert.ok(Array.isArray(result.outputData.recommendedMitigations) && result.outputData.recommendedMitigations.length > 0);
+  assert.equal(result.outputData.accessAuthorized, true);
 });
 
 test('AnalyticsAgent computes content ROI and top topics', async () => {

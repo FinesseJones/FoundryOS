@@ -106,23 +106,31 @@ export class OllamaProvider extends BaseLLMProvider {
 
   async generateText(request: PromptRequest): Promise<LLMResponse> {
     const startTime = Date.now();
+    const model = this.config.modelName || process.env.OLLAMA_MODEL || 'llama3.1:latest';
+    const baseUrl = this.config.baseUrl || process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
+
     try {
-      const res = await fetch(`${this.config.baseUrl || 'http://localhost:11434'}/api/generate`, {
+      const res = await fetch(`${baseUrl}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: this.config.modelName || 'llama3',
+          model,
           prompt: `${request.systemPrompt ? request.systemPrompt + '\n' : ''}${request.prompt}`,
           stream: false,
         }),
       });
 
-      if (!res.ok) throw new Error(`Ollama HTTP Error: ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`Ollama HTTP Error: ${res.status} ${res.statusText}`);
+      }
       const data = (await res.json()) as { response: string };
+      if (!data.response) {
+        throw new Error('Ollama returned empty response.');
+      }
       return {
         text: data.response,
         providerUsed: 'ollama',
-        modelUsed: this.config.modelName || 'llama3',
+        modelUsed: model,
         usage: {
           promptTokens: Math.ceil(request.prompt.length / 4),
           completionTokens: Math.ceil(data.response.length / 4),
@@ -131,20 +139,8 @@ export class OllamaProvider extends BaseLLMProvider {
           latencyMs: Date.now() - startTime,
         },
       };
-    } catch {
-      const text = this.generateOfflineFallbackText(request.prompt);
-      return {
-        text,
-        providerUsed: 'ollama',
-        modelUsed: 'offline-llama3',
-        usage: {
-          promptTokens: 50,
-          completionTokens: 100,
-          totalTokens: 150,
-          estimatedCostUsd: 0,
-          latencyMs: Date.now() - startTime,
-        },
-      };
+    } catch (err: any) {
+      throw new Error(`Ollama generation failed (${model} on ${baseUrl}): ${err.message}`);
     }
   }
 }
@@ -269,7 +265,7 @@ export class MultiProviderLLMFactory {
 
   private registerDefaultProviders() {
     this.providers.set('nvidia', new NvidiaNimProvider({ provider: 'nvidia', modelName: 'meta/llama-3.1-70b-instruct' }));
-    this.providers.set('ollama', new OllamaProvider({ provider: 'ollama', modelName: 'llama3' }));
+    this.providers.set('ollama', new OllamaProvider({ provider: 'ollama', modelName: 'llama3.1:latest' }));
     this.providers.set('openai', new OpenAIProvider({ provider: 'openai', modelName: 'gpt-4o' }));
     this.providers.set('claude', new ClaudeProvider({ provider: 'claude', modelName: 'claude-3-5-sonnet' }));
     this.providers.set('gemini', new GeminiProvider({ provider: 'gemini', modelName: 'gemini-1.5-pro' }));

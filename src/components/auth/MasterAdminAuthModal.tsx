@@ -26,9 +26,8 @@ export const MasterAdminAuthModal: React.FC<MasterAdminAuthModalProps> = ({
   onClose,
   onAuthenticated,
 }) => {
-  const [adminEmail, setAdminEmail] = useState('admin@foundryos.tech');
-  const [adminPassword, setAdminPassword] = useState('REDACTED_PASSWORD');
-  const [masterKey, setMasterKey] = useState('REDACTED_ROOT_KEY');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [masterKey, setMasterKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,30 +37,18 @@ export const MasterAdminAuthModal: React.FC<MasterAdminAuthModalProps> = ({
     setLoading(true);
 
     try {
-      // Create or activate Super Admin Master Session
-      const masterSession: UserSession = {
-        userId: 'usr_finessejones_master',
-        email: adminEmail.trim().toLowerCase(),
-        name: 'Finesse Jones',
-        role: 'SUPER_ADMIN' as any,
-        organizationId: 'org_foundry_hq_master',
-        organizationName: 'FoundryOS Master Control Plane',
-        workspaceId: 'ws_finessejones_root',
-        workspaceName: 'Finesse Jones Platform Root',
-        token: `master_root_token_${Date.now()}`,
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 86400000).toISOString(),
-      };
+      if (!adminEmail || !masterKey) {
+        throw new Error('Please provide both Master Admin email and Secret Key.');
+      }
 
-      // Store in account manager
       const accountManager = AccountManager.getInstance();
-      accountManager.cacheSession(masterSession);
+      const session = await accountManager.masterAdminLogin(adminEmail, masterKey);
 
-      toast.success('🛡️ Master Platform Admin Finesse Jones authenticated with Full Root Privileges!', { icon: '👑' });
-      onAuthenticated(masterSession);
+      toast.success(`🛡️ Master Platform Admin (${session.email}) authenticated with Root Privileges!`, { icon: '👑' });
+      onAuthenticated(session);
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Master Admin Authentication Failed.');
+      setError(err.message || 'Master Admin Authentication Failed. Invalid credentials.');
     } finally {
       setLoading(false);
     }
@@ -129,26 +116,15 @@ export const MasterAdminAuthModal: React.FC<MasterAdminAuthModalProps> = ({
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">Admin Master Password</label>
-            <input
-              type="password"
-              required
-              value={adminPassword}
-              onChange={(e) => setAdminPassword(e.target.value)}
-              placeholder="••••••••••••"
-              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-400 font-mono"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">Hardware / Platform Root Key</label>
+            <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">Hardware / Platform Root Secret Key</label>
             <div className="relative">
               <Key className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500" />
               <input
-                type="text"
+                type="password"
+                required
                 value={masterKey}
                 onChange={(e) => setMasterKey(e.target.value)}
-                placeholder="FOUNDRY_ROOT_SEC_..."
+                placeholder="Enter MASTER_ADMIN_SECRET..."
                 className="w-full pl-9 pr-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-400 font-mono"
               />
             </div>

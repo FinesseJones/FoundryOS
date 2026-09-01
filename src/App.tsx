@@ -152,13 +152,22 @@ export default function App() {
     const [selectedPage, setSelectedPage] = useState<string>('dashboard');
     const [activeStudioLead, setActiveStudioLead] = useState<Lead | null>(null);
 
-    // Restore active session on mount
+    // Restore active session from server httpOnly cookie on mount
     useEffect(() => {
-        const active = accountManager.getCurrentSession();
-        if (active) {
-            setSession(active);
-        }
-        setIsInitializing(false);
+        let mounted = true;
+        accountManager.restoreSessionFromServer().then(active => {
+            if (mounted) {
+                if (active) {
+                    setSession(active);
+                }
+                setIsInitializing(false);
+            }
+        }).catch(() => {
+            if (mounted) {
+                setIsInitializing(false);
+            }
+        });
+        return () => { mounted = false; };
     }, []);
 
     const handleLogout = () => {

@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
@@ -14,6 +14,96 @@ import {
 } from '../index';
 import { ContextBuilder } from '../../context';
 import { createDefaultBusinessDNA } from '../../knowledge';
+import { LLMProviderGateway } from '../../providers/llm-provider-factory';
+
+const originalExecute = LLMProviderGateway.executeWithFallback.bind(LLMProviderGateway);
+
+beforeEach(() => {
+  LLMProviderGateway.executeWithFallback = async (request) => {
+    const prompt = request.prompt || '';
+    let text = '{"result": "mocked test double"}';
+
+    if (prompt.includes('channelOptimizedContent') || prompt.includes('complianceStatus')) {
+      text = JSON.stringify({
+        targetChannel: 'x',
+        scheduledTimeIso: new Date(Date.now() + 3600000).toISOString(),
+        channelOptimizedContent: 'Pulse Dynamics Q3 Update: Transforming commercial operations.',
+        complianceStatus: 'COMPLIANT',
+        hashtags: ['#Growth', '#Operations'],
+        characterCount: 65,
+        requiresHumanApproval: true,
+        distributionStrategy: 'Priority multi-channel broadcasting',
+        riskFactor: 'LOW',
+      });
+    } else if (prompt.includes('reputationRiskScore') || prompt.includes('impersonationAttemptsDetected')) {
+      text = JSON.stringify({
+        reputationRiskScore: 0.04,
+        threatLevel: 'LOW',
+        impersonationAttemptsDetected: 0,
+        activeAlerts: [],
+        brandVoiceViolations: [],
+        recommendedMitigations: ['Monitor weekly social brand mentions'],
+        reputationSummary: 'Brand reputation remains strong with zero critical threats detected.',
+      });
+    } else if (prompt.includes('contentRoi') || prompt.includes('topPerformingTopics')) {
+      text = JSON.stringify({
+        contentRoi: 3.4,
+        conversionRate: 0.048,
+        topPerformingTopics: ['Industrial Automation', 'Zero Downtime', 'Energy Efficiency'],
+        underperformingTopics: ['Generic Tech Buzzwords'],
+        keyInsights: ['Measurable uptime SLAs convert 3x higher than general feature lists.'],
+        recommendedAction: 'Double down on quantifiable commercial ROI case studies.',
+      });
+    } else if (prompt.includes('winningPatterns') || prompt.includes('voiceEvolutionRecommendation')) {
+      text = JSON.stringify({
+        memoriesAnalyzed: 5,
+        winningPatterns: ['Guaranteed sub-15m dispatch response SLA', '20% lower seasonal overhead'],
+        underperformingTropes: ['Generic efficiency claims'],
+        proposedVocabularyAdditions: ['Zero Downtime', 'Telemetric Monitoring'],
+        proposedVocabularyRetirements: ['Cheap Service'],
+        voiceEvolutionRecommendation: 'Lead with measurable SLA guarantees in commercial contractor outreach.',
+        confidenceScore: 0.95,
+      });
+    } else if (prompt.includes('discoveredLeads')) {
+      text = JSON.stringify({
+        industry: 'SAAS',
+        targetRegion: 'National',
+        discoveredLeads: [
+          {
+            id: 101,
+            companyName: 'Apex Cloud',
+            website: 'https://apexcloud.io',
+            primaryContact: 'Sarah Jenkins (VP Growth)',
+            currentStage: 'Discovery',
+            status: 'High Priority',
+            pillarFinancialPain: '$680k annual funnel drop-off loss',
+            pillarProcessGap: 'Legacy non-responsive onboarding',
+            pillarStakeholderAlignment: 'CMO & VP Product',
+            industry: 'SAAS',
+            estimatedRevenueLoss: '$680k/yr',
+            opportunityScore: 94,
+            isAiSourced: true,
+            discoveredAt: new Date().toISOString(),
+          }
+        ],
+        executiveProspectingSummary: 'Identified 1 high-priority prospect.',
+      });
+    } else {
+      text = 'Pulse Dynamics launch announcement: Accelerating commercial transformation with authoritative solutions.';
+    }
+
+    return {
+      text,
+      providerUsed: 'nvidia',
+      modelUsed: 'meta/llama-3.2-90b-vision-instruct',
+      usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150, estimatedCostUsd: 0.0001, latencyMs: 5 },
+    };
+  };
+});
+
+afterEach(() => {
+  LLMProviderGateway.executeWithFallback = originalExecute;
+});
 
 test('AgentRegistry initializes and lists all 7 specialized agents', () => {
   const contextBuilder = new ContextBuilder();

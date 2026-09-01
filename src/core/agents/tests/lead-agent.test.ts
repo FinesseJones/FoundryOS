@@ -1,10 +1,57 @@
-import { test } from 'node:test';
+import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { LeadAgent } from '../lead-agent';
 import { ContextBuilder } from '../../context';
 import { AgentTaskRequest } from '../agent.types';
 import { createDefaultBusinessDNA } from '../../knowledge';
+import { LLMProviderGateway } from '../../providers/llm-provider-factory';
+
+const originalExecute = LLMProviderGateway.executeWithFallback.bind(LLMProviderGateway);
+
+beforeEach(() => {
+  LLMProviderGateway.executeWithFallback = async (request) => {
+    const prompt = request.prompt || '';
+    const isCustom = prompt.includes('globallogistics.com');
+    const company = isCustom ? 'GlobalLogistics Enterprise' : 'Apex Cloud Solutions';
+    const domain = isCustom ? 'https://globallogistics.com' : 'https://apexcloud.io';
+
+    const text = JSON.stringify({
+      industry: 'SAAS',
+      targetRegion: 'National',
+      discoveredLeads: [
+        {
+          id: 101,
+          companyName: company,
+          website: domain,
+          primaryContact: 'Sarah Jenkins (VP Growth)',
+          currentStage: 'Discovery',
+          status: 'High Priority',
+          pillarFinancialPain: '$1.2M in annual operational drag and pipeline leaks',
+          pillarProcessGap: 'Legacy monolithic architecture with slow onboarding',
+          pillarStakeholderAlignment: 'CMO & VP Product (Identified Sponsor)',
+          industry: 'SAAS',
+          estimatedRevenueLoss: '$1.2M/yr',
+          opportunityScore: 94,
+          isAiSourced: true,
+          discoveredAt: new Date().toISOString(),
+        }
+      ],
+      executiveProspectingSummary: 'Discovered high-priority enterprise opportunity.',
+    });
+
+    return {
+      text,
+      providerUsed: 'nvidia',
+      modelUsed: 'meta/llama-3.2-90b-vision-instruct',
+      usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150, estimatedCostUsd: 0.0001, latencyMs: 5 },
+    };
+  };
+});
+
+afterEach(() => {
+  LLMProviderGateway.executeWithFallback = originalExecute;
+});
 
 test('LeadAgent initializes with proper role and access rights', () => {
   const contextBuilder = new ContextBuilder();

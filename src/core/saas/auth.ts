@@ -174,7 +174,13 @@ export class AccountManager {
   private async safeServerFetch(endpoint: string, options: RequestInit): Promise<Response | null> {
     if (!this.isBrowserRuntime()) return null;
     try {
-      return await fetch(endpoint, options);
+      const resp = await fetch(endpoint, options);
+      const contentType = resp.headers.get('content-type') || '';
+      // If server returns HTML or non-JSON (e.g. Vite SPA fallback for /api routes), ignore server and use client state
+      if (!contentType.includes('application/json') && !contentType.includes('application/problem+json')) {
+        return null;
+      }
+      return resp;
     } catch {
       return null;
     }
@@ -306,13 +312,20 @@ export class AccountManager {
     });
 
     if (resp) {
-      if (resp.ok) {
-        const data = await resp.json();
-        this.cacheSession(data.session);
-        return data;
-      } else {
-        const errData = await resp.json();
-        if (errData.error) throw new Error(errData.error);
+      try {
+        if (resp.ok) {
+          const data = await resp.json();
+          this.cacheSession(data.session);
+          return data;
+        } else {
+          const errData = await resp.json().catch(() => ({}));
+          if (errData.error) throw new Error(errData.error);
+        }
+      } catch (err: any) {
+        if (err.message && !err.message.includes('JSON')) {
+          throw err;
+        }
+        // Fall back to client local sandbox
       }
     }
 
@@ -365,13 +378,20 @@ export class AccountManager {
     });
 
     if (resp) {
-      if (resp.ok) {
-        const data = await resp.json();
-        this.cacheSession(data.session);
-        return data;
-      } else {
-        const errData = await resp.json();
-        if (errData.error) throw new Error(errData.error);
+      try {
+        if (resp.ok) {
+          const data = await resp.json();
+          this.cacheSession(data.session);
+          return data;
+        } else {
+          const errData = await resp.json().catch(() => ({}));
+          if (errData.error) throw new Error(errData.error);
+        }
+      } catch (err: any) {
+        if (err.message && !err.message.includes('JSON')) {
+          throw err;
+        }
+        // Fall back to client local sandbox
       }
     }
 
@@ -550,14 +570,18 @@ export class AccountManager {
     });
 
     if (resp && resp.ok) {
-      const org = await resp.json();
-      this.organizations.set(org.id, org);
-      session.organizationId = org.id;
-      session.organizationName = org.name;
-      this.sessions.set(session.token, session);
-      this.cacheSession(session);
-      this.saveState();
-      return org;
+      try {
+        const org = await resp.json();
+        this.organizations.set(org.id, org);
+        session.organizationId = org.id;
+        session.organizationName = org.name;
+        this.sessions.set(session.token, session);
+        this.cacheSession(session);
+        this.saveState();
+        return org;
+      } catch {
+        // Fall back to local creation
+      }
     }
 
     const orgId = `org_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
@@ -605,15 +629,19 @@ export class AccountManager {
     });
 
     if (resp && resp.ok) {
-      const ws = await resp.json();
-      const existing = this.workspaces.get(params.organizationId) || [];
-      this.workspaces.set(params.organizationId, [...existing.filter(w => w.id !== ws.id), ws]);
-      session.workspaceId = ws.id;
-      session.workspaceName = ws.name;
-      this.sessions.set(session.token, session);
-      this.cacheSession(session);
-      this.saveState();
-      return ws;
+      try {
+        const ws = await resp.json();
+        const existing = this.workspaces.get(params.organizationId) || [];
+        this.workspaces.set(params.organizationId, [...existing.filter(w => w.id !== ws.id), ws]);
+        session.workspaceId = ws.id;
+        session.workspaceName = ws.name;
+        this.sessions.set(session.token, session);
+        this.cacheSession(session);
+        this.saveState();
+        return ws;
+      } catch {
+        // Fall back to local creation
+      }
     }
 
     const wsId = `ws_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
@@ -674,11 +702,15 @@ export class AccountManager {
     });
 
     if (resp && resp.ok) {
-      const data = await resp.json();
-      this.companyProfiles.set(params.organizationId, data.companyProfile);
-      this.dnaModels.set(params.organizationId, data.businessDNA);
-      this.saveState();
-      return data;
+      try {
+        const data = await resp.json();
+        this.companyProfiles.set(params.organizationId, data.companyProfile);
+        this.dnaModels.set(params.organizationId, data.businessDNA);
+        this.saveState();
+        return data;
+      } catch {
+        // Fall back to local creation
+      }
     }
 
     const businessId = `biz_${params.organizationId.replace(/^org_/, '')}`;

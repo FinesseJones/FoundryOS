@@ -1,17 +1,46 @@
-import "dotenv/config";
-import dotenv from "dotenv";
-import express from "express";
-import crypto from "node:crypto";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, "..");
+
+// Locate and load .env synchronously from root or cwd
+const envCandidates = [
+  path.join(rootDir, ".env"),
+  path.join(process.cwd(), ".env"),
+  path.join(__dirname, ".env"),
+];
+
+for (const cand of envCandidates) {
+  if (fs.existsSync(cand)) {
+    dotenv.config({ path: cand, override: true });
+    break;
+  }
+}
+
+// Guarantee DATABASE_URL resolves to absolute SQLite DB path
+const defaultDbPath = path.resolve(rootDir, "data/foundry.db");
+if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.trim()) {
+  process.env.DATABASE_URL = `file:${defaultDbPath}`;
+} else if (process.env.DATABASE_URL.startsWith("file:.") || (!process.env.DATABASE_URL.startsWith("file:/") && process.env.DATABASE_URL.startsWith("file:"))) {
+  const relPath = process.env.DATABASE_URL.replace(/^file:/, "");
+  process.env.DATABASE_URL = `file:${path.resolve(rootDir, relPath)}`;
+}
+
+import express from "express";
+import crypto from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import Stripe from "stripe";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
-dotenv.config();
-
 const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
   log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
 });
 
@@ -352,9 +381,10 @@ app.get("/api/health", async (_req, res) => {
     res.json({
       ok: true,
       service: "tacf-api-server",
-      key: !!NVIDIA_KEY,
-      stripe: !!STRIPE_SECRET_KEY,
+      key: !!process.env.NVIDIA_API_KEY,
+      stripe: !!process.env.STRIPE_SECRET_KEY,
       database: "prisma_sqlite",
+      databaseUrl: process.env.DATABASE_URL,
       userCount,
       timestamp: new Date().toISOString(),
     });

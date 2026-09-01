@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server": "node llm-proxy/server.js",
+    "test:checkout": "node scripts/e2e_checkout_test.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

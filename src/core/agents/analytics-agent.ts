@@ -57,8 +57,11 @@ export class AnalyticsAgent extends BaseAgent {
     // Strict JSON parsing with zero mock fallback
     let parsed: unknown;
     try {
-      const cleaned = rawOutput.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-      parsed = JSON.parse(cleaned);
+      const jsonMatch = rawOutput.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No valid JSON object structure found in response');
+      }
+      parsed = JSON.parse(jsonMatch[0]);
     } catch (parseErr: any) {
       throw new Error(`[AnalyticsAgent] Failed to parse LLM response as JSON: ${parseErr.message}\nRaw LLM Output:\n${rawOutput}`);
     }

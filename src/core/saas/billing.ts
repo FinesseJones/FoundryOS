@@ -25,21 +25,21 @@ export class SaaSBillingManager {
   static readonly PLANS: Record<PlanTier, PlanConfig> = {
     starter: {
       tier: 'starter',
-      monthlyCostUsd: 49,
-      monthlyTokenLimit: 50000,
+      monthlyCostUsd: 497,
+      monthlyTokenLimit: 100000,
       maxDnaProfiles: 1,
       allowedAgents: ['brand', 'content'],
     },
     growth: {
       tier: 'growth',
-      monthlyCostUsd: 199,
-      monthlyTokenLimit: 500000,
+      monthlyCostUsd: 997,
+      monthlyTokenLimit: 1000000,
       maxDnaProfiles: 5,
       allowedAgents: ['brand', 'content', 'publishing', 'website', 'security', 'analytics', 'learning'],
     },
     enterprise: {
       tier: 'enterprise',
-      monthlyCostUsd: 499,
+      monthlyCostUsd: 2497,
       monthlyTokenLimit: 10000000,
       maxDnaProfiles: 999,
       allowedAgents: ['brand', 'content', 'publishing', 'website', 'security', 'analytics', 'learning'],

@@ -405,9 +405,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                     onChange={(e) => setPlanTier(e.target.value)}
                     className="w-full rounded-xl bg-slate-900/90 border border-white/10 px-3 py-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   >
-                    <option value="starter">Starter ($49/mo)</option>
-                    <option value="growth">Growth ($199/mo)</option>
-                    <option value="enterprise">Enterprise ($499/mo)</option>
+                    <option value="starter">Starter ($497/mo)</option>
+                    <option value="growth">Growth ($997/mo)</option>
+                    <option value="enterprise">Enterprise ($2,497/mo)</option>
                   </select>
                 </div>
               </div>

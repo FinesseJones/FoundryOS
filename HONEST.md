@@ -16,7 +16,7 @@
 | **Social Media Studio (`SocialMediaStudio.tsx`)** | `REAL` | Client-side generator for 5 channels with visual calendar and realistic preview cards. | Shipped & functional. |
 | **Server-Side Auth (`llm-proxy/server.js`)** | `REAL` | Node.js `crypto.scryptSync` + `timingSafeEqual` with `httpOnly` `SameSite=Lax` cookie sessions and server-verified master admin. | Shipped & verified. |
 | **Client-Side Auth (`src/core/saas/auth.ts`)** | `REAL (SERVER CLIENT)` | Pure server-verified client calling `/api/auth/*` with `credentials: 'include'`. Zero password hashes or sessions in `localStorage`. | Shipped & verified. |
-| **SaaS Billing (`src/core/saas/billing.ts`)** | `MOCK (PRICING CONTRADICTION)` | Fabricated Stripe customer/subscription IDs in-memory. **Contradiction:** Defines `$49 / $199 / $499` vs README `$497 / $997 / $2,497`. | Reconcile pricing tiers & add Stripe API. |
+| **SaaS Billing (`src/core/saas/billing.ts`)** | `MOCK (STANDARDIZED)` | Fabricated Stripe customer/subscription IDs in-memory. **Standardized:** All codebase tiers, UI, and docs unified to `$497 / $997 / $2,497`. | Connect real Stripe API. |
 | **Stripe Text-to-Pay & Webhooks** | `ROADMAP` | Stripe Checkout & Webhook verification. **Gated on credentials.** | `// TODO: needs STRIPE_SECRET_KEY (sk_test_...) and STRIPE_WEBHOOK_SECRET (whsec_...)` |
 | **Governed Connectors (`governed-connectors.ts`)** | `HYBRID` | Risk/approval dispatcher is `REAL`. All `connector.execute()` are `MOCK` (fabricated success). No Twilio/Stripe connectors. | Implement live API dispatch for connectors. |
 | **Security Intelligence (`security-intelligence-service.ts`)** | `MOCK (HEURISTIC)` | 459 lines of executable TypeScript calculating derived scores (`Math.round(conf * 40 + 55)`) and returning canned risk templates. | Connect to real security audit telemetry. |
@@ -34,11 +34,11 @@
 
 ## 📁 Granular File-by-File Codebase Audit
 
-### 1. SaaS Billing & Pricing Contradiction
+### 1. SaaS Billing & Standardized Pricing
 * **[`src/core/saas/billing.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/saas/billing.ts)**: `MOCK`
-  * **Evidence (Lines 25–47):** Defines subscription tiers at `$49/mo` (`starter`), `$199/mo` (`growth`), `$499/mo` (`enterprise`).
-  * **Contradiction:** The README and Pricing Matrix specify `$497/mo`, `$997/mo`, and `$2,497/mo`. Flagged for explicit reconciliation.
-  * **Evidence (Lines 54–55):** Generates fabricated Stripe IDs in-memory: `stripeCustomerId: 'cus_' + organizationId + '_' + Date.now()`, `stripeSubscriptionId: 'sub_' + organizationId + '_' + Date.now()`. No Stripe SDK is imported or called.
+  * **Evidence (Lines 25–47):** Defines subscription tiers standardized at `$497/mo` (`starter`), `$997/mo` (`growth`), `$2,497/mo` (`enterprise`).
+  * **Pricing Reconciliation:** Reconciled across `billing.ts`, `LandingView.tsx`, `BillingView.tsx`, `OnboardingWizard.tsx`, and documentation.
+  * **Evidence (Lines 54–55):** Generates in-memory customer/subscription objects. No live Stripe API connection until `STRIPE_SECRET_KEY` is provided.
 
 ---
 

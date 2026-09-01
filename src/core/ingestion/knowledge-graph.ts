@@ -43,7 +43,7 @@ export class KnowledgeGraphBuilder {
       { id: 'node_serv_1', type: 'service', label: 'Multi-Agent Automation', properties: { agents: 7 }, confidence: 0.95 },
       { id: 'node_cust_1', type: 'customer', label: 'Enterprise Marketing Teams', properties: { segment: 'B2B' }, confidence: 0.9 },
       { id: 'node_comp_2', type: 'competitor', label: 'Legacy CopyBot', properties: { threat: 'low' }, confidence: 0.85 },
-      { id: 'node_off_1', type: 'offer', label: 'Growth Tier Trial', properties: { priceUsd: 199 }, confidence: 0.9 },
+      { id: 'node_off_1', type: 'offer', label: 'Growth Tier Trial', properties: { priceUsd: 997 }, confidence: 0.9 },
       { id: 'node_camp_1', type: 'campaign', label: 'Summer Scale 2026', properties: { status: 'active' }, confidence: 0.95 },
       { id: 'node_cont_1', type: 'content', label: 'Launch Announcement', properties: { channel: 'linkedin' }, confidence: 0.9 },
       { id: 'node_ana_1', type: 'analytics', label: 'ROI Benchmark', properties: { roiMultiplier: 3.4 }, confidence: 0.88 },

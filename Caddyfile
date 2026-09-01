@@ -1,8 +1,12 @@
-tacfos.tech, www.tacfos.tech {
+:80, :443, {$DOMAIN_NAME:localhost} {
     encode gzip
+
+    # Backend API routes
     handle /api/* {
         reverse_proxy llm-proxy:8787
     }
+
+    # Frontend Single Page App
     handle {
         reverse_proxy brand-first-app:80
     }

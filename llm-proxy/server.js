@@ -319,12 +319,25 @@ app.post("/api/auth/login", async (req, res) => {
 app.post("/api/auth/master-login", async (req, res) => {
   try {
     const { email, masterSecret } = req.body;
-    const requiredSecret = process.env.MASTER_ADMIN_SECRET || "FoundryRootSecure2026";
-    const normalizedEmail = (email || "").trim().toLowerCase();
+    const requiredSecret = process.env.MASTER_ADMIN_SECRET;
+    
+    if (!requiredSecret || !requiredSecret.trim()) {
+      return res.status(500).json({ error: "Master admin secret not configured on server." });
+    }
 
-    if (!masterSecret || masterSecret !== requiredSecret) {
+    if (!masterSecret || typeof masterSecret !== "string") {
       return res.status(401).json({ error: "Access Denied: Invalid Master Admin secret key." });
     }
+
+    // Constant-time comparison using fixed-length SHA-256 digests
+    const submittedHash = crypto.createHash("sha256").update(masterSecret).digest();
+    const requiredHash = crypto.createHash("sha256").update(requiredSecret).digest();
+
+    if (!crypto.timingSafeEqual(submittedHash, requiredHash)) {
+      return res.status(401).json({ error: "Access Denied: Invalid Master Admin secret key." });
+    }
+
+    const normalizedEmail = (email || "").trim().toLowerCase();
 
     let userId = db.usersByEmail[normalizedEmail];
     let user = userId ? db.users[userId] : null;

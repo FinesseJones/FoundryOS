@@ -33,14 +33,38 @@ model Session {
 }
 
 model Organization {
-  id          String      @id @default(uuid())
-  name        String
-  ownerUserId String?
-  industry    String      @default("technology_saas")
-  planTier    String      @default("growth")
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  workspaces  Workspace[]
+  id                   String         @id @default(uuid())
+  name                 String
+  ownerUserId          String?
+  industry             String         @default("technology_saas")
+  planTier             String         @default("growth")
+  stripeCustomerId     String?        @unique
+  stripeSubscriptionId String?        @unique
+  subscriptionStatus   String         @default("inactive")
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  workspaces           Workspace[]
+  subscriptions        Subscription[]
+}
+
+model Subscription {
+  id                   String       @id @default(uuid())
+  organizationId       String
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String
+  stripeSubscriptionId String       @unique
+  stripePriceId        String
+  planTier             String
+  status               String
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean      @default(false)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([stripeCustomerId])
 }
 
 model Workspace {

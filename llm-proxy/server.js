@@ -2,18 +2,201 @@ import express from "express";
 import crypto from "node:crypto";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
+import Stripe from "stripe";
 
 const prisma = new PrismaClient({
   log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
 });
 
 const app = express();
-app.use(express.json({ limit: "2mb" }));
 
 const NVIDIA_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 
-// ─── 1. Server-Side Scrypt Password Hashing ─────────────────────────────────
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+
+function getStripeClient() {
+  if (!STRIPE_SECRET_KEY || !STRIPE_SECRET_KEY.trim()) {
+    return null;
+  }
+  return new Stripe(STRIPE_SECRET_KEY, {
+    apiVersion: "2024-06-20",
+  });
+}
+
+// ─── 1. Stripe Raw Webhook Endpoint (MUST be before express.json()) ─────────
+
+app.post(
+  "/api/webhooks/stripe",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    if (!STRIPE_WEBHOOK_SECRET || !STRIPE_WEBHOOK_SECRET.trim()) {
+      console.error("[Stripe Webhook] Error: STRIPE_WEBHOOK_SECRET not configured on server.");
+      return res.status(500).json({ error: "Stripe webhook secret not configured." });
+    }
+
+    const stripe = getStripeClient();
+    if (!stripe) {
+      return res.status(500).json({ error: "Stripe secret key not configured." });
+    }
+
+    const sig = req.headers["stripe-signature"];
+    if (!sig) {
+      return res.status(400).json({ error: "Missing stripe-signature header." });
+    }
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+      console.error("[Stripe Webhook] Signature verification failed:", err.message);
+      return res.status(400).json({ error: `Webhook signature verification failed: ${err.message}` });
+    }
+
+    console.log(`[Stripe Webhook] Verified event received: ${event.type} (${event.id})`);
+
+    try {
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object;
+          const organizationId = session.client_reference_id || session.metadata?.organizationId;
+          const stripeCustomerId = session.customer;
+          const stripeSubscriptionId = session.subscription;
+          const planTier = session.metadata?.planTier || "growth";
+
+          if (organizationId) {
+            await prisma.organization.update({
+              where: { id: organizationId },
+              data: {
+                stripeCustomerId,
+                stripeSubscriptionId,
+                planTier,
+                subscriptionStatus: "active",
+              },
+            });
+            console.log(`[Stripe Webhook] Organization '${organizationId}' activated on tier '${planTier}'.`);
+          }
+          break;
+        }
+
+        case "customer.subscription.created":
+        case "customer.subscription.updated": {
+          const subscription = event.data.object;
+          const organizationId = subscription.metadata?.organizationId;
+          const stripeCustomerId = subscription.customer;
+          const stripeSubscriptionId = subscription.id;
+          const planTier = subscription.metadata?.planTier || "growth";
+          const status = subscription.status;
+          const currentPeriodStart = new Date(subscription.current_period_start * 1000);
+          const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+          const stripePriceId = subscription.items?.data?.[0]?.price?.id || "";
+
+          await prisma.subscription.upsert({
+            where: { stripeSubscriptionId },
+            create: {
+              organizationId: organizationId || "",
+              stripeCustomerId,
+              stripeSubscriptionId,
+              stripePriceId,
+              planTier,
+              status,
+              currentPeriodStart,
+              currentPeriodEnd,
+              cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+            },
+            update: {
+              status,
+              planTier,
+              currentPeriodStart,
+              currentPeriodEnd,
+              cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+            },
+          });
+
+          if (organizationId) {
+            await prisma.organization.update({
+              where: { id: organizationId },
+              data: {
+                stripeCustomerId,
+                stripeSubscriptionId,
+                planTier,
+                subscriptionStatus: status,
+                currentPeriodEnd,
+              },
+            });
+            console.log(`[Stripe Webhook] Updated subscription for org '${organizationId}' to status '${status}'.`);
+          }
+          break;
+        }
+
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object;
+          const organizationId = subscription.metadata?.organizationId;
+          const stripeSubscriptionId = subscription.id;
+
+          await prisma.subscription.updateMany({
+            where: { stripeSubscriptionId },
+            data: { status: "canceled" },
+          });
+
+          if (organizationId) {
+            await prisma.organization.update({
+              where: { id: organizationId },
+              data: {
+                subscriptionStatus: "canceled",
+              },
+            });
+            console.log(`[Stripe Webhook] Subscription canceled for org '${organizationId}'.`);
+          }
+          break;
+        }
+
+        case "invoice.paid": {
+          const invoice = event.data.object;
+          const stripeSubscriptionId = invoice.subscription;
+          if (stripeSubscriptionId) {
+            await prisma.subscription.updateMany({
+              where: { stripeSubscriptionId },
+              data: { status: "active" },
+            });
+          }
+          break;
+        }
+
+        case "invoice.payment_failed": {
+          const invoice = event.data.object;
+          const stripeSubscriptionId = invoice.subscription;
+          if (stripeSubscriptionId) {
+            await prisma.subscription.updateMany({
+              where: { stripeSubscriptionId },
+              data: { status: "past_due" },
+            });
+            await prisma.organization.updateMany({
+              where: { stripeSubscriptionId },
+              data: { subscriptionStatus: "past_due" },
+            });
+          }
+          break;
+        }
+
+        default:
+          console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+      }
+
+      res.status(200).json({ received: true });
+    } catch (err) {
+      console.error("[Stripe Webhook] Error processing event:", err);
+      res.status(500).json({ error: "Failed to process webhook event." });
+    }
+  }
+);
+
+// ─── 2. Global JSON Body Parser (Applied to all remaining routes) ───────────
+
+app.use(express.json({ limit: "2mb" }));
+
+// ─── 3. Server-Side Scrypt Password Hashing ─────────────────────────────────
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -33,7 +216,7 @@ function generateSessionToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
-// ─── 2. Server Authentication & httpOnly Cookie Handling ───────────────────
+// ─── 4. Server Authentication & httpOnly Cookie Handling ───────────────────
 
 function parseCookies(req) {
   const list = {};
@@ -135,7 +318,7 @@ async function assertOrgOwnership(req, res, organizationId) {
   return org;
 }
 
-// ─── 3. Health Check Endpoint ───────────────────────────────────────────────
+// ─── 5. Health Check Endpoint ───────────────────────────────────────────────
 
 app.get("/api/health", async (_req, res) => {
   try {
@@ -144,6 +327,7 @@ app.get("/api/health", async (_req, res) => {
       ok: true,
       service: "tacf-api-server",
       key: !!NVIDIA_KEY,
+      stripe: !!STRIPE_SECRET_KEY,
       database: "prisma_sqlite",
       userCount,
       timestamp: new Date().toISOString(),
@@ -153,7 +337,7 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
-// ─── 4. Server-Side Authentication Endpoints ────────────────────────────────
+// ─── 6. Server-Side Authentication Endpoints ────────────────────────────────
 
 // Register
 app.post("/api/auth/register", async (req, res) => {
@@ -381,7 +565,6 @@ app.post("/api/auth/demo", async (_req, res) => {
     const demoToken = `demo_${generateSessionToken()}`;
     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
 
-    // Ensure Demo User exists
     let demoUser = await prisma.user.findUnique({
       where: { email: "guest.demo@tacfos.tech" },
     });
@@ -397,7 +580,6 @@ app.post("/api/auth/demo", async (_req, res) => {
       });
     }
 
-    // Ensure Demo Org & Workspace exist in database
     let demoOrg = await prisma.organization.findUnique({
       where: { id: "org_demo_sandbox" },
     });
@@ -521,7 +703,131 @@ function normalizeCompanyUrl(url) {
   return `https://${clean}`;
 }
 
-// ─── 5. Server-Side Tenant Endpoints (Strict ISOL-01 Enforcement) ───────────
+// ─── 7. Stripe Subscription & Billing Endpoints (Fail-Closed) ───────────────
+
+app.post("/api/billing/create-checkout-session", authenticateSession, async (req, res) => {
+  try {
+    const stripe = getStripeClient();
+    if (!stripe) {
+      return res.status(500).json({
+        error: "Stripe secret key not configured on server. Fail closed: please set STRIPE_SECRET_KEY in environment or .env.",
+      });
+    }
+
+    const { organizationId, planTier, successUrl, cancelUrl } = req.body;
+    if (!organizationId) {
+      return res.status(400).json({ error: "organizationId is required." });
+    }
+
+    const org = await assertOrgOwnership(req, res, organizationId);
+    if (!org) return;
+
+    const tier = (planTier || "growth").toLowerCase();
+    const prices = {
+      starter: { amount: 49700, name: "FoundryOS Starter Tier" },
+      growth: { amount: 99700, name: "FoundryOS Growth Tier" },
+      enterprise: { amount: 249700, name: "FoundryOS Enterprise Tier" },
+    };
+
+    if (!prices[tier]) {
+      return res.status(400).json({
+        error: `Invalid plan tier '${planTier}'. Standardized tiers are starter ($497), growth ($997), enterprise ($2,497).`,
+      });
+    }
+
+    // 1. Get or create Stripe Customer
+    let customerId = org.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: req.user.email,
+        name: org.name,
+        metadata: {
+          organizationId: org.id,
+          userId: req.user.id,
+        },
+      });
+      customerId = customer.id;
+      await prisma.organization.update({
+        where: { id: org.id },
+        data: { stripeCustomerId: customerId },
+      });
+    }
+
+    // 2. Create Checkout Session in subscription mode
+    const appOrigin = req.headers.origin || "http://localhost:5173";
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      client_reference_id: org.id,
+      payment_method_types: ["card"],
+      mode: "subscription",
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: prices[tier].name,
+              description: `FoundryOS Autonomous Business OS — ${tier.toUpperCase()} Plan ($${prices[tier].amount / 100}/mo)`,
+            },
+            unit_amount: prices[tier].amount,
+            recurring: {
+              interval: "month",
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        organizationId: org.id,
+        planTier: tier,
+      },
+      subscription_data: {
+        metadata: {
+          organizationId: org.id,
+          planTier: tier,
+        },
+      },
+      success_url: successUrl || `${appOrigin}/?session_id={CHECKOUT_SESSION_ID}&billing=success`,
+      cancel_url: cancelUrl || `${appOrigin}/?billing=canceled`,
+    });
+
+    res.status(200).json({
+      sessionId: session.id,
+      url: session.url,
+      planTier: tier,
+      stripeCustomerId: customerId,
+    });
+  } catch (err) {
+    console.error("[Stripe Billing] Error creating checkout session:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/billing/subscription/:organizationId", authenticateSession, async (req, res) => {
+  try {
+    const { organizationId } = req.params;
+    const org = await assertOrgOwnership(req, res, organizationId);
+    if (!org) return;
+
+    const sub = await prisma.subscription.findFirst({
+      where: { organizationId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json({
+      organizationId: org.id,
+      planTier: org.planTier,
+      subscriptionStatus: org.subscriptionStatus,
+      stripeCustomerId: org.stripeCustomerId,
+      stripeSubscriptionId: org.stripeSubscriptionId,
+      currentPeriodEnd: org.currentPeriodEnd,
+      subscription: sub || null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── 8. Server-Side Tenant Endpoints (Strict ISOL-01 Enforcement) ───────────
 
 // Create Organization
 app.post("/api/tenant/organization", authenticateSession, async (req, res) => {
@@ -794,7 +1100,7 @@ app.put("/api/tenant/dna/:organizationId", authenticateSession, async (req, res)
       updatedAt: new Date().toISOString(),
     };
 
-    const updated = await prisma.businessDNA.update({
+    await prisma.businessDNA.update({
       where: { organizationId },
       data: {
         dataJson: JSON.stringify(updatedObj),
@@ -807,9 +1113,9 @@ app.put("/api/tenant/dna/:organizationId", authenticateSession, async (req, res)
   }
 });
 
-// ─── 6. Authoritative Organization System of Record Endpoints ───────────────
+// ─── 9. Authoritative Organization System of Record Endpoints ───────────────
 
-// 6.1 Full Organization State Bundle
+// 9.1 Full Organization State Bundle
 app.get("/api/tenant/organization/:organizationId/state", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
   const org = await assertOrgOwnership(req, res, organizationId);
@@ -825,6 +1131,7 @@ app.get("/api/tenant/organization/:organizationId/state", authenticateSession, a
     agentTasks,
     approvals,
     auditEvents,
+    subscriptions,
   ] = await Promise.all([
     prisma.workspace.findMany({ where: { organizationId } }),
     prisma.companyProfile.findUnique({ where: { organizationId } }),
@@ -835,6 +1142,7 @@ app.get("/api/tenant/organization/:organizationId/state", authenticateSession, a
     prisma.agentTaskRecord.findMany({ where: { organizationId }, orderBy: { createdAt: "desc" }, take: 100 }),
     prisma.approvalRequest.findMany({ where: { organizationId }, orderBy: { createdAt: "desc" } }),
     prisma.auditEvent.findMany({ where: { organizationId }, orderBy: { timestamp: "desc" }, take: 500 }),
+    prisma.subscription.findMany({ where: { organizationId }, orderBy: { createdAt: "desc" } }),
   ]);
 
   let businessDNA = null;
@@ -849,6 +1157,7 @@ app.get("/api/tenant/organization/:organizationId/state", authenticateSession, a
     companyProfile: profile || null,
     businessDNA,
     workspaces,
+    subscriptions,
     insights: insights.map((i) => {
       try {
         return { id: i.id, organizationId: i.organizationId, title: i.title, summary: i.summary, category: i.category, impact: i.impact, createdAt: i.createdAt.toISOString(), ...JSON.parse(i.dataJson || "{}") };
@@ -889,7 +1198,7 @@ app.get("/api/tenant/organization/:organizationId/state", authenticateSession, a
   });
 });
 
-// 6.2 Insights
+// 9.2 Insights
 app.get("/api/tenant/organization/:organizationId/insights", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
   const org = await assertOrgOwnership(req, res, organizationId);
@@ -935,7 +1244,7 @@ app.post("/api/tenant/organization/:organizationId/insights", authenticateSessio
   }
 });
 
-// 6.3 Recommendations
+// 9.3 Recommendations
 app.get("/api/tenant/organization/:organizationId/recommendations", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
   const org = await assertOrgOwnership(req, res, organizationId);
@@ -981,7 +1290,7 @@ app.post("/api/tenant/organization/:organizationId/recommendations", authenticat
   }
 });
 
-// 6.4 Artifacts
+// 9.4 Artifacts
 app.get("/api/tenant/organization/:organizationId/artifacts", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
   const org = await assertOrgOwnership(req, res, organizationId);
@@ -1026,7 +1335,7 @@ app.post("/api/tenant/organization/:organizationId/artifacts", authenticateSessi
   }
 });
 
-// 6.5 Agent Tasks
+// 9.5 Agent Tasks
 app.get("/api/tenant/organization/:organizationId/agent-tasks", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
   const org = await assertOrgOwnership(req, res, organizationId);
@@ -1071,7 +1380,7 @@ app.post("/api/tenant/organization/:organizationId/agent-tasks", authenticateSes
   }
 });
 
-// 6.6 Human Approvals
+// 9.6 Human Approvals
 app.get("/api/tenant/organization/:organizationId/approvals", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
   const org = await assertOrgOwnership(req, res, organizationId);
@@ -1141,7 +1450,7 @@ app.patch("/api/tenant/organization/:organizationId/approvals/:approvalId", auth
   }
 });
 
-// 6.7 Audit Events
+// 9.7 Audit Events
 app.get("/api/tenant/organization/:organizationId/audit-events", authenticateSession, async (req, res) => {
   const { organizationId } = req.params;
   const org = await assertOrgOwnership(req, res, organizationId);
@@ -1203,7 +1512,7 @@ app.post("/api/tenant/organization/:organizationId/audit-events", authenticateSe
   }
 });
 
-// ─── 7. LLM Proxy Route (NVIDIA NIM Primary, Ollama Fallback) ──────────────
+// ─── 10. LLM Proxy Route (NVIDIA NIM Primary, Ollama Fallback) ─────────────
 
 const OLLAMA_URL = process.env.OLLAMA_HOST ? `${process.env.OLLAMA_HOST}/api/chat` : "http://localhost:11434/api/chat";
 
@@ -1281,13 +1590,12 @@ app.post("/api/chat", async (req, res) => {
   });
 });
 
-// ─── 8. Startup & Server Initialization ─────────────────────────────────────
+// ─── 11. Startup & Server Initialization ────────────────────────────────────
 
 const PORT = process.env.PORT || 8787;
 
 async function startServer() {
   try {
-    // Connect and verify database connection
     await prisma.$connect();
     console.log("[Prisma] SQLite Database connected successfully.");
 

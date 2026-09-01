@@ -386,6 +386,10 @@ export class MultiProviderLLMFactory {
     this.billingManager = billingManager;
   }
 
+  registerProvider(type: LLMProviderType, provider: ILLMProvider) {
+    this.providers.set(type, provider);
+  }
+
   private registerDefaultProviders() {
     // Production Sole Active Provider: NVIDIA NIM
     this.providers.set('nvidia', new NvidiaNimProvider({

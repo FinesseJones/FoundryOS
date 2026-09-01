@@ -39,6 +39,16 @@ test('Epic 11C: Stripe Plan upgrade clears QuotaExceededError and resumes LLM Pr
   const sub = billing.initializeSubscription('org_cost_upgrade_1', 'starter');
 
   const factory = new MultiProviderLLMFactory(billing);
+  const mockProvider = {
+    generateText: async () => ({
+      text: 'Generated copy',
+      providerUsed: 'nvidia',
+      modelUsed: 'meta/llama-3.2-90b-vision-instruct',
+      usage: { promptTokens: 50, completionTokens: 50, totalTokens: 100, estimatedCostUsd: 0.0001, latencyMs: 5 },
+    }),
+    generateStructured: async () => { throw new Error('Not implemented'); },
+  };
+  factory.registerProvider('nvidia', mockProvider as any);
 
   // Exhaust Starter quota
   billing.recordTokenUsage('org_cost_upgrade_1', 100000);

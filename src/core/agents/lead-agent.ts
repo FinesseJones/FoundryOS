@@ -7,6 +7,7 @@ export const DiscoveredLeadSchema = z.object({
   id: z.number().or(z.string()),
   companyName: z.string().min(1),
   website: z.string().min(1),
+  targetRole: z.string().default('Executive Decision Maker (Target Role)'),
   primaryContact: z.string().min(1),
   currentStage: z.enum(['Discovery', 'Proposal', 'Evaluation', 'Lost']).default('Discovery'),
   status: z.enum(['High Priority', 'Medium Priority', 'Low Priority']).default('High Priority'),
@@ -17,6 +18,14 @@ export const DiscoveredLeadSchema = z.object({
   estimatedRevenueLoss: z.string().default('$500k/yr'),
   opportunityScore: z.number().min(0).max(100),
   isAiSourced: z.boolean().default(true),
+  isAiEstimated: z.boolean().default(true),
+  dataSource: z.string().default('AI-Estimated Domain Signal Analysis (Verify Before Outreach)'),
+  verificationStatus: z.enum([
+    'AI_ESTIMATED_VERIFY_BEFORE_OUTREACH',
+    'ROLE_PROFILE_UNVERIFIED',
+    'DOMAIN_AUDITED',
+  ]).default('AI_ESTIMATED_VERIFY_BEFORE_OUTREACH'),
+  verificationWarning: z.string().default('AI-estimated opportunity model. Confirm executive contact details before initiating outreach.'),
   discoveredAt: z.string().default(() => new Date().toISOString()),
 });
 
@@ -66,8 +75,8 @@ export class LeadAgent extends BaseAgent {
       role: this.role,
       taskType: 'brand_analysis',
       prompt: params.customTargetDomain
-        ? `Audit custom target domain "${params.customTargetDomain}" in the ${params.industry || 'commercial'} industry. Quantify annual financial pain, identify specific technical/process gaps, and map the economic decision maker.`
-        : `Identify and qualify ${params.batchSize || 2} prospective enterprise leads in the ${params.industry || 'saas'} industry seeking digital transformation and agency-replacement solutions.`,
+        ? `Audit custom target domain "${params.customTargetDomain}" in the ${params.industry || 'commercial'} industry. Quantify annual financial pain, identify specific technical/process gaps, and map the economic decision maker role. DO NOT hallucinate personal names.`
+        : `Identify and qualify ${params.batchSize || 2} prospective enterprise leads in the ${params.industry || 'saas'} industry seeking digital transformation and agency-replacement solutions. Map target decision maker roles with explicit AI-estimated verification tags. DO NOT hallucinate personal names.`,
       payload: params,
     }, context);
 
@@ -95,6 +104,12 @@ export class LeadAgent extends BaseAgent {
       `Target Prospect Industry: ${industry}\n` +
       `Prospect Count: ${batchSize}\n` +
       `Task Directive: "${userPrompt}"\n\n` +
+      `IMPORTANT GROUNDING INSTRUCTIONS:\n` +
+      `1. DO NOT invent, hallucinate, or fabricate specific personal individual names (e.g. do NOT return 'Sarah Jenkins' or 'Greg Lehmkuhl').\n` +
+      `2. Instead, specify the exact TARGET EXECUTIVE ROLE / TITLE needed for this opportunity (e.g. 'VP Operations / Facility Director' or 'Chief Operating Officer & VP Procurement').\n` +
+      `3. In 'primaryContact', format as 'Target Role: <Title> (Unverified - Verify Before Outreach)'.\n` +
+      `4. In 'dataSource', specify 'AI-Estimated Domain Signal Analysis (Verify Before Outreach)'.\n` +
+      `5. In 'verificationStatus', provide 'AI_ESTIMATED_VERIFY_BEFORE_OUTREACH'.\n\n` +
       `You MUST respond with valid, raw JSON (no markdown fences, no explanatory preambles) strictly following this JSON schema:\n` +
       `{\n` +
       `  "industry": "${industry}",\n` +
@@ -104,16 +119,21 @@ export class LeadAgent extends BaseAgent {
       `      "id": ${Date.now()},\n` +
       `      "companyName": "<Target Prospect Company Name>",\n` +
       `      "website": "<https://prospectdomain.com>",\n` +
-      `      "primaryContact": "<Executive Name & Role, e.g. Sarah Jenkins (VP Growth)>",\n` +
+      `      "targetRole": "<Target Executive Role/Title only, e.g. VP Operations / Facility Director>",\n` +
+      `      "primaryContact": "Target Role: <Target Executive Role/Title> (Unverified - Verify Before Outreach)",\n` +
       `      "currentStage": "Discovery",\n` +
       `      "status": "High Priority",\n` +
       `      "pillarFinancialPain": "<quantified annual revenue loss or cost drag with exact dollar figure, e.g. $1.2M annual revenue lost to manual dispatch delays>",\n` +
       `      "pillarProcessGap": "<concrete operational or technological bottleneck>",\n` +
-      `      "pillarStakeholderAlignment": "<key economic buyer and department sponsor>",\n` +
+      `      "pillarStakeholderAlignment": "<key economic buyer and department sponsor role>",\n` +
       `      "industry": "${industry.toUpperCase()}",\n` +
       `      "estimatedRevenueLoss": "<e.g. $1.2M/yr>",\n` +
       `      "opportunityScore": <integer score between 80 and 99>,\n` +
       `      "isAiSourced": true,\n` +
+      `      "isAiEstimated": true,\n` +
+      `      "dataSource": "AI-Estimated Domain Signal Analysis (Verify Before Outreach)",\n` +
+      `      "verificationStatus": "AI_ESTIMATED_VERIFY_BEFORE_OUTREACH",\n` +
+      `      "verificationWarning": "AI-estimated opportunity model. Confirm executive contact details before initiating outreach.",\n` +
       `      "discoveredAt": "${new Date().toISOString()}"\n` +
       `    }\n` +
       `  ],\n` +

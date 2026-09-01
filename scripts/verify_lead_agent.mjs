@@ -60,6 +60,25 @@ async function main() {
     throw new Error("Missing required 3-Pillar structure in discovered leads!");
   }
 
+  if (leads[0].isAiEstimated !== true) {
+    throw new Error("Grounded requirement failed: isAiEstimated must be true!");
+  }
+
+  if (leads[0].verificationStatus !== 'AI_ESTIMATED_VERIFY_BEFORE_OUTREACH') {
+    throw new Error(`Grounded requirement failed: unexpected verificationStatus: ${leads[0].verificationStatus}`);
+  }
+
+  if (!leads[0].dataSource || !leads[0].dataSource.includes('Verify Before Outreach')) {
+    throw new Error(`Grounded requirement failed: missing or invalid dataSource label: ${leads[0].dataSource}`);
+  }
+
+  console.log("\n🛡️ Grounding Validations Passed:");
+  console.log(`   - isAiEstimated: ${leads[0].isAiEstimated}`);
+  console.log(`   - verificationStatus: ${leads[0].verificationStatus}`);
+  console.log(`   - dataSource: ${leads[0].dataSource}`);
+  console.log(`   - primaryContact: ${leads[0].primaryContact}`);
+  console.log(`   - targetRole: ${leads[0].targetRole || 'Synthesized'}`);
+
   // ─── Test 2: Error Surface Test (Forced Invalid LLM Response) ────────────────
   console.log("\n--- [Test 2] Fail-Closed Proof: Forcing invalid LLM response ---");
 

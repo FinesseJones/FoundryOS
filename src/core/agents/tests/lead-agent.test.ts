@@ -27,16 +27,21 @@ beforeEach(() => {
       id: 101 + idx,
       companyName: count > 1 ? `${company} ${idx + 1}` : company,
       website: domain,
-      primaryContact: 'Sarah Jenkins (VP Growth)',
+      targetRole: 'VP Operations / Chief Facilities Officer',
+      primaryContact: 'Target Role: VP Operations (Unverified - Verify Before Outreach)',
       currentStage: 'Discovery' as const,
       status: 'High Priority' as const,
       pillarFinancialPain: '$1.2M in annual operational drag and pipeline leaks',
       pillarProcessGap: 'Legacy monolithic architecture with slow onboarding',
-      pillarStakeholderAlignment: 'CMO & VP Product (Identified Sponsor)',
+      pillarStakeholderAlignment: 'CMO & VP Product (Target Role)',
       industry: 'SAAS',
       estimatedRevenueLoss: '$1.2M/yr',
       opportunityScore: 94,
       isAiSourced: true,
+      isAiEstimated: true,
+      dataSource: 'AI-Estimated Domain Signal Analysis (Verify Before Outreach)',
+      verificationStatus: 'AI_ESTIMATED_VERIFY_BEFORE_OUTREACH' as const,
+      verificationWarning: 'AI-estimated opportunity model. Confirm executive contact details before initiating outreach.',
       discoveredAt: new Date().toISOString(),
     }));
 
@@ -71,7 +76,7 @@ test('LeadAgent initializes with proper role and access rights', () => {
   assert.equal(leadAgent.canWriteDomain('publishing_history'), false);
 });
 
-test('LeadAgent discovers leads across industries with 3 Opportunity Pillars', async () => {
+test('LeadAgent discovers leads across industries with 3 Opportunity Pillars and Grounding Labels', async () => {
   const contextBuilder = new ContextBuilder();
   const leadAgent = new LeadAgent(contextBuilder);
 
@@ -82,11 +87,16 @@ test('LeadAgent discovers leads across industries with 3 Opportunity Pillars', a
   assert.ok(saasLeads[0].pillarProcessGap.length > 5);
   assert.ok(saasLeads[0].pillarStakeholderAlignment.length > 3);
   assert.equal(saasLeads[0].isAiSourced, true);
+  assert.equal(saasLeads[0].isAiEstimated, true);
+  assert.equal(saasLeads[0].verificationStatus, 'AI_ESTIMATED_VERIFY_BEFORE_OUTREACH');
+  assert.ok(saasLeads[0].dataSource.includes('Verify Before Outreach') || saasLeads[0].dataSource.includes('AI-Estimated'));
+  assert.ok(saasLeads[0].primaryContact.includes('Target Role') || saasLeads[0].primaryContact.includes('Verify'));
 
   const legalLeads = await leadAgent.discoverLeads({ industry: 'legal', batchSize: 1 });
   assert.equal(legalLeads.length, 1);
   assert.ok(legalLeads[0].companyName.length > 0);
   assert.ok(legalLeads[0].pillarFinancialPain.length > 0);
+  assert.equal(legalLeads[0].isAiEstimated, true);
 });
 
 test('LeadAgent audits a custom target domain and synthesizes customized pillars', async () => {

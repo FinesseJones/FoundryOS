@@ -37,6 +37,7 @@ import { ContextBuilder } from "@/core/context";
 export interface Lead {
     id: number;
     companyName: string;
+    targetRole?: string;
     primaryContact: string;
     currentStage: 'Discovery' | 'Proposal' | 'Evaluation' | 'Won' | 'Lost';
     status: 'High Priority' | 'Medium Priority' | 'Low Priority';
@@ -47,6 +48,10 @@ export interface Lead {
     industry?: string;
     opportunityScore?: number;
     isAiSourced?: boolean;
+    isAiEstimated?: boolean;
+    dataSource?: string;
+    verificationStatus?: string;
+    verificationWarning?: string;
     discoveredAt?: string;
 }
 
@@ -102,8 +107,9 @@ const Leads: React.FC<LeadsProps> = ({ initialLeads, currentUser, onOpenWebsiteS
 
             // Convert to Lead format and prepend
             const newLeads: Lead[] = discovered.map(d => ({
-                id: d.id,
+                id: typeof d.id === 'number' ? d.id : Date.now(),
                 companyName: d.companyName,
+                targetRole: d.targetRole,
                 primaryContact: d.primaryContact,
                 currentStage: d.currentStage,
                 status: d.status,
@@ -114,12 +120,16 @@ const Leads: React.FC<LeadsProps> = ({ initialLeads, currentUser, onOpenWebsiteS
                 industry: d.industry,
                 opportunityScore: d.opportunityScore,
                 isAiSourced: true,
+                isAiEstimated: d.isAiEstimated ?? true,
+                dataSource: d.dataSource || 'AI-Estimated Domain Signal Analysis (Verify Before Outreach)',
+                verificationStatus: d.verificationStatus || 'AI_ESTIMATED_VERIFY_BEFORE_OUTREACH',
+                verificationWarning: d.verificationWarning || 'AI-estimated opportunity model. Confirm executive contact details before initiating outreach.',
                 discoveredAt: d.discoveredAt
             }));
 
             setLeads(prev => [...newLeads, ...prev]);
             logSystemEvent('Leads', 'CREATE', `Lead Agent discovered and ingested ${newLeads.length} leads in ${scoutIndustry}.`, currentUser.role);
-            toast.success(`🤖 Lead Agent successfully prospected and added ${newLeads.length} high-value leads!`);
+            toast.success(`🤖 Lead Agent successfully prospected and added ${newLeads.length} grounded leads!`);
 
             setIsScouting(false);
             setIsScoutModalOpen(false);
@@ -491,13 +501,22 @@ const Leads: React.FC<LeadsProps> = ({ initialLeads, currentUser, onOpenWebsiteS
                     </div>
                 </div>
 
+                {/* Grounding Disclaimer Banner */}
+                <div className="flex items-center gap-3 p-3.5 bg-amber-950/40 border border-amber-500/30 rounded-2xl text-amber-300 text-xs">
+                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div>
+                        <span className="font-bold text-amber-200">AI Grounding Standard: </span>
+                        <span>All AI-sourced leads are synthesized from public domain audits and heuristic opportunity modeling. Target roles must be verified before initiating commercial outreach. Zero fabricated personal contacts.</span>
+                    </div>
+                </div>
+
                 {/* 3. LEADS PIPELINE TABLE */}
                 <div className="overflow-hidden rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl">
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-slate-800 text-left">
                             <thead className="bg-slate-950/80">
                                 <tr className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                    <th className="px-6 py-3.5">Company & Prospect</th>
+                                    <th className="px-6 py-3.5">Company & Target Role</th>
                                     <th className="px-6 py-3.5">Stage & Priority</th>
                                     <th className="px-6 py-3.5">1. Financial Mandate (Cost)</th>
                                     <th className="px-6 py-3.5">2. Process & Stakeholder Gap</th>
@@ -515,29 +534,35 @@ const Leads: React.FC<LeadsProps> = ({ initialLeads, currentUser, onOpenWebsiteS
                                     filteredLeads.map((lead) => (
                                         <tr key={lead.id} className="hover:bg-slate-800/40 transition-colors">
                                             <td className="px-6 py-4">
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-2">
+                                                <div className="space-y-1.5">
+                                                    <div className="flex flex-wrap items-center gap-2">
                                                         <span className="font-bold text-white text-sm">{lead.companyName}</span>
                                                         {lead.isAiSourced && (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40" title={lead.verificationWarning || "AI-estimated opportunity model. Verify before outreach."}>
                                                                 <Bot className="w-2.5 h-2.5" />
-                                                                AI Agent
+                                                                AI-Estimated • Verify Before Outreach
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                                                        <span>{lead.primaryContact}</span>
+                                                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                                                        <span className="font-medium text-slate-200">{lead.primaryContact}</span>
                                                         {lead.website && (
                                                             <a 
                                                                 href={lead.website} 
                                                                 target="_blank" 
                                                                 rel="noreferrer" 
                                                                 className="text-indigo-400 hover:underline flex items-center gap-0.5"
+                                                                title="Visit Domain"
                                                             >
                                                                 <Globe className="w-3 h-3" />
                                                             </a>
                                                         )}
                                                     </div>
+                                                    {lead.dataSource && (
+                                                        <div className="text-[10px] text-slate-500 font-mono">
+                                                            Source: {lead.dataSource}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
 

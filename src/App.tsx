@@ -65,9 +65,54 @@ const mockUsers = [
 ];
 
 const mockLeads = [
-    { id: 1, companyName: 'Jackson Medical Mall Complex (Jackson, MS)', primaryContact: 'Dr. Walter Evans (Chief of Facilities)', currentStage: 'Evaluation' as const, status: 'High Priority' as const, pillarFinancialPain: '$180k/yr excess cooling run-times across 12 air handling units in Jackson MS summer humidity.', pillarProcessGap: 'Requires sub-15s emergency mechanical dispatch and BACnet smart building automation telemetry.', pillarStakeholderAlignment: 'Chief of Facility Engineering & Hospital Board (Identified Sponsor).' },
-    { id: 2, companyName: 'Highland Colony Office Park (Ridgeland, MS)', primaryContact: 'Brenda Montgomery (Property Director)', currentStage: 'Discovery' as const, status: 'High Priority' as const, pillarFinancialPain: '$94,000 peak electrical surge charges and unmonitored commercial HVAC failures.', pillarProcessGap: 'Aging 480V 3-phase panels require thermal imaging audits and high-efficiency VRF retrofits.', pillarStakeholderAlignment: 'Commercial Property Management Executive VP (Champion).' },
-    { id: 3, companyName: 'Madison Station Historic Plaza (Madison, MS)', primaryContact: 'Arthur Pendelton (Public Works Lead)', currentStage: 'Won' as const, status: 'High Priority' as const, pillarFinancialPain: 'Water main pressure drops and outdated cast-iron plumbing valves.', pillarProcessGap: 'Trenchless hydro-jetting and automated SMS client review invites scheduled post-service.', pillarStakeholderAlignment: 'Madison County Infrastructure Planning Board.' },
+    { 
+        id: 1, 
+        companyName: 'Jackson Medical Mall Complex (Jackson, MS)', 
+        targetRole: 'Chief of Facilities & Engineering',
+        primaryContact: 'Target Role: Chief of Facilities (Verify Before Outreach)', 
+        currentStage: 'Evaluation' as const, 
+        status: 'High Priority' as const, 
+        pillarFinancialPain: '$180k/yr excess cooling run-times across 12 air handling units in Jackson MS summer humidity.', 
+        pillarProcessGap: 'Requires sub-15s emergency mechanical dispatch and BACnet smart building automation telemetry.', 
+        pillarStakeholderAlignment: 'Chief of Facility Engineering & Hospital Board (Target Role).',
+        isAiSourced: true,
+        isAiEstimated: true,
+        dataSource: 'Commercial Building Telemetry Audit (Verify Before Outreach)',
+        verificationStatus: 'AI_ESTIMATED_VERIFY_BEFORE_OUTREACH',
+        verificationWarning: 'AI-estimated opportunity model. Confirm executive contact details before initiating outreach.'
+    },
+    { 
+        id: 2, 
+        companyName: 'Highland Colony Office Park (Ridgeland, MS)', 
+        targetRole: 'Commercial Property Director',
+        primaryContact: 'Target Role: Commercial Property Director (Verify Before Outreach)', 
+        currentStage: 'Discovery' as const, 
+        status: 'High Priority' as const, 
+        pillarFinancialPain: '$94,000 peak electrical surge charges and unmonitored commercial HVAC failures.', 
+        pillarProcessGap: 'Aging 480V 3-phase panels require thermal imaging audits and high-efficiency VRF retrofits.', 
+        pillarStakeholderAlignment: 'Commercial Property Management Executive VP (Target Role).',
+        isAiSourced: true,
+        isAiEstimated: true,
+        dataSource: 'Energy Consumption & Footprint Audit (Verify Before Outreach)',
+        verificationStatus: 'AI_ESTIMATED_VERIFY_BEFORE_OUTREACH',
+        verificationWarning: 'AI-estimated opportunity model. Confirm executive contact details before initiating outreach.'
+    },
+    { 
+        id: 3, 
+        companyName: 'Madison Station Historic Plaza (Madison, MS)', 
+        targetRole: 'Public Works Director / Municipal Lead',
+        primaryContact: 'Target Role: Public Works Director (Verify Before Outreach)', 
+        currentStage: 'Won' as const, 
+        status: 'High Priority' as const, 
+        pillarFinancialPain: 'Water main pressure drops and outdated cast-iron plumbing valves.', 
+        pillarProcessGap: 'Trenchless hydro-jetting and automated SMS client review invites scheduled post-service.', 
+        pillarStakeholderAlignment: 'Madison County Infrastructure Planning Board (Target Role).',
+        isAiSourced: true,
+        isAiEstimated: true,
+        dataSource: 'Municipal Facility Registry (Verify Before Outreach)',
+        verificationStatus: 'AI_ESTIMATED_VERIFY_BEFORE_OUTREACH',
+        verificationWarning: 'AI-estimated opportunity model. Confirm executive contact details before initiating outreach.'
+    },
 ];
 
 const mockProjectProps = {

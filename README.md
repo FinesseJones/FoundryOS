@@ -6,11 +6,11 @@
 [![Architecture](https://img.shields.io/badge/Architecture-Closed_Loop_AI_OS-purple.svg)](#architecture)
 [![License](https://img.shields.io/badge/License-Proprietary-cyan.svg)](#)
 
-> **FoundryOS** is the **Autonomous Business & Revenue Operating System**. Powered by continuous, versioned **Business DNA**, a high-converting **Conversational Lead-to-Revenue Suite** (2-Way SMS, 5-Star Reviews, Text-to-Pay, Missed-Call Auto-Text), and backed by the **Hyperion Engine** multi-agent runtime, FoundryOS autonomously acquires leads, nurtures clients, generates websites/apps, and powers multi-tenant business operations.
+> **FoundryOS** is the **Autonomous Business & Revenue Operating System**. Powered by continuous, versioned **Business DNA**, a high-converting **Conversational Lead-to-Revenue Suite** (2-Way SMS, 5-Star Reviews, Text-to-Pay, Missed-Call Auto-Text), a **Google Presentation & Deck-to-Fortune 500 Website Compiler**, and an **Autonomous Social Media Growth Engine**, FoundryOS autonomously acquires leads, nurtures clients, generates websites/apps, and powers multi-tenant business operations.
 
 ---
 
-## 🌟 Key Architecture & Stack
+## 🏛️ Platform Architecture & Pipeline
 
 ```mermaid
 flowchart TD
@@ -18,14 +18,14 @@ flowchart TD
 
     subgraph Pillars [" "]
         direction LR
-        DNA["<b>Business DNA Core</b><br/><i>(Phases 12–13)</i><br/>• Web & Doc Extraction<br/>• Brand Voice Sync<br/>• Revision History<br/>• Auto Refresh Engine"]
-        INTEL["<b>Intelligence Layer</b><br/><i>(Phases 14–18)</i><br/>• Marketing Intel<br/>• Sales & Lead Intel<br/>• Ops Bottlenecks<br/>• Security Posture"]
-        EXEC["<b>Execution Engine</b><br/><i>(Phases 19–20)</i><br/>• Autonomous Execution<br/>• Risk Evaluation<br/>• Human Approval Manager<br/>• Automation Scheduler"]
+        DNA["<b>Business DNA Core</b><br/>• Web & Doc Extraction<br/>• Brand Voice Sync<br/>• Revision History<br/>• Auto Refresh Engine"]
+        INTEL["<b>Intelligence Layer</b><br/>• Marketing Intel<br/>• Sales & Lead CRM<br/>• Social Media Studio<br/>• Website Studio"]
+        EXEC["<b>Execution Engine</b><br/>• 2-Way SMS Inbox<br/>• Google 5★ Reviews<br/>• Stripe Text-to-Pay<br/>• Missed-Call Auto-Text"]
     end
 
-    GOV["<b>Agent Governance & Memory</b><br/><i>(Phase 21)</i><br/>• Agent Identity & RBAC Matrix<br/>• Data Security Classifications<br/>• Versioning & Rollbacks<br/>• Marketplace Publishing<br/>• Weighted Reputation Scoring"]
+    GOV["<b>Agent Governance & Security</b><br/>• Zero-Trust 6D Risk Tensor<br/>• Mahalanobis 3.0σ Anomaly Det<br/>• Immutable Audit Trail<br/>• RBAC Permissions"]
 
-    HYP["<b>🚀 HYPERION ENGINE (Autonomous Backend Horsepower)</b><br/>• 3-Tier Multi-Inference: Ollama (32B) ↔ MLX Osaurus (27B) ↔ NVIDIA NIM (90B)<br/>• Goose ACP & dyad FullStack Code Generation<br/>• Chrome DevTools MCP Visual Verification QA Engine<br/>• Arise 4K Virtual Studio + Hunyuan3D-2 + Kokoro-82M Voice Synthesis"]
+    HYP["<b>🚀 HYPERION ENGINE (Autonomous Backend Horsepower)</b><br/>• 3-Tier Multi-Inference: Ollama (32B) ↔ MLX Osaurus (27B) ↔ NVIDIA NIM (90B)<br/>• Google Presentation & Online Presence-to-Website Compiler<br/>• Autonomous Social Media Growth Engine & Scheduler<br/>• Commercial Media Studio (3D Mechanical Explainers + Neural TTS)"]
 
     CW --> DNA
     CW --> INTEL
@@ -47,53 +47,66 @@ flowchart TD
 
 ---
 
-## 🚀 Key Features
+## 💰 Subscription Tiers & Pricing Matrix
 
-### 🧬 1. Business DNA & Knowledge Core
-- **Continuous Signal Ingestion**: Crawls company websites and imports documents to build a unified Business DNA graph.
-- **Brand Voice Alignment**: Enforces company identity, value propositions, positioning, and visual guidelines.
-- **Continuous Knowledge Refresh**: Automatic change-detection triggers DNA revisions with audit trails.
+| Subscription Plan | Monthly Retainer | Included Features | Ideal Client |
+| :--- | :--- | :--- | :--- |
+| **🥉 Starter** | **$497 / mo** | 2-Way Omnichannel Inbox, Google 5★ Review Multiplier, Missed-Call Auto-Text, Stripe Text-to-Pay, 1,000 SMS/mo | Local service contractors & single-trade operators |
+| **🥈 Growth (Pro)** | **$997 / mo** | Everything in Starter + Living Business DNA Core, AI Branding Center, Website Studio with Deck Ingest, Autonomous Lead CRM, 3,500 SMS/mo | Multi-trade commercial operators & growing practices |
+| **🥇 Enterprise KaaS** | **$2,497 / mo** | Everything in Growth + Master Multi-Tenant Control Plane, 3-Tier Multi-Inference, Zero-Trust 6D Risk Tensor Security, 10,000 SMS/mo | Multi-location enterprises, franchises, and regional contractors |
 
-### 🧠 2. Multi-Domain Intelligence Layer
-- **Marketing Intelligence**: Multi-channel campaign strategies, content calendar generation, and positioning optimization.
-- **Sales & Customer Intelligence**: Opportunity detection, lead qualification scoring, and next-best-action routing.
-- **Operations Intelligence**: Bottleneck analysis, process optimization, and resource efficiency insights.
-- **Security Intelligence**: Zero-Trust posture evaluation, risk detection across 6 risk vectors, and TACF policy enforcement.
-- **Intelligence Analytics & Learning**: Unified business maturity scoring (`FOUNDATION` → `AUTONOMOUS`) with memory write-backs.
+### 🚀 High-Margin Add-On Services:
+* **📱 Autonomous Social Media & Brand Voice Engine:** `$997 / mo` (3x weekly branded posts, profile provisioning kit, interactive visual calendar scheduler, LinkedIn/X/IG/FB/GMB live previews).
+* **🌐 Fortune 500 Dynamic Web Infrastructure:** `$2,500 Setup + $250 / mo Hosting` (Google Presentation / Deck & local footprint ingestion, sub-15s booking widget, interactive ROI calculator).
+* **🎬 Commercial Media & 3D Explainer Studio:** `$1,500 / campaign` (3D mechanical explainers, Kokoro neural voiceovers, 4K video ads).
 
-### ⚡ 3. Autonomous Execution & Customer Automation
-- **Risk-Evaluated Execution**: Workflow engine evaluates execution risk (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`).
-- **Human Approval Manager**: `LOW` risk auto-executes; `HIGH` and `CRITICAL` risk hard-halt for human approval sign-off.
-- **Automation Scheduler**: Manages cron trigger schedules with state progression (`WAITING` → `TRIGGERED` → `EXECUTING` → `COMPLETED`).
-- **Workflow Marketplace**: 8 pre-built templates plus customer workflow builder & versioning engine.
+👉 *Full pricing specification:* [**docs/FOUNDRYOS_PRICING_AND_REVENUE_MATRIX.md**](./docs/FOUNDRYOS_PRICING_AND_REVENUE_MATRIX.md)
 
-### 🛡️ 4. Enterprise Agent Governance
-- **Agent Identity Registry**: Bootstraps 8 core system agents (`@brand`, `@content`, `@publishing`, `@website`, `@security`, `@analytics`, `@learning`, `@lead`).
-- **Granular RBAC Permission Matrix**: 12 permission actions mapped across 4 data security classification levels (`PUBLIC`, `INTERNAL`, `CONFIDENTIAL`, `RESTRICTED`).
-- **Automation Versioning & Rollbacks**: `v1`, `v2`, `v3` snapshot tracking with pre-flight migration safety checks and atomic rollbacks.
-- **Marketplace Publishing**: Package submission, review/approval workflow, and single-click customer installation.
-- **Weighted Reputation Scoring**: Real-time performance tracking (0-100) with badging (`EXCELLENT`, `GOOD`, `NEEDS_IMPROVEMENT`, `CRITICAL_RISK`).
+---
+
+## 📦 Complete Module Directory (18 Modules)
+
+1. **📬 Unified Inbox (`/inbox`)**: 2-Way SMS, WebChat-to-Text, Google Local Services, and contractor equipment telemetry drawer.
+2. **⭐ Reputation & Reviews (`/reviews`)**: 1-Tap Google review requests with AI Brand Voice auto-responses.
+3. **💳 Text-to-Pay (`/payments`)**: Stripe 1-tap SMS invoice links with automated payment receipts.
+4. **🧬 Business DNA OS (`/customer_intelligence`)**: Living single source of truth across Marketing, Sales, Operations, and Security.
+5. **🏷️ Services Catalog (`/services`)**: Transformation blueprints and recurring retainer packages.
+6. **🚀 AI Branding Center (`/branding`)**: 3-tier resilient brand positioning guide and tagline synthesizer.
+7. **🔥 SMS Campaigns (`/campaigns`)**: Targeted promotional SMS blasts with 98% open rates.
+8. **📞 Virtual Phones (`/phones`)**: Sub-15s missed-call auto-text response engine.
+9. **🌐 Website Studio (`/studio`)**: Ingests Google Presentations, slide decks, or local presence into Fortune 500 websites.
+10. **📱 Social Media Studio (`/social`)**: Multi-platform profile setup kit, weekly AI brand voice posts, visual calendar & scheduler.
+11. **📋 Projects (`/projects`)**: Project governance, milestone tracking, and budget burn charts.
+12. **⚡ Leads CRM (`/leads`)**: Autonomous AI prospector quantifying 3 Opportunity Pillars.
+13. **📈 Analytics (`/analytics`)**: Departmental capacity forecasting and bottleneck risk remediation.
+14. **📊 Reports (`/reports`)**: Financial revenue forecasts and exportable executive summaries.
+15. **👥 Users & Teams (`/users`)**: High-contrast user directory with `#EM-1001` ID tags and RBAC roles.
+16. **🛡️ Audit Trail (`/audit`)**: Immutable chronological compliance and security event ledger.
+17. **⚙️ Settings (`/settings`)**: Fortune 500 Enterprise KaaS Control Matrix with 5 tabs.
+18. **👑 Master Admin (`/master_admin`)**: Global tenant control plane for super-administrators.
+
+👉 *Full architecture manual:* [**docs/FOUNDRYOS_MASTER_ARCHITECTURE.md**](./docs/FOUNDRYOS_MASTER_ARCHITECTURE.md)
+
+---
+
+## 🚢 Quickstart & Deployment
+
+### Run Locally (Port 5174):
+```bash
+npm install
+npm run dev -- --port 5174 --host 127.0.0.1
+```
+
+### Deploy to Production VPS in 1 Click:
+```bash
+curl -sSL https://raw.githubusercontent.com/FinesseJones/FoundryOS/main/deploy-vps.sh | bash
+```
 
 ---
 
 ## 🛠️ Verification & Test Suite
-
-The platform is fully verified with **159 passing tests across 48 test files** and 0 TypeScript compilation errors.
-
-### Type Check
 ```bash
 npm run typecheck
+npx tsx --test src/**/*.test.ts tests/e2e/*.test.ts
+npm run build
 ```
-
-### Run Test Suite
-```bash
-npx tsx --test src/**/*.test.ts tests/e2e/*.test.ts tests/hardening/*.test.ts
-```
-
----
-
-## 📖 Product Documentation & Architecture FAQ
-
-- [**GRILL_ME_ARCHITECTURE_FAQ.md**](./GRILL_ME_ARCHITECTURE_FAQ.md) — Rigorous Architectural Defense & Technical FAQ (Data Integrity, Sandboxing, 6D Risk Vectors).
-- [**FOUNDRYOS_REALITY_AUDIT.md**](./FOUNDRYOS_REALITY_AUDIT.md) — Reality Audit & Live Mississippi Commercial Case Study (Environment Masters, Inc.).
-- [**WIKI.md**](./WIKI.md) — Complete Product Architecture, Governance Matrix, and API Schemas.

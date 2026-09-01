@@ -28,8 +28,8 @@ const BrandingCenter: React.FC<BrandingProps> = ({ currentUser }) => {
     }, [currentSession, accountManager]);
 
     // Initial state initialized from Authoritative Business DNA (Zero duplicate entry)
-    const [companyName, setCompanyName] = useState(authoritativeDna?.companyIdentity.companyName || 'TACF Autonomous Enterprise');
-    const [industry, setIndustry] = useState(authoritativeDna?.companyIdentity.industry || 'technology_saas');
+    const [companyName, setCompanyName] = useState(authoritativeDna?.companyIdentity.companyName || 'Our Enterprise');
+    const [industry, setIndustry] = useState(authoritativeDna?.companyIdentity.industry || 'commercial_services');
     const [mission, setMission] = useState(authoritativeDna?.companyIdentity.mission || '');
     const [uvp, setUvp] = useState(authoritativeDna?.companyIdentity.uniqueValueProposition || '');
     const [financialPain, setFinancialPain] = useState(authoritativeDna?.opportunityPillars.financialPain || '');

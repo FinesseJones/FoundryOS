@@ -54,18 +54,18 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
   // State: Step 2 Organization
   const [orgName, setOrgName] = useState('');
-  const [orgIndustry, setOrgIndustry] = useState('technology_saas');
+  const [orgIndustry, setOrgIndustry] = useState('commercial_services');
   const [planTier, setPlanTier] = useState('growth');
 
   // State: Step 3 Workspace
-  const [wsName, setWsName] = useState('Primary Production');
-  const [wsSlug, setWsSlug] = useState('primary-prod');
+  const [wsName, setWsName] = useState('Primary Workspace');
+  const [wsSlug, setWsSlug] = useState('primary-ws');
 
-  // State: Step 4 Company Information & Multi-Tier Entity
+  // State: Step 4 Company Information & Multi-Tier Entity (100% Dynamic - Zero Hardcoded Defaults)
   const [companyName, setCompanyName] = useState('');
-  const [legalCompanyName, setLegalCompanyName] = useState('The AI CONTENT FOUNDRY, LLC');
-  const [operatingBrand, setOperatingBrand] = useState('TACF Global');
-  const [websiteUrl, setWebsiteUrl] = useState('https://tacfos.tech');
+  const [legalCompanyName, setLegalCompanyName] = useState('');
+  const [operatingBrand, setOperatingBrand] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
   const [mission, setMission] = useState('');
   const [uvp, setUvp] = useState('');
   const [processGap, setProcessGap] = useState('');
@@ -86,9 +86,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
           role: 'ADMIN',
         });
         setActiveSession(result.session);
-        setOrgName(`${result.user.name}'s Enterprise`);
-        setCompanyName(result.user.name);
-        setOperatingBrand(`${result.user.name}'s Enterprise`);
+        const dynamicBrand = `${result.user.name}'s Enterprise`;
+        setOrgName(dynamicBrand);
+        setCompanyName(dynamicBrand);
+        setOperatingBrand(dynamicBrand);
+        setLegalCompanyName(`${dynamicBrand}, LLC`);
+        setWebsiteUrl('');
         setStep('organization');
       } else {
         const result = await accountManager.login({
@@ -104,9 +107,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
           setCreatedOrg(result.organization);
           setStep('workspace');
         } else {
-          setOrgName(`${result.user.name}'s Enterprise`);
-          setCompanyName(result.user.name);
-          setOperatingBrand(`${result.user.name}'s Enterprise`);
+          const dynamicBrand = `${result.user.name}'s Enterprise`;
+          setOrgName(dynamicBrand);
+          setCompanyName(dynamicBrand);
+          setOperatingBrand(dynamicBrand);
+          setLegalCompanyName(`${dynamicBrand}, LLC`);
+          setWebsiteUrl('');
           setStep('organization');
         }
       }
@@ -453,7 +459,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               <div className="space-y-1.5">
                 <label className="text-xs font-mono text-slate-300">Workspace Slug</label>
                 <div className="flex items-center rounded-xl bg-slate-900/90 border border-white/10 px-4 py-2.5 text-sm font-mono text-slate-400">
-                  <span className="text-slate-500">app.tacfos.tech/</span>
+                  <span className="text-slate-500">app.foundryos.tech/</span>
                   <input
                     type="text"
                     required
@@ -489,7 +495,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 </div>
                 <h2 className="text-xl font-bold text-white tracking-tight">Enter Company Information</h2>
                 <p className="text-xs text-slate-400">
-                  This authoritative profile powers all 8 AI system agents and website generation.
+                  This authoritative profile powers all AI agents, SMS campaigns, and website generation.
                 </p>
               </div>
 
@@ -500,7 +506,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                     type="text"
                     value={legalCompanyName}
                     onChange={(e) => setLegalCompanyName(e.target.value)}
-                    placeholder="e.g. The AI CONTENT FOUNDRY, LLC"
+                    placeholder="e.g. Acme Commercial Services, LLC"
                     className="w-full rounded-xl bg-slate-900/90 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
@@ -514,7 +520,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                       setOperatingBrand(e.target.value);
                       setCompanyName(e.target.value);
                     }}
-                    placeholder="e.g. TACF Global"
+                    placeholder="e.g. Acme Commercial"
                     className="w-full rounded-xl bg-slate-900/90 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
@@ -529,7 +535,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                     value={websiteUrl}
                     onChange={(e) => setWebsiteUrl(e.target.value)}
                     onBlur={() => setWebsiteUrl(normalizeCompanyUrl(websiteUrl))}
-                    placeholder="https://tacfos.tech"
+                    placeholder="https://example.com"
                     className="w-full rounded-xl bg-slate-900/90 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   />
                 </div>

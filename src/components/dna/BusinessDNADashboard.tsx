@@ -40,12 +40,12 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [copiedNotification, setCopiedNotification] = useState(false);
 
-  // Multi-Tier Identity Edit Form State
-  const [editLegalCompany, setEditLegalCompany] = useState(currentDna.companyIdentity.legalCompanyName || 'The AI CONTENT FOUNDRY, LLC');
-  const [editOperatingBrand, setEditOperatingBrand] = useState(currentDna.companyIdentity.operatingBrand || currentDna.companyIdentity.companyName || 'TACF Global');
-  const [editProductName, setEditProductName] = useState(currentDna.companyIdentity.productName || 'TACF Autonomous Business AI OS');
+  // Multi-Tier Identity Edit Form State (100% Dynamic from Tenant DNA)
+  const [editLegalCompany, setEditLegalCompany] = useState(currentDna.companyIdentity.legalCompanyName || `${currentDna.companyIdentity.companyName}, LLC`);
+  const [editOperatingBrand, setEditOperatingBrand] = useState(currentDna.companyIdentity.operatingBrand || currentDna.companyIdentity.companyName);
+  const [editProductName, setEditProductName] = useState(currentDna.companyIdentity.productName || currentDna.companyIdentity.companyName);
   const [editCorePlatform, setEditCorePlatform] = useState(currentDna.companyIdentity.corePlatform || 'Business DNA');
-  const [editPrimaryUrl, setEditPrimaryUrl] = useState(currentDna.websiteAnalysis.primaryUrl || 'https://tacfos.tech');
+  const [editPrimaryUrl, setEditPrimaryUrl] = useState(currentDna.websiteAnalysis.primaryUrl || '');
 
   // Core Pillars & Positioning State
   const [editMission, setEditMission] = useState(currentDna.companyIdentity.mission);
@@ -551,7 +551,7 @@ export const BusinessDNADashboard: React.FC<BusinessDNADashboardProps> = ({
                     value={editPrimaryUrl}
                     onChange={(e) => setEditPrimaryUrl(e.target.value)}
                     onBlur={() => setEditPrimaryUrl(normalizeCompanyUrl(editPrimaryUrl))}
-                    placeholder="https://tacfos.tech"
+                    placeholder="https://example.com"
                     className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-mono"
                   />
                 </div>

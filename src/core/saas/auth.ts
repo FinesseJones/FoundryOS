@@ -27,12 +27,12 @@ export interface WorkspaceRecord {
 }
 
 export function normalizeCompanyUrl(url: string): string {
-  if (!url) return 'https://tacfos.tech';
+  if (!url) return '';
   let clean = url.trim();
   // Strip repeated or duplicated protocols e.g. "https://https://" or "http://https://"
   clean = clean.replace(/^(https?:\/\/)+/i, '');
   clean = clean.replace(/^\/+/, '');
-  if (!clean) return 'https://tacfos.tech';
+  if (!clean) return '';
   return `https://${clean}`;
 }
 
@@ -715,18 +715,18 @@ export class AccountManager {
 
     const businessId = `biz_${params.organizationId.replace(/^org_/, '')}`;
     const cleanUrl = normalizeCompanyUrl(params.websiteUrl);
-    const legalName = (params.legalCompanyName || 'The AI CONTENT FOUNDRY, LLC').trim();
-    const opBrand = (params.operatingBrand || params.companyName || 'TACF Global').trim();
-    const prodName = (params.productName || 'TACF Autonomous Business AI OS').trim();
+    const cleanName = (params.companyName || params.operatingBrand || 'Client Enterprise').trim();
+    const legalName = (params.legalCompanyName || `${cleanName}, LLC`).trim();
+    const opBrand = (params.operatingBrand || cleanName).trim();
+    const prodName = (params.productName || `${cleanName} Platform`).trim();
     const platName = (params.corePlatform || 'Business DNA').trim();
-    const cleanName = (params.companyName || opBrand).trim();
 
-    const cleanIndustry = params.industry || 'technology_saas';
-    const cleanMission = params.mission?.trim() || `To transform and empower the ${cleanIndustry.replace('_', ' ')} domain through automated intelligence.`;
-    const cleanUvp = params.uvp?.trim() || `Autonomous brand intelligence, real-time website compilation, and automated execution for ${cleanName}.`;
+    const cleanIndustry = params.industry || 'commercial_services';
+    const cleanMission = params.mission?.trim() || `To deliver premier, reliable, and high-performance solutions in ${cleanIndustry.replace('_', ' ')}.`;
+    const cleanUvp = params.uvp?.trim() || `Market-leading reliability, rapid execution, and trusted client service for ${cleanName}.`;
     const cleanProcessGap = params.processGap?.trim() || 'Manual departmental workflows, fragmented tool stacks, and operational lead time drag.';
     const cleanFinancialPain = params.financialPain?.trim() || 'Operational lead time drag and execution friction (Estimated baseline benchmark)';
-    const cleanTargetAudience = params.targetAudience?.trim() || 'Modern enterprise executives, operations directors, and growing commercial teams.';
+    const cleanTargetAudience = params.targetAudience?.trim() || 'Modern enterprise executives, operations directors, and commercial property leads.';
 
     const companyProfile: CompanyInfoRecord = {
       organizationId: params.organizationId,

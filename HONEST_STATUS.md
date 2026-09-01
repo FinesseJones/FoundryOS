@@ -19,12 +19,12 @@
 | **SaaS Billing & Subscriptions (`api/server.js`, `billing.ts`)** | `REAL` | Real Stripe Checkout Sessions & raw verified webhooks with Prisma DB persistence. Standardized pricing ($497 / $997 / $2,497). | Active in test mode. |
 | **Governed Connectors (`governed-connectors.ts`)** | `HYBRID` | Risk/approval dispatcher is `REAL`. All `connector.execute()` are `MOCK` (fabricated success). No Twilio/Stripe connectors. | Implement live API dispatch for connectors. |
 | **Security Intelligence (`security-intelligence-service.ts`)** | `MOCK (HEURISTIC)` | 459 lines of executable TypeScript calculating derived scores (`Math.round(conf * 40 + 55)`) and returning canned risk templates. | Connect to real security audit telemetry. |
-| **Multi-Agent Suite (`src/core/agents/*`)** | `HYBRID` | `base-agent.ts`, `brand-agent.ts`, `content-agent.ts`, `website-agent.ts` use real LLM gateway. `analytics`, `publishing`, `security`, `learning`, `lead` return canned mocks. | Wire all agents to LLM gateway. |
+| **Multi-Agent Suite (`src/core/agents/*`)** | `REAL` | All 8 agents (`brand`, `content`, `website`, `analytics`, `publishing`, `security`, `learning`, `lead`) call the authoritative NVIDIA NIM gateway (`meta/llama-3.2-90b-vision-instruct`) with Business DNA injection, strict Zod schema validation, fail-closed error handling, and quota gate enforcement. Fast in-memory test doubles used for unit testing. | Shipped & complete. |
 | **Cognitive Engine (`src/core/cognitive/*`)** | `MOCK (HEURISTIC)` | `Planner`, `ReasoningEngine`, `DecisionEngine`, `ReflectionEngine`, `ConfidenceEvaluator` compute static numerical formulas and canned templates. | Connect to LLM multi-step reasoning loops. |
 | **Live Event Bus (`src/core/events/live-event-bus.ts`)** | `MOCK` | In-memory browser singleton `Map<SystemEventType, EventHandler[]>`. Not a distributed message broker. | Replace with Redis / Kafka if distributed. |
 | **Autonomous Execution (`autonomous-execution-service.ts`)** | `MOCK` | In-memory workflow state machine setting `AWAITING_APPROVAL`. | Connect to background job runner. |
 | **Context & Knowledge (`src/core/context/*`, `src/core/knowledge/*`)** | `REAL` | Context builder slices DNA and budgets tokens; Zod schemas validate data graphs. | Shipped & complete. |
-| **LLM Provider Gateway (`llm-provider-factory.ts`)** | `REAL / CONDITIONAL` | Dispatches to NVIDIA NIM or Ollama HTTP endpoints with structured JSON parsing; fallback strings on offline. | Requires `$NVIDIA_API_KEY` or local Ollama. |
+| **LLM Provider Gateway (`llm-provider-factory.ts`)** | `REAL` | Production fallback chain locked to NVIDIA NIM (`meta/llama-3.2-90b-vision-instruct`) with immediate fail-closed error handling and zero canned fallback text. Secondary fallbacks locked behind `ENABLE_FALLBACK_PROVIDERS=true`. | Shipped & verified. |
 | **SaaS API Keys & State (`api-keys.ts`, `customer-*.ts`)** | `MOCK (IN-MEMORY)` | In-memory `Map` stores for API keys (`bf_live_...`), customer state, and notifications. | Migrate to database tables. |
 | **Docker & Deployment (`docker-compose.yml`, `Caddyfile`, `api/Dockerfile`)** | `REAL` | Production Docker Compose with pure Caddy reverse proxy and `foundryos-api` container. | Shipped & verified. |
 | **Prisma ORM & Database (`prisma/schema.prisma`)** | `REAL` | PrismaClient wired into `api/server.js` and `prisma-repositories.ts` as the single system of record with server-side `organizationId` scoping. SQLite active; Postgres migration verified against Postgres container (pending production `DATABASE_URL`). | Shipped & verified. |
@@ -66,23 +66,23 @@
 
 ### 4. Agents Directory Audit
 * **[`src/core/agents/base-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/base-agent.ts)**: `REAL`
-  * Calls `LLMProviderFactory.createProvider()` to dispatch to NVIDIA NIM or Ollama.
+  * Dispatches prompts through `LLMProviderGateway` with quota gatekeeper and structured validation.
 * **[`src/core/agents/brand-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/brand-agent.ts)**: `REAL`
   * Extends `BaseAgent`, builds dynamic brand prompt with DNA, calls `this.executePrompt()`.
 * **[`src/core/agents/content-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/content-agent.ts)**: `REAL`
   * Extends `BaseAgent`, executes LLM calls for multi-format content generation.
 * **[`src/core/agents/website-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/website-agent.ts)**: `REAL`
   * Extends `BaseAgent`, builds prompt, parses structured JSON for website design systems.
-* **[`src/core/agents/analytics-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/analytics-agent.ts)**: `MOCK`
-  * Returns hardcoded `"ROI 3.4x"`, `"84% retention"`, and static metric arrays.
-* **[`src/core/agents/publishing-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/publishing-agent.ts)**: `MOCK`
-  * Returns fabricated publication timestamps and staged URLs.
-* **[`src/core/agents/security-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/security-agent.ts)**: `MOCK`
-  * Returns canned policy check matrices and static confidence ratings.
-* **[`src/core/agents/learning-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/learning-agent.ts)**: `MOCK`
-  * Returns synthetic adaptation rate scores and mock fine-tuning weights.
-* **[`src/core/agents/lead-generation-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/lead-generation-agent.ts)**: `MOCK`
-  * Generates static lead lists with placeholder emails.
+* **[`src/core/agents/analytics-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/analytics-agent.ts)**: `REAL`
+  * Calls `this.callLLM(...)` via NVIDIA NIM gateway, calculates content ROI & engagement, validates against `AnalyticsAuditSchema`. Fail-closed on error.
+* **[`src/core/agents/publishing-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/publishing-agent.ts)**: `REAL`
+  * Calls `this.callLLM(...)` via NVIDIA NIM gateway, structures channel-specific distribution plan, validates against `PublishingPlanSchema`. Fail-closed on error.
+* **[`src/core/agents/security-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/security-agent.ts)**: `REAL`
+  * Calls `this.callLLM(...)` via NVIDIA NIM gateway, evaluates impersonation vectors & reputation risks, validates against `SecurityAuditSchema`. Fail-closed on error.
+* **[`src/core/agents/learning-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/learning-agent.ts)**: `REAL`
+  * Calls `this.callLLM(...)` via NVIDIA NIM gateway, synthesizes institutional memories & proposes voice evolution, validates against `LearningAdaptationSchema`. Fail-closed on error.
+* **[`src/core/agents/lead-agent.ts`](file:///Volumes/FinesseJones1%20External%201/Projects/brand-first-app/src/core/agents/lead-agent.ts)**: `REAL`
+  * Calls `this.callLLM(...)` via NVIDIA NIM gateway, audits digital gaps and generates 3-pillar qualified client leads, validates against `LeadProspectingResultSchema`. Fail-closed on error.
 
 ---
 

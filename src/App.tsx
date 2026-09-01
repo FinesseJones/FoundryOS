@@ -52,6 +52,7 @@ import { AdminPortalView } from './components/saas/AdminPortalView';
 import { FloatingWebChatWidget } from './components/conversational/FloatingWebChatWidget';
 import { BespokeLandingView } from './components/auth/BespokeLandingView';
 import { AccountManager, UserSession } from './core/saas/auth';
+import { toast } from 'react-hot-toast';
 
 // =============================================================
 // REAL CLIENT SEED DATA — Environment Masters, Inc. (Jackson, MS)

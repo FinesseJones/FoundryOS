@@ -1,4 +1,4 @@
-export type UserRole = 'ADMIN' | 'EXECUTIVE' | 'MARKETER' | 'MEMBER' | 'DEMO_VIEWER';
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'EXECUTIVE' | 'MARKETER' | 'MEMBER' | 'DEMO_VIEWER';
 
 export interface UserAccount {
   id: string;
@@ -52,6 +52,11 @@ export interface CompanyInfoRecord {
   processGap: string;
   financialPain: string;
   targetAudience: string;
+  businessDescription?: string;
+  valuePropositions?: string[];
+  brandTone?: string;
+  keyCompetitors?: string[];
+  targetMarket?: string;
   updatedAt: string;
 }
 
@@ -248,10 +253,15 @@ export class AccountManager {
       this.companyProfiles.set('ws_env_masters_jackson', {
         organizationId: 'org_env_masters_ms',
         workspaceId: 'ws_env_masters_jackson',
+        businessId: 'biz_env_masters_ms',
         companyName: 'Environment Masters, Inc.',
         websiteUrl: 'https://environmentmasters.com',
         businessDescription: 'Premier commercial and residential HVAC, plumbing, electrical, and smart building automation contractor serving Jackson, Madison, and Central Mississippi since 1957.',
         industry: 'HVAC, Mechanical & Commercial Electrical Contracting',
+        mission: 'To deliver premier commercial and residential HVAC, plumbing, electrical, and smart building automation with 24/7 reliability.',
+        uvp: 'Jackson Mississippi Metro Leader in HVAC & Plumbing Since 1957 with 24/7 Rapid Emergency Response.',
+        processGap: 'Lacks sub-15s missed-call auto-text dispatch and unified building telemetry.',
+        financialPain: '$180k/yr excess commercial chiller cooling costs and emergency downtime.',
         targetAudience: 'Commercial facility managers, hospital operations directors, municipal infrastructure leads, and Mississippi homeowners.',
         valuePropositions: [
           'Jackson Mississippi Metro Leader in HVAC & Plumbing Since 1957',
@@ -900,7 +910,7 @@ export class AccountManager {
 
   // ─── 8. Session Validation & Lifecycle ────────────────────────────────────
 
-  private cacheSession(session: UserSession): void {
+  public cacheSession(session: UserSession): void {
     this.sessions.set(session.token, session);
     if (this.isLocalStorageAvailable()) {
       window.localStorage.setItem(ACTIVE_SESSION_KEY, session.token);

@@ -38,7 +38,7 @@ export interface Lead {
     id: number;
     companyName: string;
     primaryContact: string;
-    currentStage: 'Discovery' | 'Proposal' | 'Evaluation' | 'Lost';
+    currentStage: 'Discovery' | 'Proposal' | 'Evaluation' | 'Won' | 'Lost';
     status: 'High Priority' | 'Medium Priority' | 'Low Priority';
     pillarFinancialPain: string; // Money cost of inefficiency
     pillarProcessGap: string;  // Specific manual process choke point

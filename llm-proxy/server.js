@@ -1,8 +1,15 @@
+import "dotenv/config";
+import dotenv from "dotenv";
 import express from "express";
 import crypto from "node:crypto";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { PrismaClient } from "@prisma/client";
 import Stripe from "stripe";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+dotenv.config();
 
 const prisma = new PrismaClient({
   log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
@@ -13,15 +20,19 @@ const app = express();
 const NVIDIA_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const STRIPE_PRICES = {
+  starter: process.env.STRIPE_PRICE_STARTER || "price_1UAnCLLUpAOiyhmZYbRKEHk0",
+  growth: process.env.STRIPE_PRICE_GROWTH || "price_1UAnCLLUpAOiyhmZ8AruC2Ew",
+  enterprise: process.env.STRIPE_PRICE_ENTERPRISE || "price_1UAnCMLUpAOiyhmZNeAsbeOR",
+};
 
 function getStripeClient() {
-  if (!STRIPE_SECRET_KEY || !STRIPE_SECRET_KEY.trim()) {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key || !key.trim()) {
     return null;
   }
-  return new Stripe(STRIPE_SECRET_KEY, {
-    apiVersion: "2024-06-20",
+  return new Stripe(key, {
+    apiVersion: "2025-02-24.acacia",
   });
 }
 
@@ -31,7 +42,8 @@ app.post(
   "/api/webhooks/stripe",
   express.raw({ type: "application/json" }),
   async (req, res) => {
-    if (!STRIPE_WEBHOOK_SECRET || !STRIPE_WEBHOOK_SECRET.trim()) {
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret || !webhookSecret.trim()) {
       console.error("[Stripe Webhook] Error: STRIPE_WEBHOOK_SECRET not configured on server.");
       return res.status(500).json({ error: "Stripe webhook secret not configured." });
     }
@@ -48,7 +60,7 @@ app.post(
 
     let event;
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     } catch (err) {
       console.error("[Stripe Webhook] Signature verification failed:", err.message);
       return res.status(400).json({ error: `Webhook signature verification failed: ${err.message}` });
@@ -60,10 +72,17 @@ app.post(
       switch (event.type) {
         case "checkout.session.completed": {
           const session = event.data.object;
-          const organizationId = session.client_reference_id || session.metadata?.organizationId;
+          let organizationId = session.client_reference_id || session.metadata?.organizationId;
           const stripeCustomerId = session.customer;
           const stripeSubscriptionId = session.subscription;
           const planTier = session.metadata?.planTier || "growth";
+
+          if (!organizationId && stripeCustomerId) {
+            const existingOrg = await prisma.organization.findUnique({
+              where: { stripeCustomerId },
+            });
+            organizationId = existingOrg?.id;
+          }
 
           if (organizationId) {
             await prisma.organization.update({
@@ -83,7 +102,7 @@ app.post(
         case "customer.subscription.created":
         case "customer.subscription.updated": {
           const subscription = event.data.object;
-          const organizationId = subscription.metadata?.organizationId;
+          let organizationId = subscription.metadata?.organizationId;
           const stripeCustomerId = subscription.customer;
           const stripeSubscriptionId = subscription.id;
           const planTier = subscription.metadata?.planTier || "growth";
@@ -92,29 +111,36 @@ app.post(
           const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
           const stripePriceId = subscription.items?.data?.[0]?.price?.id || "";
 
-          await prisma.subscription.upsert({
-            where: { stripeSubscriptionId },
-            create: {
-              organizationId: organizationId || "",
-              stripeCustomerId,
-              stripeSubscriptionId,
-              stripePriceId,
-              planTier,
-              status,
-              currentPeriodStart,
-              currentPeriodEnd,
-              cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-            },
-            update: {
-              status,
-              planTier,
-              currentPeriodStart,
-              currentPeriodEnd,
-              cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-            },
-          });
+          if (!organizationId && stripeCustomerId) {
+            const existingOrg = await prisma.organization.findUnique({
+              where: { stripeCustomerId },
+            });
+            organizationId = existingOrg?.id;
+          }
 
           if (organizationId) {
+            await prisma.subscription.upsert({
+              where: { stripeSubscriptionId },
+              create: {
+                organizationId,
+                stripeCustomerId,
+                stripeSubscriptionId,
+                stripePriceId,
+                planTier,
+                status,
+                currentPeriodStart,
+                currentPeriodEnd,
+                cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+              },
+              update: {
+                status,
+                planTier,
+                currentPeriodStart,
+                currentPeriodEnd,
+                cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+              },
+            });
+
             await prisma.organization.update({
               where: { id: organizationId },
               data: {
@@ -723,13 +749,9 @@ app.post("/api/billing/create-checkout-session", authenticateSession, async (req
     if (!org) return;
 
     const tier = (planTier || "growth").toLowerCase();
-    const prices = {
-      starter: { amount: 49700, name: "FoundryOS Starter Tier" },
-      growth: { amount: 99700, name: "FoundryOS Growth Tier" },
-      enterprise: { amount: 249700, name: "FoundryOS Enterprise Tier" },
-    };
+    const priceId = STRIPE_PRICES[tier];
 
-    if (!prices[tier]) {
+    if (!priceId) {
       return res.status(400).json({
         error: `Invalid plan tier '${planTier}'. Standardized tiers are starter ($497), growth ($997), enterprise ($2,497).`,
       });
@@ -753,37 +775,29 @@ app.post("/api/billing/create-checkout-session", authenticateSession, async (req
       });
     }
 
-    // 2. Create Checkout Session in subscription mode
+    // 2. Create Checkout Session using exact Stripe Price ID
     const appOrigin = req.headers.origin || "http://localhost:5173";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       client_reference_id: org.id,
-      payment_method_types: ["card"],
       mode: "subscription",
+      managed_payments: { enabled: false },
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: prices[tier].name,
-              description: `FoundryOS Autonomous Business OS — ${tier.toUpperCase()} Plan ($${prices[tier].amount / 100}/mo)`,
-            },
-            unit_amount: prices[tier].amount,
-            recurring: {
-              interval: "month",
-            },
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
       metadata: {
         organizationId: org.id,
         planTier: tier,
+        priceId,
       },
       subscription_data: {
         metadata: {
           organizationId: org.id,
           planTier: tier,
+          priceId,
         },
       },
       success_url: successUrl || `${appOrigin}/?session_id={CHECKOUT_SESSION_ID}&billing=success`,
@@ -794,6 +808,7 @@ app.post("/api/billing/create-checkout-session", authenticateSession, async (req
       sessionId: session.id,
       url: session.url,
       planTier: tier,
+      priceId,
       stripeCustomerId: customerId,
     });
   } catch (err) {

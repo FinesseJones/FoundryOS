@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { SaaSAuthManager } from '../../src/core/saas/auth';
@@ -10,6 +10,45 @@ import { NotificationDispatcher } from '../../src/core/automation/notifications'
 import { CustomerNotificationService } from '../../src/core/saas/customer-notifications';
 import { DocumentConnectionService } from '../../src/core/ingestion/document-connection-service';
 import { DocumentProcessingWorkflow } from '../../src/core/ingestion/document-processing-workflow';
+import { WebCrawler } from '../../src/core/ingestion/crawler';
+
+const originalCrawl = WebCrawler.prototype.crawlWebsite;
+
+beforeEach(() => {
+  WebCrawler.prototype.crawlWebsite = async function (targetUrl: string) {
+    const normalizedUrl = targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`;
+    const urlObj = new URL(normalizedUrl);
+    const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+    const fallbackPage = (this as any).generateFallbackCrawledPage(baseUrl);
+    const targetPaths = ['/', '/about', '/pricing', '/services', '/faq', '/blog', '/contact'];
+    const pages = targetPaths.map((path) => ({
+      ...fallbackPage,
+      url: `${baseUrl}${path}`,
+    }));
+    return {
+      targetUrl,
+      baseUrl,
+      sitemapFound: true,
+      robotsTxtFound: true,
+      pages,
+      discoveredNavItems: ['/about', '/pricing', '/services', '/products', '/contact'],
+      pricingSignals: [
+        `Why Customers Choose ${fallbackPage.title.split('—')[0].trim()}`,
+        `${fallbackPage.title.split('—')[0].trim()} Core Solutions`,
+        `Enterprise Plans for ${fallbackPage.title.split('—')[0].trim()}`,
+        'Frequently Asked Questions',
+      ],
+      serviceSignals: ['Enterprise Knowledge Engine', 'Multi-Agent Automation', 'Brand Analytics'],
+      faqItems: [{ question: 'How fast is setup?', answer: 'Instant onboarding.' }],
+      totalBytesCrawled: pages.reduce((acc, p) => acc + p.rawHtml.length, 0),
+      durationMs: 2,
+    };
+  };
+});
+
+afterEach(() => {
+  WebCrawler.prototype.crawlWebsite = originalCrawl;
+});
 
 test('Phase 13B E2E: Document Knowledge Import (Upload -> Parse -> Extract Signals -> Business DNA Update -> Customer Alert -> Audit Event)', async () => {
   // 1. Initialize Platform Infrastructure

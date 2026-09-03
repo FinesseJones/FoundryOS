@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createDefaultBusinessDNA } from '../../src/core/knowledge';
@@ -7,6 +7,59 @@ import { AgentRegistry, AccessControlError } from '../../src/core/agents';
 import { MultiAgentCollaborationOrchestrator } from '../../src/core/agents/collaboration-orchestrator';
 import { WorkflowEngine, WorkflowExecutionBlockedError } from '../../src/core/automation/workflows';
 import { ApprovalManager } from '../../src/core/automation/approvals';
+import { LLMProviderGateway } from '../../src/core/providers/llm-provider-factory';
+
+const originalExecute = LLMProviderGateway.executeWithFallback.bind(LLMProviderGateway);
+const originalStructured = LLMProviderGateway.generateStructured.bind(LLMProviderGateway);
+
+beforeEach(() => {
+  LLMProviderGateway.executeWithFallback = async (request) => {
+    const prompt = request.prompt || '';
+    let text = '{"result": "mocked test double"}';
+
+    if (prompt.includes('channelOptimizedContent') || prompt.includes('complianceStatus')) {
+      text = JSON.stringify({
+        targetChannel: 'x',
+        scheduledTimeIso: new Date(Date.now() + 3600000).toISOString(),
+        channelOptimizedContent: 'Pulse Dynamics Q3 Update: Transforming commercial operations.',
+        complianceStatus: 'COMPLIANT',
+        hashtags: ['#Growth', '#Operations'],
+        characterCount: 65,
+        requiresHumanApproval: true,
+        distributionStrategy: 'Priority multi-channel broadcasting',
+        riskFactor: 'LOW',
+      });
+    } else {
+      text = 'Governed announcement drafted for autonomous execution.';
+    }
+
+    return {
+      text,
+      providerUsed: 'nvidia',
+      modelUsed: 'meta/llama-3.2-90b-vision-instruct',
+      usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150, estimatedCostUsd: 0.0001, latencyMs: 5 },
+    };
+  };
+
+  LLMProviderGateway.generateStructured = async (request, schema) => {
+    const resp = await LLMProviderGateway.executeWithFallback(request);
+    let parsedData: any;
+    try {
+      parsedData = JSON.parse(resp.text);
+    } catch {
+      parsedData = { result: resp.text };
+    }
+    return {
+      data: parsedData,
+      response: resp,
+    };
+  };
+});
+
+afterEach(() => {
+  LLMProviderGateway.executeWithFallback = originalExecute;
+  LLMProviderGateway.generateStructured = originalStructured;
+});
 
 test('Epic 11D: MultiAgentCollaborationOrchestrator validates domain matrix checks during inter-agent delegation and blocks unauthorized writes', () => {
   const dna = createDefaultBusinessDNA('biz_gov_1');

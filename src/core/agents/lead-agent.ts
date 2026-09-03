@@ -77,7 +77,7 @@ export class LeadAgent extends BaseAgent {
       prompt: params.customTargetDomain
         ? `Audit custom target domain "${params.customTargetDomain}" in the ${params.industry || 'commercial'} industry. Quantify annual financial pain, identify specific technical/process gaps, and map the economic decision maker role. DO NOT hallucinate personal names.`
         : `Identify and qualify ${params.batchSize || 2} prospective enterprise leads in the ${params.industry || 'saas'} industry seeking digital transformation and agency-replacement solutions. Map target decision maker roles with explicit AI-estimated verification tags. DO NOT hallucinate personal names.`,
-      payload: params,
+      payload: params as unknown as Record<string, unknown>,
     }, context);
 
     return result.data.discoveredLeads as DiscoveredLead[];

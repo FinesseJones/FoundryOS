@@ -13,6 +13,7 @@ RUN apk add --no-cache openssl libc6-compat
 COPY package*.json ./
 COPY prisma ./prisma
 COPY api ./api
+COPY scripts ./scripts
 
 # Install dependencies and generate Prisma client
 RUN npm ci
@@ -35,6 +36,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/api ./api
+COPY --from=builder /app/scripts ./scripts
 
 EXPOSE 8787
 

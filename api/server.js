@@ -392,10 +392,11 @@ app.get("/api/health", async (_req, res) => {
     res.json({
       ok: true,
       service: "foundryos-api",
-      key: !!process.env.NVIDIA_API_KEY,
-      stripe: !!process.env.STRIPE_SECRET_KEY,
+      nvidiaConfigured: !!process.env.NVIDIA_API_KEY,
+      stripeConfigured: !!process.env.STRIPE_SECRET_KEY,
+      masterAdminConfigured: !!process.env.MASTER_ADMIN_SECRET,
       database: isPostgres ? "prisma_postgresql" : "prisma_sqlite",
-      databaseUrl: process.env.DATABASE_URL,
+      databaseConfigured: !!process.env.DATABASE_URL,
       userCount,
       timestamp: new Date().toISOString(),
     });

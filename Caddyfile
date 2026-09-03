@@ -1,9 +1,9 @@
-:{$PORT:80}, {$DOMAIN_NAME} {
+:{$PORT:80} {
     encode gzip
 
     # Backend API routes
     handle /api/* {
-        reverse_proxy {$API_UPSTREAM:127.0.0.1:8787}
+        reverse_proxy 127.0.0.1:8787
     }
 
     # Frontend Single Page App (Static Server with SPA Routing)

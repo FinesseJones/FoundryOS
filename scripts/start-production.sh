@@ -4,33 +4,30 @@ set -e
 echo "=== [FoundryOS Production Boot] ==="
 
 # Execute database deployment / migrations if Postgres URL is provided
+# FAIL CLOSED: Terminate boot immediately if database migration fails
 if [ -n "$DATABASE_URL" ]; then
   echo "[FoundryOS Boot] Running database deployment & migrations..."
-  npm run db:deploy || echo "[FoundryOS Boot] Warning: Database deployment returned non-zero code, continuing startup..."
+  npm run db:deploy
 fi
 
-# Preserve incoming public port (from Railway / Render / host)
-PUBLIC_PORT=${PORT:-80}
-INTERNAL_API_PORT=${API_PORT:-8787}
-
-# Start Node API in background explicitly on internal port
-echo "[FoundryOS Boot] Starting Backend API Server on internal port $INTERNAL_API_PORT..."
-PORT=$INTERNAL_API_PORT node api/server.js &
+# Start Node API in background scoped to internal port 8787 only (no global export)
+echo "[FoundryOS Boot] Starting Backend API Server on internal port 8787..."
+PORT=8787 node api/server.js &
 API_PID=$!
 
 # Wait for API server to be healthy
-echo "[FoundryOS Boot] Waiting for Backend API health check on internal port $INTERNAL_API_PORT..."
+echo "[FoundryOS Boot] Waiting for Backend API health check on 127.0.0.1:8787..."
 for i in $(seq 1 30); do
-  if wget --quiet --spider http://127.0.0.1:$INTERNAL_API_PORT/api/health; then
-    echo "[FoundryOS Boot] Backend API is healthy on port $INTERNAL_API_PORT."
+  if wget --quiet --spider http://127.0.0.1:8787/api/health; then
+    echo "[FoundryOS Boot] Backend API is healthy on port 8787."
     break
   fi
   sleep 1
 done
 
-# Start Caddy in foreground listening on the public port
-echo "[FoundryOS Boot] Starting Caddy Edge Server on public port $PUBLIC_PORT..."
-PORT=$PUBLIC_PORT caddy run --config /etc/caddy/Caddyfile --adapter caddyfile &
+# Start Caddy in foreground (inherits Railway's injected $PORT with default fallback to 80)
+echo "[FoundryOS Boot] Starting Caddy Edge Server..."
+caddy run --config /etc/caddy/Caddyfile --adapter caddyfile &
 CADDY_PID=$!
 
 # Handle shutdown signals

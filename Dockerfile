@@ -30,9 +30,6 @@ WORKDIR /app
 RUN apk add --no-cache caddy openssl libc6-compat wget ca-certificates
 
 ENV NODE_ENV=production
-ENV PORT=80
-ENV API_PORT=8787
-ENV API_UPSTREAM=127.0.0.1:8787
 ENV DATA_DIR=/app/data
 
 RUN mkdir -p /app/data /srv /etc/caddy
